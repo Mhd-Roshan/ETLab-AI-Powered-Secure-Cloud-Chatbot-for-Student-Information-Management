@@ -1,0 +1,119 @@
+// FIRESTORE USERS COLLECTION STRUCTURE
+// Location: /users
+
+/*
+Collection: users
+Document: {userId}
+
+Fields:
+{
+  "id": "string" (Document ID),
+  "username": "string" (unique, required),
+  "email": "string" (unique, required),
+  "collegeCode": "string" (e.g., "TVE", "KMCT"),
+  "collegeName": "string" (full college name),
+  "role": "string" (enum: "admin", "hod", "staff_advisor", "staff", "student"),
+  "firstName": "string" (required),
+  "lastName": "string" (required),
+  "phone": "string" (optional),
+  "department": "string" (optional, for staff/hod),
+  "isActive": "boolean" (default: true),
+  "createdAt": "timestamp" (ISO8601 string),
+  "lastLogin": "timestamp" (ISO8601 string, nullable)
+}
+
+Sample Documents:
+
+1. Admin User:
+{
+  "id": "1234567890",
+  "username": "Admin123",
+  "email": "admin@edlab.edu",
+  "collegeCode": "TVE",
+  "collegeName": "College of Engineering Trivandrum (TVE)",
+  "role": "admin",
+  "firstName": "Raj",
+  "lastName": "Kumar",
+  "phone": "+919876543210",
+  "department": null,
+  "isActive": true,
+  "createdAt": "2026-01-01T10:00:00.000Z",
+  "lastLogin": "2026-01-13T15:30:00.000Z"
+}
+
+2. HOD User:
+{
+  "id": "1234567891",
+  "username": "HOD001",
+  "email": "hod@edlab.edu",
+  "collegeCode": "TVE",
+  "collegeName": "College of Engineering Trivandrum (TVE)",
+  "role": "hod",
+  "firstName": "Dr.",
+  "lastName": "Sharma",
+  "phone": "+919876543211",
+  "department": "Computer Science",
+  "isActive": true,
+  "createdAt": "2026-01-01T10:00:00.000Z",
+  "lastLogin": "2026-01-13T14:20:00.000Z"
+}
+
+3. Staff User:
+{
+  "id": "1234567892",
+  "username": "Staff001",
+  "email": "staff@edlab.edu",
+  "collegeCode": "TVE",
+  "collegeName": "College of Engineering Trivandrum (TVE)",
+  "role": "staff",
+  "firstName": "John",
+  "lastName": "Doe",
+  "phone": "+919876543212",
+  "department": "Computer Science",
+  "isActive": true,
+  "createdAt": "2026-01-01T10:00:00.000Z",
+  "lastLogin": "2026-01-13T13:45:00.000Z"
+}
+
+4. Staff Advisor User:
+{
+  "id": "1234567893",
+  "username": "SA001",
+  "email": "staffadvisor@edlab.edu",
+  "collegeCode": "TVE",
+  "collegeName": "College of Engineering Trivandrum (TVE)",
+  "role": "staff_advisor",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "phone": "+919876543213",
+  "department": "Student Affairs",
+  "isActive": true,
+  "createdAt": "2026-01-01T10:00:00.000Z",
+  "lastLogin": "2026-01-13T12:15:00.000Z"
+}
+
+Firestore Security Rules:
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      // Allow read for authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow write/create only for admins
+      allow write: if request.auth != null && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // Allow users to update their own profile
+      allow update: if request.auth != null && 
+                       (request.auth.uid == userId || 
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+  }
+}
+
+Firestore Indexes:
+1. Collection: users, Fields: username (Ascending)
+2. Collection: users, Fields: role (Ascending), isActive (Ascending)
+3. Collection: users, Fields: collegeCode (Ascending), isActive (Ascending)
+*/
