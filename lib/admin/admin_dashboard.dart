@@ -24,11 +24,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     super.initState();
     _pages = [
       const DashboardHome(),
-      const GenericPage(title: "Staff Advisor Portal"),
-      const GenericPage(title: "My Classes"),
-      const GenericPage(title: "FA Calculator"),
-      const GenericPage(title: "My Timetable"),
-      const GenericPage(title: "Substitutions"),
+      const GenericPage(title: " Batches"),
+      const GenericPage(title: "Classes"),
+      const GenericPage(title: "Assignments"),
+      const GenericPage(title: "Timetable"),
+      const GenericPage(title: "Notifications"),
     ];
   }
 
@@ -101,7 +101,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   DashboardHeader(
                     toggleTheme: _toggleTheme,
                     isDarkMode: _isDarkMode,
-                    showMenu: !isDesktop,
+                    showMenu: !isDesktop, onSearch: (String p1) {  },
                   ),
                   Expanded(child: _pages[_selectedIndex]),
                 ],

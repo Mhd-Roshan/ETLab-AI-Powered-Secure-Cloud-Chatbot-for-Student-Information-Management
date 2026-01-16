@@ -18,7 +18,7 @@ class AdminApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Admin Dashboard - Edlab',
+      title: 'Edlab',
       theme: ThemeData(
         fontFamily: 'Roboto',
         primaryColor: const Color(0xFF1867DC),

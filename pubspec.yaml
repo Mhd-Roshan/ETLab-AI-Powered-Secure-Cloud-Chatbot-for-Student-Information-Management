@@ -14,7 +14,9 @@ dependencies:
     sdk: flutter
   
   # These must be at the same level as 'flutter', not inside it
-  google_fonts: ^6.1.0
+  table_calendar: ^3.1.0  # Required for the calendar
+  intl: ^0.19.0           # Required for date formatting
+  google_fonts: ^6.1.0    # Required for fonts
   cupertino_icons: ^1.0.8
   firebase_core: ^3.15.2
   cloud_firestore: ^5.0.0
