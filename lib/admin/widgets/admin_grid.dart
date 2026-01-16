@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import '../screens/module_screen.dart';
-import '../screens/batches_screen.dart';   // Import specific screen
-import '../screens/students_screen.dart';  // Import specific screen
-import '../screens/staff_screen.dart';     // Import specific screen
+import '../screens/departments_screen.dart'; // Ensure class 'DepartmentsScreen' is inside this file
+import '../screens/students_screen.dart';
+import '../screens/staff_screen.dart';
 
 class AdministrationGrid extends StatelessWidget {
   const AdministrationGrid({super.key});
 
   final List<Map<String, dynamic>> items = const [
-    {"icon": Icons.view_cozy_rounded, "label": "Batches", "color": Colors.blue},
-    {"icon": Icons.school_rounded, "label": "Students", "color": Colors.green},
     {"icon": Icons.account_tree_rounded, "label": "Department", "color": Colors.orange},
+    {"icon": Icons.school_rounded, "label": "Students", "color": Colors.green},
     {"icon": Icons.badge_rounded, "label": "Staff", "color": Colors.purple},
     {"icon": Icons.co_present_rounded, "label": "Attendance", "color": Colors.redAccent},
     {"icon": Icons.bedroom_parent_rounded, "label": "Hostel", "color": Colors.teal},
@@ -88,23 +87,30 @@ class AdministrationGrid extends StatelessWidget {
             // Routing Logic
             final String label = item['label'];
             
-            if (label == "Batches") {
+            // 1. Check for "Department" label (Updated from Batches)
+            if (label == "Department") {
               Navigator.push(
                 context, 
-                MaterialPageRoute(builder: (context) => BatchesScreen(color: displayColor))
+                // Updated to use DepartmentsScreen
+                MaterialPageRoute(builder: (context) => DepartmentsScreen(color: displayColor))
               );
-            } else if (label == "Students") {
+            } 
+            // 2. Check for "Students"
+            else if (label == "Students") {
               Navigator.push(
                 context, 
                 MaterialPageRoute(builder: (context) => StudentsScreen(color: displayColor))
               );
-            } else if (label == "Staff") {
+            } 
+            // 3. Check for "Staff"
+            else if (label == "Staff") {
               Navigator.push(
                 context, 
                 MaterialPageRoute(builder: (context) => StaffScreen(color: displayColor))
               );
-            } else {
-              // Default generic screen for items not yet implemented
+            } 
+            // 4. Default for others
+            else {
               Navigator.push(
                 context,
                 MaterialPageRoute(

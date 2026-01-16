@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class BatchesScreen extends StatelessWidget {
+class DepartmentsScreen extends StatelessWidget {
   final Color color;
-  const BatchesScreen({super.key, required this.color});
+  const DepartmentsScreen({super.key, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -44,27 +44,25 @@ class BatchesScreen extends StatelessWidget {
           )
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text("NEW BATCH", style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      // FAB Removed from here
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: GridView.builder(
           physics: const BouncingScrollPhysics(),
-          itemCount: departments.length,
+          // Add 1 to count for the Add Button
+          itemCount: departments.length + 1,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4, 
-            crossAxisSpacing: 12,
-            // 1. Reduced spacing between rows significantly
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.8, 
+            crossAxisCount: 4,
+            crossAxisSpacing: 28,
+            mainAxisSpacing: 5,
+            childAspectRatio: 1.5,
           ),
           itemBuilder: (context, index) {
+            // Check if this is the last item
+            if (index == departments.length) {
+              return _buildAddDepartmentItem(context);
+            }
+
             final dept = departments[index];
             return _buildMinimalItem(dept);
           },
@@ -73,11 +71,11 @@ class BatchesScreen extends StatelessWidget {
     );
   }
 
+  // Standard Department Item
   Widget _buildMinimalItem(Map<String, dynamic> dept) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        // Icon / Graphic
         Container(
           width: 60,
           height: 60,
@@ -104,10 +102,7 @@ class BatchesScreen extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(height: 8),
-
-        // Code
         Text(
           dept['code'],
           style: GoogleFonts.inter(
@@ -117,28 +112,22 @@ class BatchesScreen extends StatelessWidget {
             letterSpacing: -0.5,
           ),
         ),
-
         const SizedBox(height: 2),
-
-        // Name
         Text(
           dept['name'],
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(
-            fontSize: 11,
+            fontSize: 10, // Slightly reduced to fit
             fontWeight: FontWeight.w600,
             color: Colors.grey.shade600,
           ),
         ),
-
         const SizedBox(height: 4),
-
-        // HOD Name
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_rounded, size: 15, color: Colors.grey.shade400),
+            Icon(Icons.person_rounded, size: 12, color: Colors.grey.shade400),
             const SizedBox(width: 4),
             Flexible(
               child: Text(
@@ -146,7 +135,7 @@ class BatchesScreen extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: 11, // Slightly reduced to fit
                   fontWeight: FontWeight.w600,
                   color: Colors.grey.shade700,
                 ),
@@ -155,6 +144,57 @@ class BatchesScreen extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  // The New "Add Button" Item
+  Widget _buildAddDepartmentItem(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // Handle Add Department Action
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.grey.shade300,
+                width: 2,
+                // Make it dashed if you use a custom painter, or solid like this for clean look
+              ),
+            ),
+            child: Icon(
+              Icons.add_rounded,
+              color: Colors.grey.shade400,
+              size: 30,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "NEW",
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: Colors.grey.shade400,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            "Department",
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade400,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
