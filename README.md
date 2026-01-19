@@ -1,4 +1,4 @@
-# ETLab-AI-Powered-Secure-Cloud-Chatbot-for-Student-Information-Management
+# EdLab-AI-Powered-Secure-Cloud-Chatbot-for-Student-Information-Management
 KTU University manages a large volume of student-related academic data such as attendance, examination results, and academic notifications. Conventional information systems often require manual navigation and lack intelligent interaction, making the process of accessing academic information time-consuming and inefficient. With the advancement of Artificial Intelligence and cloud technologies, there is a growing need for smarter and more interactive academic information systems within KTU University.
 
 ETLab: AI-Powered Secure Cloud Chatbot for Student Information Management is an intelligent system designed to provide quick and secure access to academic information for KTU University users. The system utilizes Artificial Intelligence and Natural Language Processing (NLP) to enable students, teachers, and administrators to interact with the system using text and voice-based queries. The inclusion of voice interaction enhances usability and accessibility by enabling hands-free and user-friendly communication.
