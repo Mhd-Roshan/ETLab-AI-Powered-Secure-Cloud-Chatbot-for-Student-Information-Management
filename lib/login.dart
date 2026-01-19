@@ -2,10 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// --- IMPORTANT: Use package imports to avoid Type Mismatches ---
 import 'package:edlab/admin/admin_dashboard.dart';
-// Ensure these files exist, or use the placeholders at the bottom of this file
 import 'package:edlab/hod/hod_dashboard.dart';
 import 'package:edlab/staff/staff_dashboard.dart';
 import 'package:edlab/staff_advisor/staff_advisor_dashboard.dart';

@@ -26,7 +26,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       const DashboardHome(),
       const GenericPage(title: " Batches"),
       const GenericPage(title: "Classes"),
-      const GenericPage(title: "Assignments"),
+      const GenericPage(title: "Chatbot"),
       const GenericPage(title: "Timetable"),
       const GenericPage(title: "Notifications"),
     ];

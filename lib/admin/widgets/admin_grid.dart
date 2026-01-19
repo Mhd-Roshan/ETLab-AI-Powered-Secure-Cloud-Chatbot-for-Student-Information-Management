@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import '../screens/module_screen.dart';
-import '../screens/departments_screen.dart'; // Ensure class 'DepartmentsScreen' is inside this file
-import '../screens/students_screen.dart';
+import '../screens/departments_screen.dart'; 
+import '../screens/students_screen.dart';  
 import '../screens/staff_screen.dart';
+import '../screens/hostel_screen.dart';
+import '../screens/attendance_screen.dart';
+import '../screens/suspended_users_screen.dart'; 
+import '../screens/subject_pool_screen.dart';
+import '../screens/university_exam_screen.dart';
+import '../screens/placement_screen.dart'; // Ensure this is imported
 
 class AdministrationGrid extends StatelessWidget {
   const AdministrationGrid({super.key});
@@ -73,7 +79,7 @@ class AdministrationGrid extends StatelessWidget {
   Widget _buildSimpleCircleItem(BuildContext context, Map<String, dynamic> item) {
     final Color color = item['color'];
 
-    // Logic for darker icon colors on light backgrounds
+    // Visual color adjustment for lighter colors
     Color displayColor = color;
     if (color == Colors.yellow) displayColor = Colors.orangeAccent;
     if (color == Colors.tealAccent) displayColor = Colors.teal;
@@ -84,33 +90,39 @@ class AdministrationGrid extends StatelessWidget {
       children: [
         InkWell(
           onTap: () {
-            // Routing Logic
             final String label = item['label'];
             
-            // 1. Check for "Department" label (Updated from Batches)
+            // --- Navigation Routing Logic ---
+            
             if (label == "Department") {
-              Navigator.push(
-                context, 
-                // Updated to use DepartmentsScreen
-                MaterialPageRoute(builder: (context) => DepartmentsScreen(color: displayColor))
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => DepartmentsScreen(color: displayColor)));
             } 
-            // 2. Check for "Students"
             else if (label == "Students") {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (context) => StudentsScreen(color: displayColor))
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => StudentsScreen(color: displayColor)));
             } 
-            // 3. Check for "Staff"
             else if (label == "Staff") {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (context) => StaffScreen(color: displayColor))
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => StaffScreen(color: displayColor)));
             } 
-            // 4. Default for others
+            else if (label == "Attendance") {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => AttendanceScreen(color: displayColor)));
+            }
+            else if (label == "Hostel") {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => HostelScreen(color: displayColor)));
+            }
+            else if (label == "Subject Pool") {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => SubjectPoolScreen(color: displayColor)));
+            }
+            else if (label == "Suspended") {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => SuspendedUsersScreen(color: displayColor)));
+            }
+            else if (label == "Univ. Exam") {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => UniversityExamScreen(color: displayColor)));
+            }
+            else if (label == "Placement") {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => PlacementScreen(color: displayColor)));
+            }
             else {
+              // Default Fallback
               Navigator.push(
                 context,
                 MaterialPageRoute(
