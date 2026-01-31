@@ -14,7 +14,8 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
   // Controllers
   final TextEditingController _collegeController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
@@ -29,7 +30,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   // --- COLOR PALETTE (Pixel / Retro Tech) ---
   final Color _accentOrange = const Color(0xFFFF6803); // Retro Orange
   final Color _deepOrange = const Color(0xFFAE3A02);
-  final Color _bgGray = const Color(0xFFEBEBEB);       // Light tech gray
+  final Color _bgGray = const Color(0xFFEBEBEB); // Light tech gray
   final Color _textBlack = const Color(0xFF1A1A1A);
   final Color _glassWhite = Colors.white.withOpacity(0.65); // Frosted feel
   final Color _glassBorder = Colors.white.withOpacity(0.9);
@@ -69,10 +70,16 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('PLEASE FILL ALL FIELDS', style: GoogleFonts.courierPrime(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Text(
+            'PLEASE FILL ALL FIELDS',
+            style: GoogleFonts.courierPrime(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: _deepOrange,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)), 
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
         ),
       );
       return;
@@ -98,7 +105,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
   String _determineUserRole(String username) {
     final upperUser = username.toUpperCase().trim();
-    if (upperUser.contains('ADVISOR') || upperUser.contains('STAFFAD')) return 'staff_advisor';
+    if (upperUser.contains('ADVISOR') || upperUser.contains('STAFFAD'))
+      return 'staff_advisor';
     if (upperUser.contains('HOD')) return 'hod';
     if (upperUser.contains('ADMIN')) return 'admin';
     if (upperUser.startsWith('SA')) return 'staff_advisor';
@@ -110,7 +118,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
   void _navigateToDashboard(BuildContext context, String role) {
     Widget dashboard;
-    
+
     // Explicitly assigning the widget based on role
     switch (role) {
       case 'admin':
@@ -224,7 +232,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                       },
                     ),
                   ),
-                  const SizedBox(height: 11), 
+                  const SizedBox(height: 11),
                   Text(
                     "INITIALIZE SESSION...",
                     style: GoogleFonts.courierPrime(
@@ -234,15 +242,18 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                       letterSpacing: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 24), 
+                  const SizedBox(height: 24),
 
                   ClipRRect(
                     borderRadius: BorderRadius.circular(32),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
                       child: Container(
-                        constraints: const BoxConstraints(maxWidth: 420), 
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 40,
+                        ),
                         decoration: BoxDecoration(
                           color: _glassWhite,
                           borderRadius: BorderRadius.circular(32),
@@ -266,9 +277,15 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               label: "User Identity",
                               child: TextFormField(
                                 controller: _usernameController,
-                                style: GoogleFonts.spaceMono(color: _textBlack, fontWeight: FontWeight.bold),
+                                style: GoogleFonts.spaceMono(
+                                  color: _textBlack,
+                                  fontWeight: FontWeight.bold,
+                                ),
                                 cursorColor: _accentOrange,
-                                decoration: _buildInputDecoration("ID NO", Icons.badge),
+                                decoration: _buildInputDecoration(
+                                  "ID NO",
+                                  Icons.badge,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -277,22 +294,32 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               child: TextFormField(
                                 controller: _passwordController,
                                 obscureText: !_isPasswordVisible,
-                                style: GoogleFonts.spaceMono(color: _textBlack, fontWeight: FontWeight.bold),
-                                cursorColor: _accentOrange,
-                                decoration: _buildInputDecoration("Password", Icons.lock_outline).copyWith(
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                                      color: Colors.grey[600],
-                                      size: 18,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _isPasswordVisible = !_isPasswordVisible;
-                                      });
-                                    },
-                                  ),
+                                style: GoogleFonts.spaceMono(
+                                  color: _textBlack,
+                                  fontWeight: FontWeight.bold,
                                 ),
+                                cursorColor: _accentOrange,
+                                decoration:
+                                    _buildInputDecoration(
+                                      "Password",
+                                      Icons.lock_outline,
+                                    ).copyWith(
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _isPasswordVisible
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
+                                          color: Colors.grey[600],
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _isPasswordVisible =
+                                                !_isPasswordVisible;
+                                          });
+                                        },
+                                      ),
+                                    ),
                               ),
                             ),
 
@@ -302,22 +329,31 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               width: double.infinity,
                               height: 54,
                               child: ElevatedButton(
-                                onPressed: _isLoading ? null : () => _handleLogin(context),
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => _handleLogin(context),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: _accentOrange,
                                   foregroundColor: _textBlack,
                                   padding: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                   elevation: 10,
                                   shadowColor: _accentOrange.withOpacity(0.4),
                                 ),
                                 child: _isLoading
                                     ? SizedBox(
-                                        height: 24, width: 24,
-                                        child: CircularProgressIndicator(color: _textBlack, strokeWidth: 3),
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          color: _textBlack,
+                                          strokeWidth: 3,
+                                        ),
                                       )
                                     : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Text(
                                             "LOGIN",
@@ -372,8 +408,21 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("SYSTEM STATUS: ", style: GoogleFonts.spaceMono(color: Colors.grey[600], fontSize: 11)),
-                      Text("ONLINE", style: GoogleFonts.spaceMono(color: Colors.green[700], fontWeight: FontWeight.bold, fontSize: 11)),
+                      Text(
+                        "SYSTEM STATUS: ",
+                        style: GoogleFonts.spaceMono(
+                          color: Colors.grey[600],
+                          fontSize: 11,
+                        ),
+                      ),
+                      Text(
+                        "ONLINE",
+                        style: GoogleFonts.spaceMono(
+                          color: Colors.green[700],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -387,8 +436,14 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
   // --- WIDGET HELPERS ---
   Widget _buildFloatingObject({
-    double? top, double? bottom, double? left, double? right,
-    required IconData icon, required Color color, required double size, required double delay
+    double? top,
+    double? bottom,
+    double? left,
+    double? right,
+    required IconData icon,
+    required Color color,
+    required double size,
+    required double delay,
   }) {
     return AnimatedBuilder(
       animation: _controller,
@@ -410,7 +465,11 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                 color: Colors.white.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(size / 3),
                 boxShadow: [
-                  BoxShadow(color: color.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
                 ],
                 border: Border.all(color: Colors.white, width: 2),
               ),
@@ -477,24 +536,34 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               return const Iterable<String>.empty();
             }
             return _ktuColleges.where((String option) {
-              return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+              return option.toLowerCase().contains(
+                textEditingValue.text.toLowerCase(),
+              );
             });
           },
           onSelected: (String selection) {
             _collegeController.text = selection;
           },
-          fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
-            textController.addListener(() {
-              _collegeController.text = textController.text;
-            });
-            return TextFormField(
-              controller: textController,
-              focusNode: focusNode,
-              style: GoogleFonts.spaceMono(color: _textBlack, fontWeight: FontWeight.bold, fontSize: 13),
-              cursorColor: _accentOrange,
-              decoration: _buildInputDecoration("Search College...", Icons.school_outlined),
-            );
-          },
+          fieldViewBuilder:
+              (context, textController, focusNode, onFieldSubmitted) {
+                textController.addListener(() {
+                  _collegeController.text = textController.text;
+                });
+                return TextFormField(
+                  controller: textController,
+                  focusNode: focusNode,
+                  style: GoogleFonts.spaceMono(
+                    color: _textBlack,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  cursorColor: _accentOrange,
+                  decoration: _buildInputDecoration(
+                    "Search College...",
+                    Icons.school_outlined,
+                  ),
+                );
+              },
           optionsViewBuilder: (context, onSelected, options) {
             return Align(
               alignment: Alignment.topLeft,
@@ -515,12 +584,19 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     padding: EdgeInsets.zero,
                     shrinkWrap: true,
                     itemCount: options.length,
-                    separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey[200]),
+                    separatorBuilder: (context, index) =>
+                        Divider(height: 1, color: Colors.grey[200]),
                     itemBuilder: (BuildContext context, int index) {
                       final String option = options.elementAt(index);
                       return ListTile(
                         dense: true,
-                        title: Text(option, style: GoogleFonts.spaceMono(color: _textBlack, fontSize: 12)),
+                        title: Text(
+                          option,
+                          style: GoogleFonts.spaceMono(
+                            color: _textBlack,
+                            fontSize: 12,
+                          ),
+                        ),
                         onTap: () => onSelected(option),
                         hoverColor: _accentOrange.withOpacity(0.1),
                       );
@@ -559,4 +635,3 @@ class DotGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

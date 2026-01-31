@@ -1,206 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:edlab/admin/widgets/admin_sidebar.dart';
+import 'package:edlab/admin/widgets/admin_header.dart';
 
 class SuspendedUsersScreen extends StatefulWidget {
-  final Color color;
-  const SuspendedUsersScreen({super.key, required this.color});
+  const SuspendedUsersScreen({super.key});
 
   @override
   State<SuspendedUsersScreen> createState() => _SuspendedUsersScreenState();
 }
 
 class _SuspendedUsersScreenState extends State<SuspendedUsersScreen> {
-  // --- STATE VARIABLES ---
-  String _searchQuery = "";
-  String _selectedTab = "Batch"; // Options: "Batch", "Students Only", "Staff Only"
-
-  // Controllers
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _idController = TextEditingController();
-  final TextEditingController _reasonController = TextEditingController();
-
-  // --- DATA SOURCE ---
-  List<Map<String, dynamic>> _suspendedUsers = [
-    {
-      "name": "Arjun Nair",
-      "id": "KMCT20CS001",
-      "role": "Student",
-      "reason": "Disciplinary Action",
-      "date": "Jan 12, 2026",
-      "duration": "2 Weeks",
-      "status": "Active",
-      "img": "https://randomuser.me/api/portraits/men/11.jpg"
-    },
-    {
-      "name": "Mr. Rahul P.",
-      "id": "EMP045",
-      "role": "Staff",
-      "reason": "Administrative Review",
-      "date": "Jan 10, 2026",
-      "duration": "Indefinite",
-      "status": "Active",
-      "img": "https://randomuser.me/api/portraits/men/32.jpg"
-    },
-    {
-      "name": "Ben Johnson",
-      "id": "KMCT20CS005",
-      "role": "Student",
-      "reason": "Fee Default",
-      "date": "Jan 15, 2026",
-      "duration": "Until Payment",
-      "status": "Active",
-      "img": "https://randomuser.me/api/portraits/men/3.jpg"
-    },
-  ];
-
-  // --- LOGIC ---
-
-  List<Map<String, dynamic>> get _filteredUsers {
-    return _suspendedUsers.where((user) {
-      final matchesSearch = (user['name']?.toString().toLowerCase() ?? "").contains(_searchQuery.toLowerCase()) || 
-                            (user['id']?.toString().toLowerCase() ?? "").contains(_searchQuery.toLowerCase());
-      
-      bool matchesTab = true;
-      if (_selectedTab == "Students Only") matchesTab = user['role'] == "Student";
-      if (_selectedTab == "Staff Only") matchesTab = user['role'] == "Staff";
-
-      return matchesSearch && matchesTab;
-    }).toList();
-  }
-
-  // Metrics
-  int get _totalSuspended => _suspendedUsers.length;
-  int get _studentSuspended => _suspendedUsers.where((u) => u['role'] == 'Student').length;
-  int get _staffSuspended => _suspendedUsers.where((u) => u['role'] == 'Staff').length;
-
-  // --- ACTIONS ---
-
-  void _revokeSuspension(Map<String, dynamic> user) {
-    setState(() {
-      _suspendedUsers.remove(user);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Suspension revoked for ${user['name']}"), backgroundColor: Colors.green)
-    );
-  }
-
-  void _manualSuspendDialog() {
-    _nameController.clear();
-    _idController.clear();
-    _reasonController.clear();
-    String selectedRole = "Student";
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setStateSB) {
-          return AlertDialog(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            title: Text("Manually Suspend User", style: GoogleFonts.dmSans(fontWeight: FontWeight.bold)),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildTextField(_nameController, "User Name"),
-                  const SizedBox(height: 12),
-                  _buildTextField(_idController, "ID / Reg No"),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: selectedRole,
-                    dropdownColor: Colors.white,
-                    decoration: InputDecoration(
-                      labelText: "Role",
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    items: ["Student", "Staff"].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                    onChanged: (val) => setStateSB(() => selectedRole = val!),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(_reasonController, "Reason for Suspension"),
-                ],
-              ),
+  // Function to Reinstate (Activate) a User
+  Future<void> _reinstateUser(String docId, String name) async {
+    bool confirm =
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Reinstate User?"),
+            content: Text(
+              "Are you sure you want to reactivate $name? They will regain access immediately.",
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
               ElevatedButton(
-                onPressed: () {
-                  if (_nameController.text.isNotEmpty) {
-                    setState(() {
-                      _suspendedUsers.add({
-                        "name": _nameController.text,
-                        "id": _idController.text,
-                        "role": selectedRole,
-                        "reason": _reasonController.text,
-                        "date": "Just Now",
-                        "duration": "Indefinite",
-                        "status": "Active",
-                        "img": "https://i.pravatar.cc/150?u=${_idController.text}"
-                      });
-                    });
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("User suspended successfully"), backgroundColor: Colors.redAccent)
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-                child: const Text("Suspend"),
-              )
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text(
+                  "Reinstate",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
             ],
-          );
-        }
-      ),
-    );
-  }
+          ),
+        ) ??
+        false;
 
-  TextField _buildTextField(TextEditingController controller, String label) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      ),
-    );
+    if (confirm) {
+      await FirebaseFirestore.instance.collection('students').doc(docId).update(
+        {
+          'status': 'active', // Update status back to active
+          'suspensionReason': FieldValue.delete(), // Remove the reason
+        },
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("$name has been reinstated."),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black87,
-        centerTitle: false,
-        title: Text(
-          "Suspended Users",
-          style: GoogleFonts.dmSans(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 20),
-            // 2. Header Card
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
-              ),
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sidebar
+          const SizedBox(width: 90, child: AdminSidebar(activeIndex: -1)),
+
+          // Main Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const AdminHeader(),
+                  const SizedBox(height: 32),
+
+                  // --- Header ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -208,341 +87,299 @@ class _SuspendedUsersScreenState extends State<SuspendedUsersScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Suspended Accounts",
-                            style: GoogleFonts.dmSans(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+                            "Suspended Users",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
-                            "Manage temporarily or permanently suspended student and staff accounts.",
-                            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade500),
+                            "Manage restricted access and disciplinary actions",
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.grey.shade500,
+                            ),
                           ),
                         ],
                       ),
-                      // Desktop/Tablet view Buttons (Hidden on small mobile usually, but kept for layout match)
-                      Row(
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.download_rounded, size: 18),
-                            label: const Text("Export CSV"),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.black87,
-                              side: BorderSide(color: Colors.grey.shade300),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+
+                      // Stat Chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red.shade100),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.red.shade700,
+                              size: 20,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          ElevatedButton.icon(
-                            onPressed: _manualSuspendDialog,
-                            icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
-                            label: const Text("Manually Suspend"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2563EB), // Royal Blue
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            const SizedBox(width: 8),
+                            StreamBuilder<QuerySnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('students')
+                                  .where('status', isEqualTo: 'suspended')
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                int count = snapshot.data?.docs.length ?? 0;
+                                return Text(
+                                  "$count Active Suspensions",
+                                  style: TextStyle(
+                                    color: Colors.red.shade900,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                        ],
-                      )
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
+                  const SizedBox(height: 32),
 
-            const SizedBox(height: 24),
-
-            // 3. Metrics Row
-            Row(
-              children: [
-                Expanded(child: _buildMetricCard("TOTAL SUSPENDED", "$_totalSuspended", Icons.block_rounded, Colors.red)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildMetricCard("STUDENTS", "$_studentSuspended", Icons.school_rounded, Colors.blue)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildMetricCard("STAFF", "$_staffSuspended", Icons.badge_rounded, Colors.purple)),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // 4. Filters & Search Bar
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Row(
-                children: [
-                  // Custom Tab Switcher
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: ["Batch", "Students Only", "Staff Only"].map((tab) {
-                        bool isSelected = _selectedTab == tab;
-                        return InkWell(
-                          onTap: () => setState(() => _selectedTab = tab),
-                          borderRadius: BorderRadius.circular(8),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.white : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: isSelected ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)] : [],
-                            ),
-                            child: Text(
-                              tab,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isSelected ? Colors.black87 : Colors.grey.shade600,
-                              ),
-                            ),
+                  // --- DATA STREAM ---
+                  StreamBuilder<QuerySnapshot>(
+                    // Fetch only suspended students
+                    stream: FirebaseFirestore.instance
+                        .collection('students')
+                        .where('status', isEqualTo: 'suspended')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(),
                           ),
                         );
-                      }).toList(),
-                    ),
-                  ),
-                  
-                  const Spacer(),
+                      }
 
-                  // Search Field
-                  SizedBox(
-                    width: 300,
-                    child: TextField(
-                      onChanged: (val) => setState(() => _searchQuery = val),
-                      decoration: InputDecoration(
-                        hintText: "Search by name, ID, or email...",
-                        hintStyle: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade400),
-                        prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 20),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade200)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Filter Icon
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade200),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(Icons.filter_list_rounded, size: 20, color: Colors.grey.shade600),
+                      var docs = snapshot.data?.docs ?? [];
+
+                      if (docs.isEmpty) {
+                        return _buildEmptyState();
+                      }
+
+                      return Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: const Color(0xFFF1F5F9)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 20,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: DataTable(
+                          columnSpacing: 20,
+                          horizontalMargin: 32,
+                          headingRowHeight: 60,
+                          dataRowMinHeight: 70,
+                          dataRowMaxHeight: 70,
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                "User Details",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "Role",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "Department",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "Reason",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "Actions",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                          rows: docs.map((doc) {
+                            var data = doc.data() as Map<String, dynamic>;
+                            String name =
+                                "${data['firstName']} ${data['lastName']}";
+                            String email = data['email'] ?? "No Email";
+                            String reason =
+                                data['suspensionReason'] ??
+                                "Administrative Action";
+
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor: Colors.red.shade50,
+                                        child: Text(
+                                          name[0],
+                                          style: TextStyle(
+                                            color: Colors.red.shade700,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          Text(
+                                            email,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    "Student",
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(Text(data['department'] ?? "--")),
+                                DataCell(
+                                  Container(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 200,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      reason,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  ElevatedButton.icon(
+                                    onPressed: () =>
+                                        _reinstateUser(doc.id, name),
+                                    icon: const Icon(
+                                      Icons.lock_open_rounded,
+                                      size: 16,
+                                    ),
+                                    label: const Text("Reinstate"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            // 5. Data Table Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Row(
-                children: [
-                  SizedBox(width: 30, child: Icon(Icons.check_box_outline_blank_rounded, size: 20, color: Colors.grey.shade400)),
-                  Expanded(flex: 3, child: _tableHeader("USER PROFILE")),
-                  Expanded(flex: 2, child: _tableHeader("ROLE")),
-                  Expanded(flex: 3, child: _tableHeader("REASON")),
-                  Expanded(flex: 2, child: _tableHeader("SUSPENSION DATE")),
-                  Expanded(flex: 2, child: _tableHeader("DURATION")),
-                  Expanded(flex: 2, child: _tableHeader("STATUS")),
-                  Expanded(flex: 1, child: _tableHeader("ACTIONS")),
-                ],
-              ),
-            ),
-
-            // 6. Data List / Empty State
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                border: Border(
-                  left: BorderSide(color: Colors.grey.shade200),
-                  right: BorderSide(color: Colors.grey.shade200),
-                  bottom: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-              child: _filteredUsers.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(40.0),
-                      child: Center(
-                        child: Text("No suspended accounts found.", style: GoogleFonts.inter(color: Colors.grey.shade500)),
-                      ),
-                    )
-                  : Column(
-                      children: _filteredUsers.map((user) => _buildUserRow(user)).toList(),
-                    ),
-            ),
-
-            const SizedBox(height: 40),
-            
-            // Footer
-            Center(
-              child: Text(
-                "© 2026 EduManager Systems. All rights reserved.",
-                style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade400),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- WIDGET HELPER FUNCTIONS ---
-
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: Icon(icon, size: 20, color: color),
-              ),
-              const SizedBox(width: 12),
-              Text(title, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade500, letterSpacing: 0.5)),
-            ],
           ),
-          const SizedBox(height: 16),
-          Text(value, style: GoogleFonts.dmSans(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87)),
         ],
       ),
     );
   }
 
-  Widget _tableHeader(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade500),
-    );
-  }
-
-  Widget _buildUserRow(Map<String, dynamic> user) {
+  Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      width: double.infinity,
+      padding: const EdgeInsets.all(60),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
-      child: Row(
+      child: Column(
         children: [
-          SizedBox(width: 30, child: Icon(Icons.check_box_outline_blank_rounded, size: 20, color: Colors.grey.shade300)),
-          
-          // User Profile
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundImage: NetworkImage(user['img']),
-                  backgroundColor: Colors.grey.shade200,
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user['name'], style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87)),
-                    Text(user['id'], style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500)),
-                  ],
-                ),
-              ],
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check_circle_outline,
+              size: 48,
+              color: Colors.green.shade400,
             ),
           ),
-
-          // Role
-          Expanded(
-            flex: 2,
-            child: Text(user['role'], style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.grey.shade700)),
-          ),
-
-          // Reason
-          Expanded(
-            flex: 3,
-            child: Text(user['reason'], style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade600)),
-          ),
-
-          // Date
-          Expanded(
-            flex: 2,
-            child: Text(user['date'], style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.grey.shade700)),
-          ),
-
-          // Duration
-          Expanded(
-            flex: 2,
-            child: Text(user['duration'], style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade600)),
-          ),
-
-          // Status
-          Expanded(
-            flex: 2,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.red.withOpacity(0.1)),
-              ),
-              child: Text(
-                user['status'].toUpperCase(),
-                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.red.shade700),
-                textAlign: TextAlign.center,
-              ),
+          const SizedBox(height: 20),
+          Text(
+            "All Clear!",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF0F172A),
             ),
           ),
-
-          // Actions
-          Expanded(
-            flex: 1,
-            child: PopupMenuButton<String>(
-              icon: Icon(Icons.more_horiz_rounded, color: Colors.grey.shade400),
-              color: Colors.white,
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              onSelected: (val) {
-                if (val == 'revoke') _revokeSuspension(user);
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'revoke',
-                  child: Row(children: [Icon(Icons.restore, size: 18, color: Colors.green), SizedBox(width: 8), Text("Revoke Suspension")]),
-                ),
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.blue), SizedBox(width: 8), Text("Edit Details")]),
-                ),
-              ],
-            ),
+          const SizedBox(height: 8),
+          Text(
+            "There are currently no suspended users in the system.",
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),

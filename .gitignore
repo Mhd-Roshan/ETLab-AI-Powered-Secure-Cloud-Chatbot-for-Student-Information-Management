@@ -48,3 +48,6 @@ app.*.map.json
 scripts/serviceAccountKey.json
 scripts/node_modules/
 scripts/package-lock.json
+
+# API Keys and Secrets
+lib/config/api_config.dart

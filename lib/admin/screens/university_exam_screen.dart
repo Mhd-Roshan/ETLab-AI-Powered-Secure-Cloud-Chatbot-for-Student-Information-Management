@@ -1,625 +1,586 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:edlab/admin/widgets/admin_sidebar.dart';
+import 'package:edlab/admin/widgets/admin_header.dart';
 
 class UniversityExamScreen extends StatefulWidget {
-  final Color color;
-  const UniversityExamScreen({super.key, required this.color});
+  const UniversityExamScreen({super.key});
 
   @override
   State<UniversityExamScreen> createState() => _UniversityExamScreenState();
 }
 
 class _UniversityExamScreenState extends State<UniversityExamScreen> {
-  // --- STATE VARIABLES ---
-  String _searchQuery = "";
-  String _selectedStatus = "Status: All";
-  
-  // Pagination State
-  int _currentPage = 1;
-  final int _itemsPerPage = 5;
+  // Initialize with values to prevent null errors
+  String _selectedDept = 'All';
+  final List<String> _departments = ['All', 'MCA', 'MBA', 'CSE', 'ECE', 'ME'];
 
-  // Controllers for "Create Exam"
-  final TextEditingController _subjectController = TextEditingController();
-  final TextEditingController _codeController = TextEditingController();
-  final TextEditingController _invigilatorController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _timeController = TextEditingController();
-
-  // --- DATA SOURCE (Initialized inline to handle hot reload) ---
-  List<Map<String, dynamic>> _exams = [
-    {
-      "subject": "Data Structures & Algorithms",
-      "code": "CS201",
-      "date": "Oct 24, 2026",
-      "time": "10:00 AM",
-      "invigilator": "Dr. Sarah Smith",
-      "status": "Scheduled"
-    },
-    {
-      "subject": "Digital Electronics",
-      "code": "EC204",
-      "date": "Oct 26, 2026",
-      "time": "01:30 PM",
-      "invigilator": "Prof. Rahul P.",
-      "status": "Draft"
-    },
-    {
-      "subject": "Engineering Mathematics IV",
-      "code": "MA202",
-      "date": "Oct 28, 2026",
-      "time": "10:00 AM",
-      "invigilator": "Dr. V. Kumar",
-      "status": "Published"
-    },
-    {
-      "subject": "Operating Systems",
-      "code": "CS305",
-      "date": "Oct 30, 2026",
-      "time": "10:00 AM",
-      "invigilator": "Ms. Remmya C.",
-      "status": "Scheduled"
-    },
-    {
-      "subject": "Computer Networks",
-      "code": "CS307",
-      "date": "Nov 02, 2026",
-      "time": "09:30 AM",
-      "invigilator": "Mr. Ajayakumar",
-      "status": "Draft"
-    },
-    {
-      "subject": "Database Management",
-      "code": "CS302",
-      "date": "Nov 05, 2026",
-      "time": "01:30 PM",
-      "invigilator": "Ms. Sharafunnissa",
-      "status": "Scheduled"
-    },
-  ];
-
-  @override
-  void dispose() {
-    _subjectController.dispose();
-    _codeController.dispose();
-    _invigilatorController.dispose();
-    _dateController.dispose();
-    _timeController.dispose();
-    super.dispose();
-  }
-
-  // --- LOGIC ---
-
-  // Filter Logic
-  List<Map<String, dynamic>> get _filteredExams {
-    return _exams.where((exam) {
-      final subject = (exam['subject'] ?? "").toString().toLowerCase();
-      final code = (exam['code'] ?? "").toString().toLowerCase();
-      final search = _searchQuery.toLowerCase();
-      
-      final matchesSearch = subject.contains(search) || code.contains(search);
-      
-      String statusClean = _selectedStatus.replaceAll("Status: ", "");
-      final matchesStatus = _selectedStatus == "Status: All" || exam['status'] == statusClean;
-
-      return matchesSearch && matchesStatus;
-    }).toList();
-  }
-
-  // Pagination Logic
-  List<Map<String, dynamic>> get _paginatedExams {
-    int startIndex = (_currentPage - 1) * _itemsPerPage;
-    int endIndex = startIndex + _itemsPerPage;
-    
-    // Safety check for bounds
-    if (startIndex >= _filteredExams.length) {
-      return []; 
-    }
-    if (endIndex > _filteredExams.length) {
-      endIndex = _filteredExams.length;
-    }
-    
-    return _filteredExams.sublist(startIndex, endIndex);
-  }
-
-  int get _totalPages => (_filteredExams.length / _itemsPerPage).ceil();
-
-  // --- ACTIONS ---
-
-  void _showCreateExamDialog() {
-    // Clear controllers
-    _subjectController.clear();
-    _codeController.clear();
-    _invigilatorController.clear();
-    _dateController.clear();
-    _timeController.clear();
+  // --- FUNCTION: Schedule New Exam ---
+  void _showScheduleDialog() {
+    final TextEditingController subjectCtrl = TextEditingController();
+    final TextEditingController codeCtrl = TextEditingController();
+    final TextEditingController venueCtrl = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+    TimeOfDay selectedTime = TimeOfDay.now();
+    String selectedDept = 'MCA';
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text("Create New Exam", style: GoogleFonts.dmSans(fontWeight: FontWeight.bold)),
-        content: SizedBox(
-          width: 500, // Fixed width for desktop/web look
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildTextField(_subjectController, "Exam Subject"),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: _buildTextField(_codeController, "Course Code")),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildTextField(_invigilatorController, "Invigilator")),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: _buildTextField(_dateController, "Date (e.g. Oct 24)")),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildTextField(_timeController, "Time (e.g. 10:00 AM)")),
-                  ],
-                ),
-              ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Schedule New Exam"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: subjectCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Subject Name",
+                      hintText: "e.g., Data Structures",
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: codeCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Course Code",
+                      hintText: "e.g., CS301",
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: venueCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Venue/Hall",
+                      hintText: "e.g., Main Block - Hall A",
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedDept,
+                    items: ['MCA', 'MBA', 'CSE', 'ECE', 'ME']
+                        .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                        .toList(),
+                    onChanged: (val) => setState(() => selectedDept = val!),
+                    decoration: const InputDecoration(labelText: "Department"),
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    title: Text(
+                      "Date: ${DateFormat('MMM d, yyyy').format(selectedDate)}",
+                    ),
+                    trailing: const Icon(Icons.calendar_today),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    onTap: () async {
+                      DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2030),
+                      );
+                      if (picked != null) setState(() => selectedDate = picked);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    title: Text("Time: ${selectedTime.format(context)}"),
+                    trailing: const Icon(Icons.access_time),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    onTap: () async {
+                      TimeOfDay? picked = await showTimePicker(
+                        context: context,
+                        initialTime: selectedTime,
+                      );
+                      if (picked != null) setState(() => selectedTime = picked);
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx), 
-            child: Text("Cancel", style: TextStyle(color: Colors.grey.shade600))
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (_subjectController.text.isNotEmpty && _codeController.text.isNotEmpty) {
-                setState(() {
-                  _exams.insert(0, { // Add to top
-                    "subject": _subjectController.text,
-                    "code": _codeController.text,
-                    "date": _dateController.text,
-                    "time": _timeController.text,
-                    "invigilator": _invigilatorController.text,
-                    "status": "Draft" // Default status
-                  });
-                  _currentPage = 1; // Reset to page 1 to see new item
-                });
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Exam Created Successfully"), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating)
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB), 
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
-            ),
-            child: const Text("Create Exam"),
-          )
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (subjectCtrl.text.isNotEmpty && codeCtrl.text.isNotEmpty) {
+                    DateTime finalDateTime = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      selectedTime.hour,
+                      selectedTime.minute,
+                    );
+
+                    await FirebaseFirestore.instance
+                        .collection('university_exams')
+                        .add({
+                          'subject': subjectCtrl.text,
+                          'code': codeCtrl.text,
+                          'venue': venueCtrl.text,
+                          'department': selectedDept,
+                          'date': Timestamp.fromDate(finalDateTime),
+                          'status': 'Scheduled',
+                        });
+                    if (context.mounted) Navigator.pop(context);
+                  }
+                },
+                child: const Text("Schedule"),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  void _deleteExam(Map<String, dynamic> exam) {
-    setState(() {
-      _exams.remove(exam);
-      // Adjust pagination if page becomes empty
-      if (_paginatedExams.isEmpty && _currentPage > 1) {
-        _currentPage--;
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Exam Deleted"), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating)
-    );
-  }
-
-  TextField _buildTextField(TextEditingController controller, String label) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        floatingLabelBehavior: FloatingLabelBehavior.always,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      ),
-    );
+  Future<void> _deleteExam(String docId) async {
+    await FirebaseFirestore.instance
+        .collection('university_exams')
+        .doc(docId)
+        .delete();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black87,
-        centerTitle: false,
-        title: Text(
-          "University Exam Management",
-          style: GoogleFonts.dmSans(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Header Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(width: 90, child: AdminSidebar(activeIndex: 2)),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const AdminHeader(),
+                  const SizedBox(height: 32),
+
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(height: 8),
-                      Text(
-                        "University Exam Management",
-                        style: GoogleFonts.dmSans(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "University Examinations",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Manage schedules, halls, and invigilation",
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Streamline exam schedules, manage question banks, assign invigilators, and publish results effectively.",
-                        style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600),
+                      ElevatedButton.icon(
+                        onPressed: _showScheduleDialog,
+                        icon: const Icon(Icons.add_task_rounded, size: 18),
+                        label: const Text("Schedule Exam"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepOrangeAccent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-                // Create New Button
-                ElevatedButton.icon(
-                  onPressed: _showCreateExamDialog,
-                  icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
-                  label: const Text("Create New Exam"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB), // Primary Blue
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  const SizedBox(height: 24),
+
+                  // Stats Row
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('university_exams')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox.shrink();
+                      var docs = snapshot.data!.docs;
+                      int total = docs.length;
+                      int todayCount = 0;
+                      int upcoming = 0;
+                      DateTime now = DateTime.now();
+
+                      for (var doc in docs) {
+                        var data = doc.data() as Map<String, dynamic>;
+                        if (data['date'] != null && data['date'] is Timestamp) {
+                          DateTime d = (data['date'] as Timestamp).toDate();
+                          if (d.year == now.year &&
+                              d.month == now.month &&
+                              d.day == now.day) {
+                            todayCount++;
+                          }
+                          if (d.isAfter(now)) {
+                            upcoming++;
+                          }
+                        }
+                      }
+
+                      return Row(
+                        children: [
+                          _buildStatCard(
+                            "Total Scheduled",
+                            "$total",
+                            Colors.blueAccent,
+                            Icons.assignment,
+                          ),
+                          const SizedBox(width: 20),
+                          _buildStatCard(
+                            "Today's Exams",
+                            "$todayCount",
+                            Colors.orangeAccent,
+                            Icons.today,
+                          ),
+                          const SizedBox(width: 20),
+                          _buildStatCard(
+                            "Upcoming",
+                            "$upcoming",
+                            Colors.green,
+                            Icons.event_available,
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 32),
 
-            const SizedBox(height: 30),
-
-            // 2. Quick Action Cards
-            Row(
-              children: [
-                Expanded(child: _buildActionCard("Schedule Exam", "Set dates & venues", Icons.calendar_month_rounded, Colors.blue)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildActionCard("Question Banks", "Manage papers & topics", Icons.library_books_rounded, Colors.purple)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildActionCard("Invigilator Duty", "Assign faculty staff", Icons.badge_rounded, Colors.orange)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildActionCard("Publish Results", "Grade & release scores", Icons.analytics_rounded, Colors.green)),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-
-            // 3. Filter Bar
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Row(
-                children: [
-                  // Search
-                  Expanded(
-                    child: TextField(
-                      onChanged: (val) {
-                        setState(() {
-                          _searchQuery = val;
-                          _currentPage = 1; // Reset pagination on search
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: "Search by subject, course code, or exam ID...",
-                        hintStyle: GoogleFonts.inter(color: Colors.grey.shade400, fontSize: 14),
-                        prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                      ),
+                  // Department Filter (SAFE MAP)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _departments
+                          .map<Widget>((dept) => _buildFilterTab(dept))
+                          .toList(),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  
-                  // Status Dropdown
+                  const SizedBox(height: 24),
+
+                  // Exam Table
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedStatus,
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.black87),
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
-                        items: ["Status: All", "Status: Scheduled", "Status: Draft", "Status: Published"]
-                            .map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                        onChanged: (val) {
-                          setState(() {
-                            _selectedStatus = val!;
-                            _currentPage = 1;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  
-                  // Filter Button
-                  _buildOutlineButton(Icons.filter_list_rounded, "Filter"),
-                  const SizedBox(width: 12),
-                  
-                  // Export Button
-                  _buildOutlineButton(Icons.download_rounded, "Export"),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // 4. Data Table Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Row(
-                children: [
-                  Expanded(flex: 4, child: _headerText("EXAM NAME / SUBJECT")),
-                  Expanded(flex: 3, child: _headerText("DATE & TIME")),
-                  Expanded(flex: 2, child: _headerText("CODE")),
-                  Expanded(flex: 3, child: _headerText("INVIGILATOR")),
-                  Expanded(flex: 2, child: _headerText("STATUS")),
-                  Expanded(flex: 1, child: _headerText("ACTIONS")),
-                ],
-              ),
-            ),
-
-            // 5. Data List / Empty State
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                border: Border(
-                  left: BorderSide(color: Colors.grey.shade200),
-                  right: BorderSide(color: Colors.grey.shade200),
-                  bottom: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-              child: _filteredExams.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(60.0),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(Icons.search_off_rounded, size: 40, color: Colors.grey.shade300),
-                            const SizedBox(height: 10),
-                            Text("No exam records found.", style: GoogleFonts.inter(color: Colors.grey.shade400)),
-                          ],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFF1F5F9)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 20,
+                          offset: const Offset(0, 5),
                         ),
-                      ),
-                    )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _paginatedExams.length,
-                      separatorBuilder: (ctx, i) => Divider(height: 1, color: Colors.grey.shade100),
-                      itemBuilder: (context, index) {
-                        return _buildExamRow(_paginatedExams[index]);
+                      ],
+                    ),
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('university_exams')
+                          .orderBy('date')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(40),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+
+                        // SAFE DOCS ACCESS
+                        var docs = snapshot.data?.docs ?? [];
+
+                        var filtered = docs.where((doc) {
+                          var data = doc.data() as Map<String, dynamic>;
+                          if (_selectedDept == 'All') return true;
+                          return data['department'] == _selectedDept;
+                        }).toList();
+
+                        if (filtered.isEmpty) return _buildEmptyState();
+
+                        return DataTable(
+                          columnSpacing: 20,
+                          horizontalMargin: 32,
+                          headingRowHeight: 60,
+                          dataRowMinHeight: 70,
+                          dataRowMaxHeight: 70,
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                "Subject",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "Date & Time",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "Department",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "Venue",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "Status",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "Action",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                          rows: filtered.map((doc) {
+                            var data = doc.data() as Map<String, dynamic>;
+                            DateTime? date;
+                            String formattedDate = "--";
+                            String formattedTime = "--";
+
+                            if (data['date'] != null &&
+                                data['date'] is Timestamp) {
+                              date = (data['date'] as Timestamp).toDate();
+                              formattedDate = DateFormat(
+                                'MMM d, yyyy',
+                              ).format(date);
+                              formattedTime = DateFormat('h:mm a').format(date);
+                            }
+
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        data['subject'] ?? "Untitled",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        data['code'] ?? "--",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    "$formattedDate\n$formattedTime",
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                                DataCell(Text(data['department'] ?? "--")),
+                                DataCell(Text(data['venue'] ?? "TBA")),
+                                DataCell(_buildStatusBadge(date)),
+                                DataCell(
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.redAccent,
+                                    ),
+                                    onPressed: () => _deleteExam(doc.id),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        );
                       },
                     ),
+                  ),
+                ],
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // 6. Pagination Footer
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildFilterTab(String title) {
+    bool isSelected = _selectedDept == title;
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: InkWell(
+        onTap: () => setState(() => _selectedDept = title),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.deepOrangeAccent : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.deepOrangeAccent
+                  : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Text(
+            title,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : const Color(0xFF64748B),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.01),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Showing ${(_currentPage - 1) * _itemsPerPage + 1} to ${(_currentPage * _itemsPerPage).clamp(0, _filteredExams.length)} of ${_filteredExams.length} results",
-                  style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade600),
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                Row(
-                  children: [
-                    _buildPaginationButton(Icons.chevron_left, () {
-                      if (_currentPage > 1) setState(() => _currentPage--);
-                    }, _currentPage > 1),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 32, height: 32,
-                      decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(6)),
-                      child: Center(child: Text("$_currentPage", style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold))),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildPaginationButton(Icons.chevron_right, () {
-                      if (_currentPage < _totalPages) setState(() => _currentPage++);
-                    }, _currentPage < _totalPages),
-                  ],
-                )
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  // --- WIDGET HELPER FUNCTIONS ---
+  Widget _buildStatusBadge(DateTime? date) {
+    if (date == null) return const Text("-");
+    DateTime now = DateTime.now();
+    bool isPast = date.isBefore(now.subtract(const Duration(hours: 3)));
+    bool isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
 
-  Widget _buildActionCard(String title, String subtitle, IconData icon, Color color) {
+    String text = isPast
+        ? "Completed"
+        : isToday
+        ? "Today"
+        : "Scheduled";
+    Color color = isPast
+        ? Colors.green
+        : isToday
+        ? Colors.blue
+        : Colors.orange;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
       ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(60),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              Icon(Icons.arrow_forward_rounded, color: Colors.grey.shade300, size: 20),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(title, style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87), overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 4),
-          Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500), overflow: TextOverflow.ellipsis),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOutlineButton(IconData icon, String label) {
-    return OutlinedButton.icon(
-      onPressed: () {},
-      icon: Icon(icon, size: 16),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.black87,
-        side: BorderSide(color: Colors.grey.shade200),
-        backgroundColor: Colors.grey.shade50,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      ),
-    );
-  }
-
-  Widget _buildPaginationButton(IconData icon, VoidCallback onTap, bool enabled) {
-    return Container(
-      decoration: BoxDecoration(
-        color: enabled ? Colors.white : Colors.grey.shade100, 
-        border: Border.all(color: Colors.grey.shade300), 
-        borderRadius: BorderRadius.circular(6)
-      ),
-      child: IconButton(
-        onPressed: enabled ? onTap : null, 
-        icon: Icon(icon, size: 18, color: enabled ? Colors.black87 : Colors.grey), 
-        padding: EdgeInsets.zero, 
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32)
-      ),
-    );
-  }
-
-  Widget _headerText(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.inter(
-        fontSize: 11,
-        fontWeight: FontWeight.w800,
-        color: Colors.grey.shade500,
-        letterSpacing: 0.8,
-      ),
-    );
-  }
-
-  Widget _buildExamRow(Map<String, dynamic> exam) {
-    Color statusColor = Colors.grey;
-    Color statusBg = Colors.grey.shade50;
-
-    if (exam['status'] == "Scheduled") {
-      statusColor = Colors.blue;
-      statusBg = Colors.blue.shade50;
-    } else if (exam['status'] == "Published") {
-      statusColor = Colors.green;
-      statusBg = Colors.green.shade50;
-    } else if (exam['status'] == "Draft") {
-      statusColor = Colors.orange;
-      statusBg = Colors.orange.shade50;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 4, 
-            child: Text(exam['subject'], style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, color: Colors.blue.shade900, fontSize: 14)),
-          ),
-          Expanded(
-            flex: 3, 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(exam['date'], style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black87)),
-                Text(exam['time'], style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade500)),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 2, 
-            child: Text(exam['code'], style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.grey.shade700)),
-          ),
-          Expanded(
-            flex: 3, 
-            child: Row(
-              children: [
-                CircleAvatar(radius: 12, backgroundColor: Colors.grey.shade200, child: const Icon(Icons.person, size: 14, color: Colors.grey)),
-                const SizedBox(width: 8),
-                Expanded(child: Text(exam['invigilator'], style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700), overflow: TextOverflow.ellipsis)),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 2, 
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusBg,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  exam['status'].toUpperCase(),
-                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: statusColor, letterSpacing: 0.5),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 1, 
-            child: PopupMenuButton<String>(
-              icon: Icon(Icons.more_horiz, color: Colors.grey.shade400),
-              color: Colors.white,
-              onSelected: (val) {
-                if(val == 'delete') _deleteExam(exam);
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 16, color: Colors.blue), SizedBox(width: 8), Text("Edit")])),
-                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 16, color: Colors.red), SizedBox(width: 8), Text("Delete", style: TextStyle(color: Colors.red))])),
-              ],
+          Icon(Icons.event_busy_rounded, size: 48, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            "No exams scheduled",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF0F172A),
             ),
           ),
         ],

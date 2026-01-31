@@ -1,171 +1,198 @@
 import 'package:flutter/material.dart';
-import '../screens/module_screen.dart';
-import '../screens/departments_screen.dart'; 
-import '../screens/students_screen.dart';  
+import 'package:google_fonts/google_fonts.dart';
+import '../screens/departments_screen.dart';
+import '../screens/students_screen.dart';
 import '../screens/staff_screen.dart';
-import '../screens/hostel_screen.dart';
 import '../screens/attendance_screen.dart';
-import '../screens/suspended_users_screen.dart'; 
+import '../screens/hostel_screen.dart';
+import '../screens/placement_screen.dart';
 import '../screens/subject_pool_screen.dart';
+import '../screens/suspended_users_screen.dart';
 import '../screens/university_exam_screen.dart';
-import '../screens/placement_screen.dart'; // Ensure this is imported
+import '../screens/generic_page.dart';
+import '../screens/semester_registration_screen.dart';
+import '../screens/fees/fees_dashboard.dart';
+import '../screens/surveys_screen.dart';
+import '../screens/alerts_screen.dart';
+import '../screens/sms_screen.dart';
+import '../screens/ai_dashboard.dart';
 
-class AdministrationGrid extends StatelessWidget {
-  const AdministrationGrid({super.key});
-
-  final List<Map<String, dynamic>> items = const [
-    {"icon": Icons.account_tree_rounded, "label": "Department", "color": Colors.orange},
-    {"icon": Icons.school_rounded, "label": "Students", "color": Colors.green},
-    {"icon": Icons.badge_rounded, "label": "Staff", "color": Colors.purple},
-    {"icon": Icons.co_present_rounded, "label": "Attendance", "color": Colors.redAccent},
-    {"icon": Icons.bedroom_parent_rounded, "label": "Hostel", "color": Colors.teal},
-    {"icon": Icons.rocket_launch_rounded, "label": "Placement", "color": Colors.indigo},
-    {"icon": Icons.psychology_alt_rounded, "label": "Attain", "color": Colors.amber},
-    {"icon": Icons.app_registration_rounded, "label": "Sem. Register", "color": Colors.deepPurple},
-    {"icon": Icons.auto_stories_rounded, "label": "Subject Pool", "color": Colors.cyan},
-    {"icon": Icons.person_off_rounded, "label": "Suspended", "color": Colors.brown},
-    {"icon": Icons.history_edu_rounded, "label": "Univ. Exam", "color": Colors.deepOrange},
-    {"icon": Icons.payments_rounded, "label": "Fees", "color": Colors.pink},
-    {"icon": Icons.local_library_rounded, "label": "Library", "color": Colors.tealAccent},
-    {"icon": Icons.calendar_month_rounded, "label": "Timetable", "color": Colors.lightBlue},
-    {"icon": Icons.directions_bus_rounded, "label": "Transport", "color": Colors.yellow},
-    {"icon": Icons.notifications_active_rounded, "label": "Alerts", "color": Colors.lime},
-    {"icon": Icons.summarize_rounded, "label": "Reports", "color": Colors.indigoAccent},
-  ];
+class AdminWorkspaceGrid extends StatelessWidget {
+  const AdminWorkspaceGrid({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4.0, bottom: 15),
-          child: Text(
-            "BASIC",
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              letterSpacing: 5.0,
-              color: Colors.grey.shade500,
-            ),
-          ),
-        ),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            int crossAxisCount = constraints.maxWidth > 1200 ? 8 : (constraints.maxWidth > 800 ? 6 : 4);
-            if (constraints.maxWidth < 400) crossAxisCount = 3;
+    final List<Map<String, dynamic>> items = [
+      {
+        'icon': Icons.apartment,
+        'label': 'Department',
+        'color': Colors.orange,
+        'route': const DepartmentsScreen(),
+      },
+      {
+        'icon': Icons.school,
+        'label': 'Students',
+        'color': Colors.green,
+        'route': const StudentsScreen(),
+      },
+      {
+        'icon': Icons.badge,
+        'label': 'Staff',
+        'color': Colors.purpleAccent,
+        'route': const StaffScreen(),
+      },
+      {
+        'icon': Icons.assignment_ind,
+        'label': 'Attendance',
+        'color': Colors.redAccent,
+        'route': const AttendanceScreen(),
+      },
+      {
+        'icon': Icons.king_bed,
+        'label': 'Hostel',
+        'color': Colors.teal,
+        'route': const HostelScreen(color: Colors.teal),
+      },
+      {
+        'icon': Icons.rocket_launch,
+        'label': 'Placement',
+        'color': Colors.pinkAccent,
+        'route': const PlacementScreen(),
+      },
+      {
+        'icon': Icons.emoji_events,
+        'label': 'Attain',
+        'color': Colors.amber,
+        'route': const GenericPage(title: 'Attainment'),
+      },
+      {
+        'icon': Icons.app_registration,
+        'label': 'Sem. Register',
+        'color': Colors.deepPurpleAccent,
+        'route': const SemesterRegistrationScreen(),
+      },
+      {
+        'icon': Icons.library_books,
+        'label': 'Subjects',
+        'color': Colors.cyan,
+        'route': const SubjectPoolScreen(),
+      },
+      {
+        'icon': Icons.block,
+        'label': 'Suspended',
+        'color': Colors.grey,
+        'route': const SuspendedUsersScreen(),
+      },
+      {
+        'icon': Icons.history_edu,
+        'label': 'Univ. Exam',
+        'color': Colors.deepOrange,
+        'route': const UniversityExamScreen(),
+      },
+      {
+        'icon': Icons.payments,
+        'label': 'Fees',
+        'color': Colors.pink,
+        'route': const FeesDashboard(),
+      },
+      {
+        'icon': Icons.local_library,
+        'label': 'Library',
+        'color': Colors.tealAccent,
+        'route': const GenericPage(title: 'Library'),
+      },
+      {
+        'icon': Icons.sms_rounded,
+        'label': 'SMS',
+        'color': Colors.blueAccent,
+        'route': const SmsScreen(),
+      },
+      {
+        'icon': Icons.bus_alert,
+        'label': 'Transport',
+        'color': Colors.yellow,
+        'route': const GenericPage(title: 'Transport'),
+      },
+      {
+        'icon': Icons.notifications_active_rounded,
+        'label': 'Alerts',
+        'color': Colors.lightGreen,
+        'route': const AlertsScreen(),
+      },
+      {
+        'icon': Icons.description,
+        'label': 'Surveys',
+        'color': Colors.indigoAccent,
+        'route': const SurveyScreen(),
+      },
+      {
+        'icon': Icons.auto_awesome,
+        'label': 'AI Dashboard',
+        'color': Colors.indigo,
+        'route': const EdLabSmartDashboard(currentUserId: 'admin'),
+      },
+    ];
 
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 26,
-                mainAxisSpacing: 4,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                return _buildSimpleCircleItem(context, item);
-              },
-            );
-          },
-        ),
-      ],
+    return Wrap(
+      spacing: 24,
+      runSpacing: 24,
+      children: items
+          .map((item) => _buildModernGridItem(context, item))
+          .toList(),
     );
   }
 
-  Widget _buildSimpleCircleItem(BuildContext context, Map<String, dynamic> item) {
-    final Color color = item['color'];
-
-    // Visual color adjustment for lighter colors
-    Color displayColor = color;
-    if (color == Colors.yellow) displayColor = Colors.orangeAccent;
-    if (color == Colors.tealAccent) displayColor = Colors.teal;
-    if (color == Colors.lime) displayColor = Colors.lime.shade700;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () {
-            final String label = item['label'];
-            
-            // --- Navigation Routing Logic ---
-            
-            if (label == "Department") {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => DepartmentsScreen(color: displayColor)));
-            } 
-            else if (label == "Students") {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => StudentsScreen(color: displayColor)));
-            } 
-            else if (label == "Staff") {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => StaffScreen(color: displayColor)));
-            } 
-            else if (label == "Attendance") {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => AttendanceScreen(color: displayColor)));
-            }
-            else if (label == "Hostel") {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => HostelScreen(color: displayColor)));
-            }
-            else if (label == "Subject Pool") {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => SubjectPoolScreen(color: displayColor)));
-            }
-            else if (label == "Suspended") {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => SuspendedUsersScreen(color: displayColor)));
-            }
-            else if (label == "Univ. Exam") {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => UniversityExamScreen(color: displayColor)));
-            }
-            else if (label == "Placement") {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => PlacementScreen(color: displayColor)));
-            }
-            else {
-              // Default Fallback
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ModuleScreen(title: label, color: displayColor)
-                )
-              );
-            }
-          },
-          borderRadius: BorderRadius.circular(64),
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: displayColor.withOpacity(0.1),
-              border: Border.all(
-                color: displayColor.withOpacity(0.1),
-                width: 1,
+  Widget _buildModernGridItem(BuildContext context, Map<String, dynamic> item) {
+    return InkWell(
+      onTap: () {
+        if (item['route'] != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => item['route']),
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 100,
+        height: 110,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (item['color'] as Color).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(item['icon'], color: item['color'], size: 36),
               ),
             ),
-            child: Center(
-              child: Icon(
-                item['icon'],
-                color: displayColor,
-                size: 34,
+            const SizedBox(height: 12),
+            Text(
+              item['label'],
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          item['label'],
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 11,
-            color: Colors.grey.shade700,
-            height: 1.2,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // --- IMPORTS ---
-import '../widgets/admin_grid.dart';     // Ensure this file exists
+import '../widgets/admin_grid.dart'; // Ensure this file exists
 import '../widgets/admin_calendar.dart'; // Ensure this file exists
+import '../services/firebase_seeder.dart';
 
 class DashboardHome extends StatefulWidget {
   const DashboardHome({super.key});
@@ -43,7 +44,7 @@ class _DashboardHomeState extends State<DashboardHome> {
         children: [
           // Top HUD: Breadcrumb + Date
           _buildHeaderHUD(context),
-          
+
           const SizedBox(height: 40),
 
           LayoutBuilder(
@@ -59,16 +60,13 @@ class _DashboardHomeState extends State<DashboardHome> {
                         children: [
                           AiToolsSection(),
                           SizedBox(height: 40),
-                          AdministrationGrid(),
+                          AdminWorkspaceGrid(),
                         ],
                       ),
                     ),
                     SizedBox(width: 40),
                     // Right Panel: The Smart Calendar
-                    Expanded(
-                      flex: 1, 
-                      child: AdminCalendar(), 
-                    ),
+                    Expanded(flex: 1, child: AdminRightPanel()),
                   ],
                 );
               } else {
@@ -76,9 +74,9 @@ class _DashboardHomeState extends State<DashboardHome> {
                   children: [
                     AiToolsSection(),
                     SizedBox(height: 40),
-                    AdministrationGrid(),
+                    AdminWorkspaceGrid(),
                     SizedBox(height: 40),
-                    AdminCalendar(),
+                    AdminRightPanel(),
                   ],
                 );
               }
@@ -91,10 +89,31 @@ class _DashboardHomeState extends State<DashboardHome> {
 
   Widget _buildHeaderHUD(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    final List<String> months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final List<String> days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    
+
+    final List<String> months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final List<String> days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+
     String weekDay = days[_now.weekday - 1];
     String month = months[_now.month - 1];
     String day = _now.day.toString();
@@ -110,11 +129,15 @@ class _DashboardHomeState extends State<DashboardHome> {
           children: [
             Row(
               children: [
-                Icon(Icons.workspaces, size: 20, color: const Color.fromARGB(255, 0, 75, 136)),
+                Icon(
+                  Icons.workspaces,
+                  size: 20,
+                  color: const Color.fromARGB(255, 0, 75, 136),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   "EDLAB WORKSPACE",
-                  style: GoogleFonts.silkscreen(
+                  style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.3,
@@ -133,7 +156,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           children: [
             Text(
               "Today",
-              style: GoogleFonts.inter(
+              style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: Colors.grey.shade500,
@@ -141,8 +164,9 @@ class _DashboardHomeState extends State<DashboardHome> {
             ),
             Text(
               "$weekDay, $month $day, $year",
-              style: GoogleFonts.inter(
-                fontSize: 20, // Increased size slightly to replace the clock's visual weight
+              style: GoogleFonts.poppins(
+                fontSize:
+                    20, // Increased size slightly to replace the clock's visual weight
                 fontWeight: FontWeight.w600,
                 color: isDark ? Colors.white : const Color(0xFF1E293B),
                 letterSpacing: -0.5,
@@ -168,7 +192,7 @@ class AiToolsSection extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 16, left: 4),
           child: Text(
             "INTELLIGENCE",
-            style: GoogleFonts.inter(
+            style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
@@ -176,10 +200,10 @@ class AiToolsSection extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // Bento Grid Layout for AI Cards
         SizedBox(
-          height: 180, 
+          height: 180,
           child: Row(
             children: [
               Expanded(
@@ -188,17 +212,26 @@ class AiToolsSection extends StatelessWidget {
                   title: "AI Assistant",
                   subtitle: "Analyze academic performance",
                   icon: Icons.auto_awesome_mosaic_rounded,
-                  gradientColors: [const Color(0xFF6366F1), const Color(0xFFA855F7)], // Indigo -> Purple
+                  gradientColors: [
+                    const Color(0xFF6366F1),
+                    const Color(0xFFA855F7),
+                  ], // Indigo -> Purple
                 ),
               ),
               const SizedBox(width: 20),
               Expanded(
                 child: _buildHoloCard(
                   context,
-                  title: "Predictive Analytics",
-                  subtitle: "Forecast student dropout rates",
-                  icon: Icons.show_chart_rounded,
-                  gradientColors: [const Color(0xFF0EA5E9), const Color(0xFF2DD4BF)], // Sky -> Teal
+                  title: "Database Seeder",
+                  subtitle: "Populate real Firebase with dummy data",
+                  icon: Icons.cloud_upload_rounded,
+                  gradientColors: [
+                    const Color(0xFFF59E0B),
+                    const Color(0xFFEF4444),
+                  ], // Amber -> Red
+                  onTap: () async {
+                    _showSeedingDialog(context);
+                  },
                 ),
               ),
             ],
@@ -214,11 +247,12 @@ class AiToolsSection extends StatelessWidget {
     required String subtitle,
     required IconData icon,
     required List<Color> gradientColors,
+    VoidCallback? onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24), 
+      borderRadius: BorderRadius.circular(24),
       child: Stack(
         children: [
           // 1. Base Glass Layer
@@ -226,8 +260,8 @@ class AiToolsSection extends StatelessWidget {
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               decoration: BoxDecoration(
-                color: isDark 
-                    ? Colors.white.withOpacity(0.03) 
+                color: isDark
+                    ? Colors.white.withOpacity(0.03)
                     : Colors.white.withOpacity(0.6),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
@@ -276,7 +310,7 @@ class AiToolsSection extends StatelessWidget {
                       child: Icon(icon, size: 28, color: gradientColors.first),
                     ),
                     Icon(
-                      Icons.arrow_outward_rounded, 
+                      Icons.arrow_outward_rounded,
                       color: isDark ? Colors.white24 : Colors.black12,
                       size: 20,
                     ),
@@ -287,7 +321,7 @@ class AiToolsSection extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white : const Color(0xFF1E293B),
@@ -297,27 +331,67 @@ class AiToolsSection extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.poppins(
                         fontSize: 13,
                         color: isDark ? Colors.white54 : Colors.black54,
                         height: 1.4,
                       ),
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ),
-          
+
           // 4. Click Ripple
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () {},
+              onTap: onTap,
               borderRadius: BorderRadius.circular(24),
               splashColor: gradientColors.last.withOpacity(0.1),
               highlightColor: gradientColors.first.withOpacity(0.05),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSeedingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Seed Database?"),
+        content: const Text(
+          "This will add dummy data for Departments, Courses, Staff, Students, and Fees to your real Firebase. Proceed?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await FirebaseSeeder.seedAll();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Database seeded successfully!"),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error seeding database: $e")),
+                  );
+                }
+              }
+            },
+            child: const Text("Seed All"),
           ),
         ],
       ),

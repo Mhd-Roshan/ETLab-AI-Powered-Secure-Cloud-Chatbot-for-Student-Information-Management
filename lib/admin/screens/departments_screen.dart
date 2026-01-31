@@ -1,144 +1,403 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:edlab/admin/widgets/admin_sidebar.dart';
+import 'package:edlab/admin/widgets/admin_header.dart';
 
-class DepartmentsScreen extends StatelessWidget {
-  final Color color;
-  const DepartmentsScreen({super.key, required this.color});
+class DepartmentsScreen extends StatefulWidget {
+  const DepartmentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // KMCT Departments Data
-    final List<Map<String, dynamic>> departments = [
-      {"code": "MCA", "name": "Computer App.", "hod": "Mr. Ajayakumar K.K", "color": const Color(0xFF7F5AF0)},
-      {"code": "MBA", "name": "Management", "hod": " Dr. N. K. Shamla", "color": const Color(0xFFFF2E63)},
-      {"code": "CSE", "name": "Comp. Science", "hod": "Mr. Swaradh P", "color": const Color(0xFF00C9A7)},
-      {"code": "EEE", "name": "Electrical", "hod": "Ms. Shamna P V", "color": const Color(0xFFFFD166)},
-      {"code": "ME", "name": "Mechanical", "hod": " Dr. Sunu Surendran K.T", "color": const Color(0xFFFF9F1C)},
-      {"code": "CE", "name": "Civil Eng.", "hod": "Ms. Sheeja T.V", "color": const Color(0xFF2D81FF)},
-      {"code": "AIML", "name": "AI & ML", "hod": "Dr. Kalaiselvan", "color": const Color(0xFFF72585)},
-      {"code": "ADS", "name": "Data Science", "hod": "Dr. Mahesh", "color": const Color(0xFF4361EE)},
-    ];
+  State<DepartmentsScreen> createState() => _DepartmentsScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        centerTitle: true,
-        title: Text(
-          "DEPARTMENTS",
-          style: GoogleFonts.silkscreen(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.5,
-            color: Colors.black87,
+class _DepartmentsScreenState extends State<DepartmentsScreen> {
+  // --- ADD DEPARTMENT DIALOG ---
+  void _showAddDeptDialog() {
+    final nameCtrl = TextEditingController();
+    final codeCtrl = TextEditingController();
+    final hodCtrl = TextEditingController();
+    // Removed Student Controller
+    final staffCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Add New Department"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Dept Name (e.g. Computer Science)",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: codeCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Dept Code (e.g. CSE)",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: hodCtrl,
+                decoration: const InputDecoration(
+                  labelText: "HOD Name",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Only Faculty Input
+              TextField(
+                controller: staffCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: "Total Faculty",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.sort_rounded),
-            onPressed: () {},
-            color: Colors.black54,
-          )
-        ],
-      ),
-      // FAB Removed from here
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: GridView.builder(
-          physics: const BouncingScrollPhysics(),
-          // Add 1 to count for the Add Button
-          itemCount: departments.length + 1,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            crossAxisSpacing: 28,
-            mainAxisSpacing: 5,
-            childAspectRatio: 1.5,
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
           ),
-          itemBuilder: (context, index) {
-            // Check if this is the last item
-            if (index == departments.length) {
-              return _buildAddDepartmentItem(context);
-            }
-
-            final dept = departments[index];
-            return _buildMinimalItem(dept);
-          },
-        ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameCtrl.text.isNotEmpty && codeCtrl.text.isNotEmpty) {
+                await FirebaseFirestore.instance.collection('departments').add({
+                  'name': nameCtrl.text,
+                  'code': codeCtrl.text.toUpperCase(),
+                  'hodName': hodCtrl.text,
+                  // Removed 'totalStudents'
+                  'totalStaff': int.tryParse(staffCtrl.text) ?? 0,
+                  'createdAt': FieldValue.serverTimestamp(),
+                });
+                if (mounted) Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Create"),
+          ),
+        ],
       ),
     );
   }
 
-  // Standard Department Item
-  Widget _buildMinimalItem(Map<String, dynamic> dept) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: (dept['color'] as Color).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(24),
+  // --- DELETE DEPARTMENT ---
+  void _deleteDept(String docId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Department?"),
+        content: const Text("This action cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(24),
-              onTap: () {},
-              splashColor: (dept['color'] as Color).withOpacity(0.2),
-              child: Center(
-                child: Text(
-                  dept['code'].substring(0, 1),
-                  style: GoogleFonts.dmSans(
-                    color: dept['color'],
-                    fontWeight: FontWeight.w900,
-                    fontSize: 28,
+          TextButton(
+            onPressed: () {
+              FirebaseFirestore.instance
+                  .collection('departments')
+                  .doc(docId)
+                  .delete();
+              Navigator.pop(context);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sidebar
+          const SizedBox(width: 90, child: AdminSidebar(activeIndex: -1)),
+
+          // Main Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const AdminHeader(),
+                  const SizedBox(height: 32),
+
+                  // --- Header ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Departments",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Manage faculties and HODs",
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _showAddDeptDialog,
+                        icon: const Icon(Icons.add_business_rounded, size: 18),
+                        label: const Text("Add Department"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orangeAccent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 32),
+
+                  // --- DEPARTMENTS GRID ---
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('departments')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      var docs = snapshot.data?.docs ?? [];
+
+                      if (docs.isEmpty) {
+                        return _buildEmptyState();
+                      }
+
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 350,
+                              mainAxisSpacing: 24,
+                              crossAxisSpacing: 24,
+                              childAspectRatio:
+                                  1.4, // Adjusted aspect ratio since content is less
+                            ),
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          var data = docs[index].data() as Map<String, dynamic>;
+                          return _buildDeptCard(docs[index].id, data);
+                        },
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          dept['code'],
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: Colors.black87,
-            letterSpacing: -0.5,
+        ],
+      ),
+    );
+  }
+
+  // --- WIDGET HELPERS ---
+
+  Widget _buildDeptCard(String docId, Map<String, dynamic> data) {
+    String code = data['code'] ?? "DEPT";
+    String name = data['name'] ?? "Department";
+    String hod = data['hodName'] ?? "TBA";
+    // Removed Student Stat
+    int staff = data['totalStaff'] ?? 0;
+
+    // Generate a consistent color based on code length/char
+    Color accentColor = [
+      Colors.blue,
+      Colors.purple,
+      Colors.orange,
+      Colors.teal,
+      Colors.pink,
+    ][code.length % 5];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          dept['name'],
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.inter(
-            fontSize: 10, // Slightly reduced to fit
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_rounded, size: 12, color: Colors.grey.shade400),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                dept['hod'],
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: 11, // Slightly reduced to fit
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Card Header
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    code,
+                    style: TextStyle(
+                      color: accentColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
+                PopupMenuButton(
+                  icon: const Icon(Icons.more_horiz, color: Colors.grey),
+                  onSelected: (val) {
+                    if (val == 'delete') _deleteDept(docId);
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        "Delete",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Card Body
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.person_outline,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "HOD: $hod",
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          // Card Footer (Only Faculty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFFF8FAFC))),
+            ),
+            child: Row(
+              children: [
+                _buildMiniStat(staff.toString(), "Total Faculty", Colors.green),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniStat(String val, String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.groups_rounded, color: color, size: 16),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              val,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: Colors.grey.shade500,
               ),
             ),
           ],
@@ -147,51 +406,26 @@ class DepartmentsScreen extends StatelessWidget {
     );
   }
 
-  // The New "Add Button" Item
-  Widget _buildAddDepartmentItem(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // Handle Add Department Action
-      },
+  Widget _buildEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(60),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.grey.shade300,
-                width: 2,
-                // Make it dashed if you use a custom painter, or solid like this for clean look
-              ),
-            ),
-            child: Icon(
-              Icons.add_rounded,
-              color: Colors.grey.shade400,
-              size: 30,
+          Icon(Icons.apartment_rounded, size: 48, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            "No departments found",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF0F172A),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            "NEW",
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: Colors.grey.shade400,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            "Department",
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade400,
-            ),
+            "Add a department to get started.",
+            style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500),
           ),
         ],
       ),

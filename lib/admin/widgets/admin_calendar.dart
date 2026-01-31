@@ -1,559 +1,616 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:edlab/services/admin_service.dart';
 import 'package:intl/intl.dart';
 
-// Task Model
-class CalendarTask {
-  String title;
-  String time;
-  bool isCompleted;
+class AdminRightPanel extends StatefulWidget {
+  const AdminRightPanel({super.key});
 
-  CalendarTask(this.title, {this.time = "All Day", this.isCompleted = false});
+  @override
+  State<AdminRightPanel> createState() => _AdminRightPanelState();
 }
 
-class AdminCalendar extends StatefulWidget {
-  const AdminCalendar({super.key});
+class _AdminRightPanelState extends State<AdminRightPanel> {
+  final AdminService _adminService = AdminService();
 
-  @override
-  State<AdminCalendar> createState() => _AdminCalendarState();
-}
+  // --- DIALOG: Add Task (With Time) ---
+  void _promptAddTask() {
+    TextEditingController taskCtrl = TextEditingController();
+    // Pre-fill with current time (e.g., "3:05 PM")
+    TextEditingController timeCtrl = TextEditingController(
+      text: DateFormat('h:mm a').format(DateTime.now()),
+    );
 
-class _AdminCalendarState extends State<AdminCalendar> {
-  DateTime _focusedDay = DateTime.now();
-  DateTime _selectedDay = DateTime.now();
-
-  // 1. HOLIDAYS
-  final Map<DateTime, String> _holidays = {
-    DateTime.utc(2026, 1, 26): "Republic Day",
-    DateTime.utc(2026, 3, 29): "Holi",
-    DateTime.utc(2026, 4, 14): "Vishu",
-    DateTime.utc(2026, 5, 1): "May Day",
-    DateTime.utc(2026, 8, 15): "Independence Day",
-    DateTime.utc(2026, 8, 28): "Onam",
-    DateTime.utc(2026, 10, 2): "Gandhi Jayanti",
-    DateTime.utc(2026, 11, 8): "Diwali",
-    DateTime.utc(2026, 12, 25): "Christmas",
-  };
-
-  // 2. TASKS DATA
-  Map<DateTime, List<CalendarTask>> _tasks = {};
-
-  // 3. EDITING STATE
-  // If true, shows the creation form at the top
-  bool _isCreating = false;
-  // If not null, shows the edit form for this specific task
-  CalendarTask? _editingTask;
-
-  // Controllers
-  final TextEditingController _titleController = TextEditingController();
-  TimeOfDay _selectedTime = TimeOfDay.now();
-
-  @override
-  void initState() {
-    super.initState();
-    final today = DateTime.utc(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    _tasks = {
-      today: [
-        CalendarTask("Submit Department Report", time: "09:00 AM", isCompleted: true),
-        CalendarTask("Staff Meeting", time: "02:00 PM", isCompleted: false),
-        CalendarTask("Review Budget Proposal 2026", time: "05:00 PM", isCompleted: false),
-      ],
-      DateTime.utc(2026, 1, 26): [
-        CalendarTask("Flag Hoisting Ceremony", time: "08:00 AM", isCompleted: false),
-      ],
-    };
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Add New Task"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: taskCtrl,
+              decoration: const InputDecoration(
+                labelText: "Task Name",
+                hintText: "e.g., Review Applications",
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: timeCtrl,
+              decoration: const InputDecoration(
+                labelText: "Time",
+                hintText: "e.g., 10:00 AM",
+                border: OutlineInputBorder(),
+                suffixIcon: Icon(Icons.access_time, size: 20),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (taskCtrl.text.isNotEmpty) {
+                // Pass both title and time to service
+                _adminService.addTask(taskCtrl.text, timeCtrl.text);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("Add"),
+          ),
+        ],
+      ),
+    );
   }
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
+  // --- DIALOG: Edit Task (With Time) ---
+  void _promptEditTask(String docId, String currentTitle, String currentTime) {
+    TextEditingController taskCtrl = TextEditingController(text: currentTitle);
+    TextEditingController timeCtrl = TextEditingController(text: currentTime);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Edit Task"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: taskCtrl,
+              decoration: const InputDecoration(
+                labelText: "Task Name",
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: timeCtrl,
+              decoration: const InputDecoration(
+                labelText: "Time",
+                border: OutlineInputBorder(),
+                suffixIcon: Icon(Icons.access_time, size: 20),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (taskCtrl.text.isNotEmpty) {
+                _adminService.updateTask(docId, taskCtrl.text, timeCtrl.text);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
   }
 
-  List<CalendarTask> _getTasksForDay(DateTime day) {
-    final normalizedDate = DateTime.utc(day.year, day.month, day.day);
-    return _tasks[normalizedDate] ?? [];
-  }
-
-  // --- ACTIONS ---
-
-  void _startCreating() {
-    setState(() {
-      _isCreating = true;
-      _editingTask = null; // Cancel any active edits
-      _titleController.clear();
-      _selectedTime = TimeOfDay.now();
-    });
-  }
-
-  void _startEditing(CalendarTask task) {
-    setState(() {
-      _isCreating = false; // Cancel creation
-      _editingTask = task;
-      _titleController.text = task.title;
-      try {
-        final dt = DateFormat.jm().parse(task.time);
-        _selectedTime = TimeOfDay.fromDateTime(dt);
-      } catch (_) {
-        _selectedTime = TimeOfDay.now();
-      }
-    });
-  }
-
-  void _cancelAction() {
-    setState(() {
-      _isCreating = false;
-      _editingTask = null;
-      _titleController.clear();
-      FocusScope.of(context).unfocus(); // Close keyboard
-    });
-  }
-
-  void _saveTask() {
-    if (_titleController.text.isEmpty) return;
-
-    final normalizedDate = DateTime.utc(_selectedDay.year, _selectedDay.month, _selectedDay.day);
-    final timeStr = DateFormat.jm().format(DateTime(2024, 1, 1, _selectedTime.hour, _selectedTime.minute));
-
-    setState(() {
-      if (_isCreating) {
-        // Create New
-        if (_tasks[normalizedDate] == null) _tasks[normalizedDate] = [];
-        _tasks[normalizedDate]!.add(CalendarTask(_titleController.text, time: timeStr));
-      } else if (_editingTask != null) {
-        // Update Existing
-        _editingTask!.title = _titleController.text;
-        _editingTask!.time = timeStr;
-      }
-      // Reset
-      _isCreating = false;
-      _editingTask = null;
-      _titleController.clear();
-    });
-  }
-
-  void _deleteTask(CalendarTask task) {
-    final normalizedDate = DateTime.utc(_selectedDay.year, _selectedDay.month, _selectedDay.day);
-    setState(() {
-      _tasks[normalizedDate]?.remove(task);
-      if (_tasks[normalizedDate]?.isEmpty ?? false) {
-        _tasks.remove(normalizedDate);
-      }
-      // If we were editing this task, stop editing
-      if (_editingTask == task) {
-        _editingTask = null;
-        _isCreating = false;
-      }
-    });
+  // --- DIALOG: Delete Confirmation ---
+  void _promptDeleteTask(String docId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Task?"),
+        content: const Text("Are you sure you want to remove this task?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              _adminService.deleteTask(docId);
+              Navigator.pop(context);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-
-    return Column(
-      children: [
-        // --- CALENDAR ---
-        ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(isDark ? 0.1 : 0.6), width: 1),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
-              ),
-              padding: const EdgeInsets.all(16),
-              child: TableCalendar(
-                firstDay: DateTime.utc(2024, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
-                focusedDay: _focusedDay,
-                eventLoader: _getTasksForDay,
-                headerStyle: HeaderStyle(
-                  titleCentered: true,
-                  formatButtonVisible: false,
-                  titleTextStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
-                  leftChevronIcon: Icon(Icons.chevron_left, color: textColor),
-                  rightChevronIcon: Icon(Icons.chevron_right, color: textColor),
-                ),
-                startingDayOfWeek: StartingDayOfWeek.monday,
-                calendarStyle: CalendarStyle(
-                  outsideDaysVisible: false,
-                  defaultTextStyle: GoogleFonts.inter(color: textColor),
-                  weekendTextStyle: GoogleFonts.inter(color: Colors.grey),
-                  markersMaxCount: 1,
-                  markerDecoration: const BoxDecoration(color: Color(0xFF6366F1), shape: BoxShape.circle),
-                ),
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _selectedDay = selectedDay;
-                    _focusedDay = focusedDay;
-                    _cancelAction(); // Cancel any editing when changing days
-                  });
-                },
-                calendarBuilders: CalendarBuilders(
-                  prioritizedBuilder: (context, day, focusedDay) {
-                    final normalizeDate = DateTime.utc(day.year, day.month, day.day);
-                    final isHoliday = _holidays.keys.any((d) => 
-                      d.year == normalizeDate.year && d.month == normalizeDate.month && d.day == normalizeDate.day
-                    );
-                    if (isHoliday) {
-                      return Center(
-                        child: Container(
-                          width: 32, height: 32,
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.red.withOpacity(0.5))
-                          ),
-                          child: Center(child: Text('${day.day}', style: GoogleFonts.inter(color: Colors.red, fontWeight: FontWeight.bold))),
-                        ),
-                      );
-                    }
-                    return null;
-                  },
-                  todayBuilder: (context, day, focusedDay) {
-                    return Center(
-                      child: Container(
-                        width: 32, height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade600,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.4), blurRadius: 8)]
-                        ),
-                        child: Center(child: Text('${day.day}', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600))),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-        ),
-        
-        const SizedBox(height: 24),
-        
-        // --- TASK SECTION ---
-        _buildTaskSection(context, textColor),
-
-        const SizedBox(height: 16),
-        _buildUpcomingHolidays(context, textColor),
-      ],
-    );
-  }
-
-  Widget _buildTaskSection(BuildContext context, Color textColor) {
-    final tasks = _getTasksForDay(_selectedDay);
-    final dateStr = DateFormat('MMMM d').format(_selectedDay);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header Row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "AGENDA - $dateStr", 
-              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)
-            ),
-            
-            // Add Button (Hidden if Creating)
-            if (!_isCreating)
-              InkWell(
-                onTap: _startCreating,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.add_rounded, size: 14, color: Colors.blue),
-                      const SizedBox(width: 4),
-                      Text("Add Task", style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue)),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // 1. INLINE CREATION FORM (Appears at top)
-        if (_isCreating) ...[
-          _buildInlineForm(context, textColor),
-          const SizedBox(height: 12),
-        ],
-
-        // 2. TASK LIST
-        if (tasks.isEmpty && !_isCreating)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.03),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
-            ),
-            child: Column(
-              children: [
-                Icon(Icons.assignment_add, color: Colors.grey.withOpacity(0.3), size: 32),
-                const SizedBox(height: 8),
-                Text("No tasks yet.", style: GoogleFonts.inter(color: Colors.grey, fontSize: 13)),
-              ],
-            ),
-          )
-        else
-          ...tasks.map((task) {
-            // Check if this specific task is being edited
-            if (_editingTask == task) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildInlineForm(context, textColor),
-              );
-            }
-            return _buildModernTaskItem(context, task, textColor);
-          }),
-      ],
-    );
-  }
-
-  // --- THE INLINE FORM WIDGET ---
-  Widget _buildInlineForm(BuildContext context, Color textColor) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.withOpacity(0.5), width: 1.5), // Highlight border
-        boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.1), blurRadius: 10)],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Input Row
+          // 1. Calendar Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                DateFormat('MMMM yyyy').format(DateTime.now()),
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              Row(
+                children: [
+                  _buildNavIcon(Icons.chevron_left_rounded),
+                  const SizedBox(width: 8),
+                  _buildNavIcon(Icons.chevron_right_rounded),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // 2. Calendar Grid
+          _buildModernCalendar(),
+
+          const SizedBox(height: 20),
+          // Holiday Legend
           Row(
             children: [
-              // TextField
-              Expanded(
-                child: TextField(
-                  controller: _titleController,
-                  autofocus: true,
-                  style: GoogleFonts.inter(fontSize: 14, color: textColor),
-                  decoration: InputDecoration(
-                    hintText: "Enter task title...",
-                    hintStyle: GoogleFonts.inter(color: Colors.grey.shade400),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  onSubmitted: (_) => _saveTask(),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEF4444),
+                  shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 8),
-              
-              // Time Picker Chip
+              Text(
+                "Holiday",
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 24),
+
+          // 3. FIREBASE TASKS
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "TASKS",
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                  color: const Color(0xFF94A3B8),
+                ),
+              ),
               InkWell(
-                onTap: () async {
-                  final TimeOfDay? picked = await showTimePicker(context: context, initialTime: _selectedTime);
-                  if (picked != null) setState(() => _selectedTime = picked);
-                },
+                onTap: _promptAddTask,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    _selectedTime.format(context),
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    size: 16,
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          
-          // Action Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              InkWell(
-                onTap: _cancelAction,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text("Cancel", style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _saveTask,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                  visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
-                ),
-                child: Text("Save", style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          )
+          const SizedBox(height: 16),
+
+          // Task Stream
+          StreamBuilder<QuerySnapshot>(
+            stream: _adminService.getTasks(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return _buildEmptyState();
+              }
+
+              return Column(
+                children: snapshot.data!.docs.map((doc) {
+                  return _buildTaskItem(doc);
+                }).toList(),
+              );
+            },
+          ),
+
+          const SizedBox(height: 24),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 24),
+
+          // 4. FIREBASE ACTIVITY
+          Text(
+            "RECENT ACTIVITY",
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.0,
+              color: const Color(0xFF94A3B8),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          StreamBuilder<QuerySnapshot>(
+            stream: _adminService.getRecentActivities(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Text(
+                  "No recent activity",
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                );
+              }
+
+              return Column(
+                children: snapshot.data!.docs.map((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  String timeAgo = "Just now";
+                  if (data['postedDate'] != null) {
+                    Timestamp ts = data['postedDate'];
+                    timeAgo = DateFormat('MMM d, h:mm a').format(ts.toDate());
+                  }
+
+                  return _buildActivityItem(
+                    data['title'] ?? 'New Announcement',
+                    timeAgo,
+                    Colors.blueAccent,
+                    Icons.notifications_none_outlined,
+                  );
+                }).toList(),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
-  // --- DISPLAY WIDGET ---
-  Widget _buildModernTaskItem(BuildContext context, CalendarTask task, Color textColor) {
+  // --- WIDGET HELPERS ---
+
+  Widget _buildEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.assignment_turned_in_outlined,
+            color: Colors.grey.shade300,
+            size: 32,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "No tasks pending",
+            style: GoogleFonts.poppins(
+              color: Colors.grey.shade400,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskItem(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    bool isDone = data['isDone'] ?? false;
+    String title = data['title'] ?? 'Untitled';
+    String time = data['timeLabel'] ?? 'Today';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => setState(() => task.isCompleted = !task.isCompleted),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Theme.of(context).cardColor.withOpacity(0.7), Theme.of(context).cardColor.withOpacity(0.4)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDone ? const Color(0xFFF8FAFC) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDone ? Colors.transparent : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Checkbox (Toggle Done)
+          InkWell(
+            onTap: () => _adminService.toggleTask(doc.id, isDone),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: isDone ? const Color(0xFF10B981) : Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDone ? Colors.transparent : const Color(0xFFCBD5E1),
+                  width: 2,
+                ),
               ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: task.isCompleted ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.15),
-                width: 1
-              ),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+              child: isDone
+                  ? const Icon(Icons.check, size: 12, color: Colors.white)
+                  : null,
             ),
-            child: Row(
-              children: [
-                // Checkbox
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 24, height: 24,
-                  decoration: BoxDecoration(
-                    color: task.isCompleted ? const Color(0xFF10B981) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: task.isCompleted ? const Color(0xFF10B981) : Colors.grey.withOpacity(0.4),
-                      width: 2
+          ),
+          const SizedBox(width: 12),
+
+          // Task Details (Click to Edit)
+          Expanded(
+            child: InkWell(
+              onTap: () => _promptEditTask(doc.id, title, time),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      decoration: isDone ? TextDecoration.lineThrough : null,
+                      color: isDone
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF334155),
                     ),
                   ),
-                  child: task.isCompleted ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : null,
-                ),
-                const SizedBox(width: 16),
-                
-                // Text Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        task.title,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: task.isCompleted ? Colors.grey.shade400 : textColor,
-                          decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-                          decorationColor: Colors.grey.shade400,
-                          fontWeight: task.isCompleted ? FontWeight.w400 : FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        task.time,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: task.isCompleted ? Colors.grey.shade300 : Colors.blue.shade300,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    time,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: const Color(0xFF94A3B8),
+                    ),
                   ),
-                ),
+                ],
+              ),
+            ),
+          ),
 
-                // Edit Button (Only if not completed)
-                if (!task.isCompleted)
-                  IconButton(
-                    icon: Icon(Icons.edit_outlined, size: 18, color: Colors.grey.shade500),
-                    onPressed: () => _startEditing(task),
-                    tooltip: "Edit Inline",
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+          // Actions: Edit & Delete
+          Row(
+            children: [
+              InkWell(
+                onTap: () => _promptEditTask(doc.id, title, time),
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: Colors.grey.shade400,
                   ),
-                
-                const SizedBox(width: 12),
-                
-                // Delete Button
-                IconButton(
-                  icon: Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red.shade300),
-                  onPressed: () => _deleteTask(task),
-                  tooltip: "Delete",
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                ),
+              ),
+              const SizedBox(width: 4),
+              InkWell(
+                onTap: () => _promptDeleteTask(doc.id),
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Icon(
+                    Icons.delete_outline,
+                    size: 16,
+                    color: Colors.redAccent.withOpacity(0.6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityItem(
+    String title,
+    String time,
+    Color color,
+    IconData icon,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 14, color: color),
+              ),
+              Container(width: 2, height: 20, color: const Color(0xFFF1F5F9)),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF334155),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  time,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: const Color(0xFF94A3B8),
+                  ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildUpcomingHolidays(BuildContext context, Color textColor) {
-    final now = DateTime.now();
-    final sortedHolidays = _holidays.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
-    final upcomingEntry = sortedHolidays.firstWhere(
-      (e) => e.key.isAfter(now.subtract(const Duration(days: 1))),
-      orElse: () => sortedHolidays.last,
+  Widget _buildNavIcon(IconData icon) {
+    return InkWell(
+      onTap: () {},
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 16, color: const Color(0xFF64748B)),
+      ),
     );
+  }
 
-    if (upcomingEntry.key.year < now.year && upcomingEntry != sortedHolidays.last) {
-       return const SizedBox.shrink();
-    }
+  Widget _buildModernCalendar() {
+    final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    return Table(
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        TableRow(
+          children: days
+              .map(
+                (d) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      d,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        _buildCalRow(['', '', '', '1', '2', '3', '4'], holiday: '1'),
+        _buildCalRow(['5', '6', '7', '8', '9', '10', '11']),
+        _buildCalRow(['12', '13', '14', '15', '16', '17', '18']),
+        _buildCalRow(['19', '20', '21', '22', '23', '24', '25']),
+        _buildCalRow(
+          ['26', '27', '28', '29', '30', '31', ''],
+          activeDay: '29',
+          holiday: '26',
+        ),
+      ],
+    );
+  }
 
-    final formattedDate = DateFormat('MMM d, yyyy').format(upcomingEntry.key);
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.withOpacity(0.1)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), shape: BoxShape.circle),
-            child: const Icon(Icons.celebration_rounded, color: Colors.red, size: 16),
+  TableRow _buildCalRow(
+    List<String> dates, {
+    String? activeDay,
+    String? holiday,
+  }) {
+    return TableRow(
+      children: dates.map((date) {
+        if (date.isEmpty) return const SizedBox.shrink();
+        bool isActive = date == activeDay;
+        bool isHoliday = date == holiday;
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.all(3),
+            width: 32,
+            height: 32,
+            decoration: isActive
+                ? BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(8),
+                  )
+                : isHoliday
+                ? BoxDecoration(
+                    color: const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(8),
+                  )
+                : null,
+            child: Center(
+              child: Text(
+                date,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: (isActive || isHoliday)
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                  color: isActive
+                      ? Colors.white
+                      : isHoliday
+                      ? const Color(0xFFEF4444)
+                      : const Color(0xFF334155),
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "UPCOMING EVENT",
-                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.red.withOpacity(0.7)),
-              ),
-              Text(
-                "${upcomingEntry.value} - $formattedDate",
-                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor),
-              ),
-            ],
-          )
-        ],
-      ),
+        );
+      }).toList(),
     );
   }
 }

@@ -2,7 +2,7 @@ name: edlab
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
 
@@ -12,19 +12,25 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+
   # These must be at the same level as 'flutter', not inside it
-  table_calendar: ^3.1.0  # Required for the calendar
-  intl: ^0.19.0           # Required for date formatting
-  google_fonts: ^6.1.0    # Required for fonts
+  table_calendar: ^3.1.0 # Required for the calendar
+  intl: ^0.19.0 # Required for date formatting
+  google_fonts: ^6.1.0 # Required for fonts
   cupertino_icons: ^1.0.8
   firebase_core: ^3.15.2
+  firebase_auth: ^5.0.0 # Add this to fix the missing plugin error
   cloud_firestore: ^5.0.0
+  google_generative_ai: ^0.4.0
+  flutter_markdown: ^0.7.1
+  uuid: ^4.0.0
+  pdf: ^3.10.0
+  printing: ^5.11.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  
+
   flutter_lints: ^6.0.0
 
 flutter:
@@ -32,3 +38,4 @@ flutter:
 
   assets:
     - assets/edlab.png
+    - assets/kmct.png

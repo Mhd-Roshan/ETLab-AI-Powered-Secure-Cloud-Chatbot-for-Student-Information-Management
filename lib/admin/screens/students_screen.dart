@@ -1,581 +1,612 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:edlab/admin/widgets/admin_sidebar.dart';
+import 'package:edlab/admin/widgets/admin_header.dart';
 
-// ==========================================
-// LEVEL 1: DEPARTMENT SELECTION
-// ==========================================
-// (This remains the same as previous step, skipping to Level 2 & 3 as requested)
-
-class StudentsScreen extends StatelessWidget {
-  final Color color;
-  const StudentsScreen({super.key, required this.color});
+class StudentsScreen extends StatefulWidget {
+  const StudentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // KMCT Departments Data
-    final List<Map<String, dynamic>> departments = [
-      {"code": "CSE", "name": "Computer Science", "color": const Color(0xFF00C9A7), "icon": Icons.terminal_rounded},
-      {"code": "MCA", "name": "Computer App.", "color": const Color(0xFF7F5AF0), "icon": Icons.dataset_linked_rounded},
-      {"code": "ME", "name": "Mechanical", "color": const Color(0xFFFF9F1C), "icon": Icons.settings_suggest_rounded},
-      {"code": "CE", "name": "Civil Eng.", "color": const Color(0xFF2D81FF), "icon": Icons.holiday_village_rounded},
-      {"code": "ECE", "name": "Electronics", "color": const Color(0xFF2CB67D), "icon": Icons.memory_rounded},
-      {"code": "EEE", "name": "Electrical", "color": const Color(0xFFFFD166), "icon": Icons.electric_bolt_rounded},
-      {"code": "AIML", "name": "AI & ML", "color": const Color(0xFFF72585), "icon": Icons.psychology_rounded},
-      {"code": "ADS", "name": "Data Science", "color": const Color(0xFF4361EE), "icon": Icons.hub_rounded},
-    ];
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          "STUDENTS",
-          style: GoogleFonts.silkscreen(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-            color: Colors.black,
-          ),
-        ),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Text(
-              "Select Department",
-              style: GoogleFonts.dmSans(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w600
-              ),
-            ),
-          ),
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              physics: const BouncingScrollPhysics(),
-              itemCount: departments.length + 1,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4, 
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.8, 
-              ),
-              itemBuilder: (context, index) {
-                if (index == departments.length) {
-                  return _buildAddDeptCard(context);
-                }
-                final dept = departments[index];
-                return _buildCompactDeptItem(context, dept);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactDeptItem(BuildContext context, Map<String, dynamic> dept) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DepartmentBatchesScreen(
-              deptCode: dept['code'],
-              deptName: dept['name'],
-              themeColor: dept['color'],
-            ),
-          ),
-        );
-      },
-      onLongPress: () {
-        _showActionSheet(context, "Department: ${dept['code']}", dept['color']);
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: (dept['color'] as Color).withOpacity(0.08),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(dept['icon'], color: dept['color'], size: 24),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            dept['code'],
-            style: GoogleFonts.dmSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: Colors.black87,
-              letterSpacing: -0.5,
-            ),
-          ),
-          Text(
-            dept['name'],
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
-              fontSize: 9,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAddDeptCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.grey.shade300, width: 2), 
-            ),
-            child: Icon(Icons.add_rounded, color: Colors.grey.shade400, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Add New",
-            style: GoogleFonts.dmSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade400,
-            ),
-          ),
-          const SizedBox(height: 9), 
-        ],
-      ),
-    );
-  }
+  State<StudentsScreen> createState() => _StudentsScreenState();
 }
 
-// ==========================================
-// LEVEL 2: ACADEMIC BATCHES (Modern Clean List)
-// ==========================================
+class _StudentsScreenState extends State<StudentsScreen> {
+  // Navigation State
+  String? _selectedDept;
+  String? _selectedBatch;
 
-class DepartmentBatchesScreen extends StatelessWidget {
-  final String deptCode;
-  final String deptName;
-  final Color themeColor;
+  // Data Lists
+  final List<String> _departments = [
+    'MCA',
+    'MBA',
+    'CSE',
+    'ECE',
+    'ME',
+    'CE',
+    'EEE',
+  ];
 
-  const DepartmentBatchesScreen({
-    super.key, 
-    required this.deptCode, 
-    required this.deptName,
-    required this.themeColor
+  // Generate Batches (e.g., 2021-2023 to 2026-2028)
+  final List<String> _batches = List.generate(6, (index) {
+    int startYear = 2021 + index;
+    return "$startYear-${startYear + 2}"; // Assuming 2-year courses like MCA/MBA. Change logic for B.Tech (4 years)
   });
 
-  @override
-  Widget build(BuildContext context) {
-    List<Map<String, String>> batches;
-
-    // Logic: MCA gets 2 years, others get 4 years
-    if (deptCode == "MCA") {
-      batches = [
-        {"range": "2024 - 2026", "sem": "S2 - First Year", "status": "Active"},
-        {"range": "2023 - 2025", "sem": "S4 - Final Year", "status": "Active"},
-        {"range": "2022 - 2024", "sem": "Graduated", "status": "Alumni"},
-      ];
-    } else {
-      batches = [
-        {"range": "2024 - 2028", "sem": "S2 - First Year", "status": "Active"},
-        {"range": "2023 - 2027", "sem": "S4 - Second Year", "status": "Active"},
-        {"range": "2022 - 2026", "sem": "S6 - Third Year", "status": "Active"},
-        {"range": "2021 - 2025", "sem": "S8 - Final Year", "status": "Active"},
-        {"range": "2020 - 2024", "sem": "Graduated", "status": "Alumni"},
-      ];
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        centerTitle: true,
-        title: Text(
-          deptCode,
-          style: GoogleFonts.dmSans(fontWeight: FontWeight.w900, fontSize: 22),
-        ),
-        actions: [
-          // MODERN TOP ADD BUTTON
-          _buildTopAddButton(context, themeColor, () {
-             // Logic to Add Batch
-          }),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 10, 24, 20),
-            child: Text(
-              "Academic Batches",
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w600
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              physics: const BouncingScrollPhysics(),
-              itemCount: batches.length,
-              separatorBuilder: (ctx, i) => Divider(height: 30, color: Colors.grey.shade100),
-              itemBuilder: (context, index) {
-                final batch = batches[index];
-                return _buildCleanBatchItem(context, batch);
-              },
-            ),
-          ),
-        ],
-      ),
+  // --- CRUD: ADD / EDIT STUDENT ---
+  void _showStudentForm({String? docId, Map<String, dynamic>? data}) {
+    final formKey = GlobalKey<FormState>();
+    final fNameCtrl = TextEditingController(text: data?['firstName'] ?? '');
+    final lNameCtrl = TextEditingController(text: data?['lastName'] ?? '');
+    final regCtrl = TextEditingController(
+      text: data?['registrationNumber'] ?? '',
     );
-  }
+    final emailCtrl = TextEditingController(text: data?['email'] ?? '');
+    final phoneCtrl = TextEditingController(text: data?['phone'] ?? '');
 
-  Widget _buildCleanBatchItem(BuildContext context, Map<String, String> batch) {
-    bool isAlumni = batch['status'] == "Alumni";
+    // Status defaults to active
+    String status = data?['status'] ?? 'active';
 
-    return InkWell(
-      onTap: () {
-         Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BatchStudentListScreen(
-                batchRange: batch['range']!,
-                deptName: deptName,
-                sem: batch['sem']!,
-                themeColor: themeColor,
-              ),
+    bool isEdit = docId != null;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(
+              isEdit ? "Edit Student" : "Add New Student",
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
             ),
-          );
-      },
-      splashColor: themeColor.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // 1. Status Indicator Bar
-            Container(
-              width: 4,
-              height: 45,
-              decoration: BoxDecoration(
-                color: isAlumni ? Colors.grey.shade300 : themeColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 20),
-            
-            // 2. Main Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    batch['range']!,
-                    style: GoogleFonts.dmSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: isAlumni ? Colors.grey.shade400 : Colors.black87,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
+            content: SizedBox(
+              width: 500,
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (!isAlumni) 
-                        Icon(Icons.circle, size: 6, color: themeColor),
-                      if (!isAlumni) 
-                        const SizedBox(width: 6),
-                      Text(
-                        batch['sem']!,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: isAlumni ? Colors.grey.shade400 : Colors.grey.shade600,
+                      // Breadcrumb Context
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
                         ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Adding to $_selectedDept • $_selectedBatch",
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(child: _buildInput("First Name", fNameCtrl)),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildInput("Last Name", lNameCtrl)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInput("Registration No.", regCtrl),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: _buildInput("Email", emailCtrl)),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildInput("Phone", phoneCtrl)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: status,
+                        decoration: const InputDecoration(
+                          labelText: "Status",
+                          border: OutlineInputBorder(),
+                        ),
+                        items: ['active', 'inactive', 'suspended']
+                            .map(
+                              (s) => DropdownMenuItem(
+                                value: s,
+                                child: Text(s.toUpperCase()),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) => setState(() => status = val!),
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    Map<String, dynamic> studentData = {
+                      'firstName': fNameCtrl.text,
+                      'lastName': lNameCtrl.text,
+                      'registrationNumber': regCtrl.text,
+                      'email': emailCtrl.text,
+                      'phone': phoneCtrl.text,
+                      'department': _selectedDept, // Auto-assigned from context
+                      'batch': _selectedBatch, // Auto-assigned from context
+                      'status': status,
+                    };
 
-            // 3. Edit/Delete Action
-            IconButton(
-              icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade300),
-              onPressed: () {
-                _showActionSheet(context, "Batch ${batch['range']}", themeColor);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+                    if (!isEdit) {
+                      studentData['createdAt'] = FieldValue.serverTimestamp();
+                    }
 
-// ==========================================
-// LEVEL 3: STUDENTS LIST (Modern Clean List)
-// ==========================================
-
-class BatchStudentListScreen extends StatelessWidget {
-  final String batchRange;
-  final String deptName;
-  final String sem;
-  final Color themeColor;
-
-  const BatchStudentListScreen({
-    super.key,
-    required this.batchRange,
-    required this.deptName,
-    required this.sem,
-    required this.themeColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> students = [
-      {"name": "Adithya Kumar", "reg": "KMCT20CS001", "img": "https://randomuser.me/api/portraits/men/11.jpg"},
-      {"name": "Ben Johnson", "reg": "KMCT20CS005", "img": "https://randomuser.me/api/portraits/men/3.jpg"},
-      {"name": "Catherine Joy", "reg": "KMCT20CS012", "img": "https://randomuser.me/api/portraits/women/5.jpg"},
-      {"name": "David Miller", "reg": "KMCT20CS015", "img": "https://randomuser.me/api/portraits/men/8.jpg"},
-      {"name": "Fathima R.", "reg": "KMCT20CS020", "img": "https://randomuser.me/api/portraits/women/9.jpg"},
-      {"name": "Gokul S.", "reg": "KMCT20CS022", "img": "https://randomuser.me/api/portraits/men/12.jpg"},
-    ];
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        foregroundColor: Colors.black,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              batchRange,
-              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
-            ),
-            Text(
-              "Students",
-              style: GoogleFonts.dmSans(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {}, 
-            icon: const Icon(Icons.search_rounded, size: 28)
-          ),
-          const SizedBox(width: 8),
-          // MODERN TOP ADD BUTTON
-          _buildTopAddButton(context, Colors.black, () {
-             // Logic to Add Student
-          }),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: ListView.separated(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        itemCount: students.length,
-        separatorBuilder: (ctx, i) => const SizedBox(height: 20),
-        itemBuilder: (context, index) {
-          final student = students[index];
-          return _buildCleanStudentTile(context, student);
+                    if (isEdit) {
+                      await FirebaseFirestore.instance
+                          .collection('students')
+                          .doc(docId)
+                          .update(studentData);
+                    } else {
+                      await FirebaseFirestore.instance
+                          .collection('students')
+                          .add(studentData);
+                    }
+                    if (mounted) Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(isEdit ? "Update" : "Create"),
+              ),
+            ],
+          );
         },
       ),
     );
   }
 
-  Widget _buildCleanStudentTile(BuildContext context, Map<String, dynamic> student) {
-    return InkWell(
-      onTap: () {
-        // Navigate to Profile
-      },
-      child: Row(
+  Widget _buildInput(String label, TextEditingController ctrl) {
+    return TextFormField(
+      controller: ctrl,
+      validator: (v) => v!.isEmpty ? "Required" : null,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+    );
+  }
+
+  // --- CRUD: DELETE ---
+  Future<void> _deleteStudent(String docId) async {
+    bool confirm =
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Delete Student?"),
+            content: const Text("This cannot be undone."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  "Delete",
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirm) {
+      await FirebaseFirestore.instance
+          .collection('students')
+          .doc(docId)
+          .delete();
+    }
+  }
+
+  // --- NAVIGATION HELPERS ---
+  void _resetSelection() {
+    setState(() {
+      if (_selectedBatch != null) {
+        _selectedBatch = null;
+      } else {
+        _selectedDept = null;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(18),
-              image: DecorationImage(
-                image: NetworkImage(student['img']),
-                fit: BoxFit.cover,
+          // Sidebar
+          const SizedBox(width: 90, child: AdminSidebar(activeIndex: 1)),
+
+          // Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const AdminHeader(),
+                  const SizedBox(height: 32),
+
+                  // BREADCRUMBS & HEADER
+                  Row(
+                    children: [
+                      if (_selectedDept != null)
+                        IconButton(
+                          onPressed: _resetSelection,
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      Text(
+                        _selectedBatch != null
+                            ? "$_selectedDept > Batch $_selectedBatch"
+                            : _selectedDept != null
+                            ? "$_selectedDept Departments"
+                            : "Select Department",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const Spacer(),
+                      // Only show Add Button if we are in the Student List view
+                      if (_selectedBatch != null)
+                        ElevatedButton.icon(
+                          onPressed: () => _showStudentForm(),
+                          icon: const Icon(Icons.add),
+                          label: const Text("Add Student"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // --- CONDITIONAL RENDERING ---
+                  if (_selectedDept == null)
+                    _buildDepartmentGrid()
+                  else if (_selectedBatch == null)
+                    _buildBatchGrid()
+                  else
+                    _buildStudentList(),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 15),
-          
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  student['name'],
-                  style: GoogleFonts.dmSans(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: Colors.black87
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Text(
-                    student['reg'],
-                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Edit/Delete Action
-          IconButton(
-            icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade300),
-            onPressed: () {
-              _showActionSheet(context, student['name'], themeColor);
-            },
           ),
         ],
       ),
     );
   }
-}
 
-// ==========================================
-// SHARED WIDGETS
-// ==========================================
+  // --- VIEW 1: DEPARTMENTS ---
+  Widget _buildDepartmentGrid() {
+    return Wrap(
+      spacing: 24,
+      runSpacing: 24,
+      children: _departments.map((dept) {
+        return _buildSelectionCard(
+          title: dept,
+          subtitle: "Department",
+          icon: Icons.business,
+          color: Colors.blueAccent,
+          onTap: () => setState(() => _selectedDept = dept),
+        );
+      }).toList(),
+    );
+  }
 
-// 1. Top Bar Add Button (Modern Squircle)
-Widget _buildTopAddButton(BuildContext context, Color color, VoidCallback onTap) {
-  return InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: Container(
-      height: 38,
-      width: 38,
+  // --- VIEW 2: BATCHES ---
+  Widget _buildBatchGrid() {
+    return Wrap(
+      spacing: 24,
+      runSpacing: 24,
+      children: _batches.map((batch) {
+        return _buildSelectionCard(
+          title: batch,
+          subtitle: "Academic Year",
+          icon: Icons.calendar_today_rounded,
+          color: Colors.orangeAccent,
+          onTap: () => setState(() => _selectedBatch = batch),
+        );
+      }).toList(),
+    );
+  }
+
+  // --- VIEW 3: STUDENT LIST (FIREBASE) ---
+  Widget _buildStudentList() {
+    return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: const Icon(
-        Icons.add_rounded,
-        color: Colors.white,
-        size: 22,
-      ),
-    ),
-  );
-}
-
-// 2. Edit/Delete Bottom Sheet
-void _showActionSheet(BuildContext context, String title, Color themeColor) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (context) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('students')
+            .where('department', isEqualTo: _selectedDept)
+            .where('batch', isEqualTo: _selectedBatch)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting)
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40),
+                child: CircularProgressIndicator(),
               ),
-            ),
-            Text(
-              title,
-              style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            _buildActionTile(
-              icon: Icons.edit_rounded, 
-              color: themeColor, 
-              text: "Edit Details",
-              onTap: () => Navigator.pop(context),
-            ),
-            const SizedBox(height: 10),
-            _buildActionTile(
-              icon: Icons.delete_rounded, 
-              color: Colors.red, 
-              text: "Delete",
-              onTap: () => Navigator.pop(context),
+            );
+
+          final students = snapshot.data?.docs ?? [];
+
+          if (students.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(60),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.person_off_outlined,
+                      size: 48,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "No students found in $_selectedDept ($_selectedBatch)",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Click 'Add Student' to create records.",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return DataTable(
+            columnSpacing: 20,
+            horizontalMargin: 32,
+            headingRowHeight: 60,
+            dataRowMinHeight: 60,
+            dataRowMaxHeight: 60,
+            columns: const [
+              DataColumn(
+                label: Text(
+                  "Name",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  "Reg No",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  "Contact",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  "Status",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  "Actions",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+            rows: students.map((doc) {
+              var data = doc.data() as Map<String, dynamic>;
+              return DataRow(
+                cells: [
+                  DataCell(
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Colors.blue.shade50,
+                          child: Text(
+                            (data['firstName']?[0] ?? "U"),
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "${data['firstName']} ${data['lastName']}",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              data['email'] ?? "",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  DataCell(Text(data['registrationNumber'] ?? "--")),
+                  DataCell(Text(data['phone'] ?? "--")),
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (data['status'] == 'active')
+                            ? Colors.green.shade50
+                            : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        (data['status'] ?? "Active").toString().toUpperCase(),
+                        style: TextStyle(
+                          color: (data['status'] == 'active')
+                              ? Colors.green.shade700
+                              : Colors.red.shade700,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () =>
+                              _showStudentForm(docId: doc.id, data: data),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: Colors.redAccent,
+                          ),
+                          onPressed: () => _deleteStudent(doc.id),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- COMMON CARD WIDGET ---
+  Widget _buildSelectionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 200,
+        height: 180,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.01),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-      );
-    },
-  );
-}
-
-Widget _buildActionTile({required IconData icon, required Color color, required String text, required VoidCallback onTap}) {
-  return ListTile(
-    onTap: onTap,
-    contentPadding: EdgeInsets.zero,
-    leading: Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-      child: Icon(icon, color: color),
-    ),
-    title: Text(
-      text, 
-      style: GoogleFonts.inter(
-        fontWeight: FontWeight.w600, 
-        fontSize: 16,
-        color: color == Colors.red ? Colors.red : Colors.black87
-      )
-    ),
-    trailing: Icon(Icons.chevron_right_rounded, color: Colors.grey.shade300),
-  );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const Spacer(),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

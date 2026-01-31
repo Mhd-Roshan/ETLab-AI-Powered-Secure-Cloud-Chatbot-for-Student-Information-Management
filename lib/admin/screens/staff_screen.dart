@@ -1,456 +1,640 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:edlab/admin/widgets/admin_sidebar.dart';
+import 'package:edlab/admin/widgets/admin_header.dart';
 
-// ==========================================
-// LEVEL 1: DEPARTMENT SELECTION
-// ==========================================
-
-class StaffScreen extends StatelessWidget {
-  final Color color;
-  const StaffScreen({super.key, required this.color});
+class StaffScreen extends StatefulWidget {
+  const StaffScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // KMCT Departments Data
-    final List<Map<String, dynamic>> departments = [
-      {"code": "MCA", "name": "Computer App.", "color": const Color(0xFF7F5AF0), "icon": Icons.dataset_linked_rounded},
-      {"code": "MBA", "name": "Management", "color": const Color(0xFFFF2E63), "icon": Icons.pie_chart_rounded},
-      {"code": "CSE", "name": "Comp. Science", "color": const Color(0xFF00C9A7), "icon": Icons.terminal_rounded},
-      {"code": "EEE", "name": "Electrical", "color": const Color(0xFFFFD166), "icon": Icons.electric_bolt_rounded},
-      {"code": "ME", "name": "Mechanical", "color": const Color(0xFFFF9F1C), "icon": Icons.settings_suggest_rounded},
-      {"code": "ECE", "name": "Electronics", "color": const Color(0xFF2CB67D), "icon": Icons.memory_rounded},
-      {"code": "CE", "name": "Civil Eng.", "color": const Color(0xFF2D81FF), "icon": Icons.holiday_village_rounded},
-      {"code": "AIML", "name": "AI & ML", "color": const Color(0xFFF72585), "icon": Icons.psychology_rounded},
-    ];
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        centerTitle: true,
-        title: Text(
-          "STAFF DIRECTORY",
-          style: GoogleFonts.silkscreen(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.5,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Select Department",
-              style: GoogleFonts.dmSans(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w600
-              ),
-            ),
-            const SizedBox(height: 15),
-            Expanded(
-              child: GridView.builder(
-                physics: const BouncingScrollPhysics(),
-                itemCount: departments.length + 1,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 28,
-                mainAxisSpacing: 5,
-                childAspectRatio: 1.5,
-                ),
-                itemBuilder: (context, index) {
-                  if (index == departments.length) {
-                    return _buildAddDepartmentItem(context);
-                  }
-                  final dept = departments[index];
-                  return _buildMinimalDeptItem(context, dept);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMinimalDeptItem(BuildContext context, Map<String, dynamic> dept) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DepartmentStaffListScreen(
-              deptCode: dept['code'],
-              deptName: dept['name'],
-              themeColor: dept['color'],
-            ),
-          ),
-        );
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: (dept['color'] as Color).withOpacity(0.08),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Icon(dept['icon'], color: dept['color'], size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            dept['code'],
-            style: GoogleFonts.dmSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: Colors.black87,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            dept['name'],
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAddDepartmentItem(BuildContext context) {
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.grey.shade300, width: 2),
-            ),
-            child: Icon(Icons.add_rounded, color: Colors.grey.shade400, size: 30),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "NEW",
-            style: GoogleFonts.dmSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: Colors.grey.shade400,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  State<StaffScreen> createState() => _StaffScreenState();
 }
 
-// ==========================================
-// LEVEL 2: MCA FACULTY LIST
-// ==========================================
+class _StaffScreenState extends State<StaffScreen> {
+  String _selectedDept = 'All'; // Filter
 
-class DepartmentStaffListScreen extends StatelessWidget {
-  final String deptCode;
-  final String deptName;
-  final Color themeColor;
+  // --- ADD STAFF DIALOG ---
+  void _showAddStaffDialog() {
+    final nameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final idCtrl = TextEditingController();
+    String role = 'Professor';
+    String dept = 'CSE';
 
-  const DepartmentStaffListScreen({
-    super.key, 
-    required this.deptCode, 
-    required this.deptName,
-    required this.themeColor
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    
-    // Exact MCA Faculty Data
-    final List<Map<String, dynamic>> mcaFaculty = [
-      {
-        "name": "Mr. Ajayakumar K. K.",
-        "role": "HOD",
-        "img": "https://randomuser.me/api/portraits/men/55.jpg", 
-        "qual": "M.Sc Physics, PGDCA, MCA.",
-        "exp": "Over 31 years of experience in academics.",
-        "area": "Area of Interest – Data structure, Linux Algorithms."
-      },
-      {
-        "name": "Ms. Remmya C. B.",
-        "role": "Assistant Professor",
-        "img": "https://randomuser.me/api/portraits/women/44.jpg",
-        "qual": "MCA.",
-        "exp": "Close to 14 years of experience in academics.",
-        "area": "Area of Interest – Logic design, Networks, Computer Org."
-      },
-      {
-        "name": "Ms. Resmi S. R.",
-        "role": "Assistant Professor",
-        "img": "https://randomuser.me/api/portraits/women/68.jpg",
-        "qual": "MCA.",
-        "exp": "Over 15 years of experience in academics.",
-        "area": "Area of Interest – DBMS, Operating Systems."
-      },
-      {
-        "name": "Ms. Sharafunnissa O.",
-        "role": "Assistant Professor",
-        "img": "https://randomuser.me/api/portraits/women/29.jpg",
-        "qual": "MCA.",
-        "exp": "Over 16 years of experience.",
-        "area": "Area of Interest – Advanced Operating systems, Computer Networks, Design and analysis of algorithms, Web data mining."
-      },
-      {
-        "name": "Athulya Prabhakaran",
-        "role": "Assistant Professor",
-        "img": "https://randomuser.me/api/portraits/women/90.jpg",
-        "qual": "M.Tech.",
-        "exp": "2 years of experience in academics..",
-        "area": "Area of Specialisation – Artificial Intelligence, Machine learning."
-      },
-    ];
-
-    // Filter to ensure only MCA is shown or generic list if not MCA
-    final List<Map<String, dynamic>> faculty = (deptCode == "MCA") 
-        ? mcaFaculty 
-        : []; // Empty for others as per "Only MCA needed" request
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              deptName,
-              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
-            ),
-            Text(
-              "Faculty Members",
-              style: GoogleFonts.dmSans(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search_rounded, size: 28)),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: (){},
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              height: 38,
-              width: 38,
-              decoration: BoxDecoration(
-                color: themeColor,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(color: themeColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3)),
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Add New Staff"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Full Name",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: emailCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Email",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: idCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Employee ID",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: role,
+                    decoration: const InputDecoration(
+                      labelText: "Designation",
+                      border: OutlineInputBorder(),
+                    ),
+                    items:
+                        [
+                              'Professor',
+                              'Asst. Professor',
+                              'Lab Assistant',
+                              'Admin Staff',
+                            ]
+                            .map(
+                              (r) => DropdownMenuItem(value: r, child: Text(r)),
+                            )
+                            .toList(),
+                    onChanged: (v) => setState(() => role = v!),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: dept,
+                    decoration: const InputDecoration(
+                      labelText: "Department",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: ['CSE', 'ECE', 'ME', 'CE', 'MCA', 'MBA', 'Admin']
+                        .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                        .toList(),
+                    onChanged: (v) => setState(() => dept = v!),
+                  ),
                 ],
               ),
-              child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
             ),
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: faculty.isEmpty 
-      ? Center(child: Text("No Data for $deptCode", style: GoogleFonts.dmSans(color: Colors.grey)))
-      : ListView.separated(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        itemCount: faculty.length,
-        separatorBuilder: (ctx, i) => Divider(height: 40, color: Colors.grey.shade100),
-        itemBuilder: (context, index) {
-          return _buildDetailedStaffCard(context, faculty[index]);
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (nameCtrl.text.isNotEmpty && emailCtrl.text.isNotEmpty) {
+                    await FirebaseFirestore.instance
+                        .collection('staff')
+                        .doc(idCtrl.text.isEmpty ? null : idCtrl.text)
+                        .set({
+                          'firstName': nameCtrl.text.split(' ').first,
+                          'lastName': nameCtrl.text.split(' ').length > 1
+                              ? nameCtrl.text.split(' ').last
+                              : '',
+                          'email': emailCtrl.text,
+                          'staffId': idCtrl.text,
+                          'designation': role,
+                          'department': dept,
+                          'status': 'Active', // Active, On Leave
+                          'joinDate': FieldValue.serverTimestamp(),
+                        });
+                    if (mounted) Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("Add Staff"),
+              ),
+            ],
+          );
         },
       ),
     );
   }
 
-  Widget _buildDetailedStaffCard(BuildContext context, Map<String, dynamic> staff) {
-    return Container(
-      color: Colors.white,
-      child: IntrinsicHeight(
+  // --- DELETE STAFF ---
+  void _deleteStaff(String docId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Staff?"),
+        content: const Text(
+          "Are you sure you want to remove this staff member?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              FirebaseFirestore.instance
+                  .collection('staff')
+                  .doc(docId)
+                  .delete();
+              Navigator.pop(context);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sidebar
+          const SizedBox(width: 90, child: AdminSidebar(activeIndex: -1)),
+
+          // Main Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const AdminHeader(),
+                  const SizedBox(height: 32),
+
+                  // --- Header ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Staff Directory",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Manage faculty and administrative staff",
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _showAddStaffDialog,
+                        icon: const Icon(
+                          Icons.person_add_alt_1_rounded,
+                          size: 18,
+                        ),
+                        label: const Text("Add Staff"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purpleAccent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // --- STATS & TABLE ---
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('staff')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting)
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+
+                      var allDocs = snapshot.data?.docs ?? [];
+
+                      // Filter
+                      var filteredDocs = allDocs.where((doc) {
+                        if (_selectedDept == 'All') return true;
+                        return (doc.data() as Map)['department'] ==
+                            _selectedDept;
+                      }).toList();
+
+                      // Stats
+                      int total = allDocs.length;
+                      int professors = allDocs
+                          .where(
+                            (d) => (d.data() as Map)['designation']
+                                .toString()
+                                .contains('Professor'),
+                          )
+                          .length;
+                      int support = total - professors;
+
+                      return Column(
+                        children: [
+                          // 1. Stats Row
+                          Row(
+                            children: [
+                              _buildStatCard(
+                                "Total Staff",
+                                "$total",
+                                Colors.blue,
+                                Icons.badge_outlined,
+                              ),
+                              const SizedBox(width: 20),
+                              _buildStatCard(
+                                "Teaching Faculty",
+                                "$professors",
+                                Colors.green,
+                                Icons.school_outlined,
+                              ),
+                              const SizedBox(width: 20),
+                              _buildStatCard(
+                                "Support Staff",
+                                "$support",
+                                Colors.orange,
+                                Icons.engineering_outlined,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
+
+                          // 2. Department Filter Tabs
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                'All',
+                                'CSE',
+                                'ECE',
+                                'ME',
+                                'CE',
+                                'MCA',
+                                'MBA',
+                              ].map((dept) => _buildFilterTab(dept)).toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // 3. Staff Table
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: const Color(0xFFF1F5F9),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.02),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: filteredDocs.isEmpty
+                                ? _buildEmptyState()
+                                : DataTable(
+                                    columnSpacing: 20,
+                                    horizontalMargin: 32,
+                                    headingRowHeight: 60,
+                                    dataRowMinHeight: 70,
+                                    dataRowMaxHeight: 70,
+                                    columns: const [
+                                      DataColumn(
+                                        label: Text(
+                                          "Staff Member",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          "ID",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          "Designation",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          "Department",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          "Status",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          "Actions",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    rows: filteredDocs.map((doc) {
+                                      var data =
+                                          doc.data() as Map<String, dynamic>;
+                                      String name =
+                                          "${data['firstName']} ${data['lastName']}";
+                                      String role =
+                                          data['designation'] ?? "Staff";
+                                      bool isActive =
+                                          (data['status'] ?? 'Active') ==
+                                          'Active';
+
+                                      return DataRow(
+                                        cells: [
+                                          DataCell(
+                                            Row(
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 18,
+                                                  backgroundColor:
+                                                      Colors.purple.shade50,
+                                                  child: Text(
+                                                    name.isNotEmpty
+                                                        ? name[0]
+                                                        : "S",
+                                                    style: TextStyle(
+                                                      color: Colors
+                                                          .purple
+                                                          .shade700,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      name,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      data['email'] ?? "",
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors
+                                                            .grey
+                                                            .shade500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Text(
+                                              data['staffId'] ?? "--",
+                                              style: GoogleFonts.inter(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(Text(role)),
+                                          DataCell(
+                                            Text(data['department'] ?? "--"),
+                                          ),
+                                          DataCell(
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: isActive
+                                                    ? Colors.green.shade50
+                                                    : Colors.orange.shade50,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                isActive
+                                                    ? "Active"
+                                                    : "On Leave",
+                                                style: TextStyle(
+                                                  color: isActive
+                                                      ? Colors.green.shade700
+                                                      : Colors.orange.shade700,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Row(
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.edit_outlined,
+                                                    size: 18,
+                                                    color: Colors.grey,
+                                                  ),
+                                                  onPressed: () {},
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.delete_outline,
+                                                    size: 18,
+                                                    color: Colors.redAccent,
+                                                  ),
+                                                  onPressed: () =>
+                                                      _deleteStaff(doc.id),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- WIDGET HELPERS ---
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.01),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Image
             Container(
-              width: 80,
-              height: 100,
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(4),
-                image: DecorationImage(
-                  image: NetworkImage(staff['img']),
-                  fit: BoxFit.cover,
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ),
-            
-            const SizedBox(width: 12),
-            
-            // 2. Name & Role Column
-            SizedBox(
-              width: 90, 
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    staff['name'],
-                    style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                      height: 1.2
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F172A),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    staff['role'],
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade400,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            // 3. Vertical Divider Line
-            Container(
-              width: 1,
-              color: Colors.grey.shade200,
-              margin: const EdgeInsets.symmetric(horizontal: 10),
-            ),
-
-            // 4. Details Column
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInfoText(staff['qual']),
-                  const SizedBox(height: 4),
-                  _buildInfoText(staff['exp']),
-                  const SizedBox(height: 6),
-                  Text(
-                    staff['area'],
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // 5. Action Menu (Edit/Delete)
-            GestureDetector(
-               onTap: () => _showActionSheet(context, staff['name'], themeColor),
-               child: Container(
-                 padding: const EdgeInsets.only(left: 8, bottom: 8),
-                 color: Colors.transparent, // expand touch area
-                 child: Icon(Icons.more_vert_rounded, size: 20, color: Colors.grey.shade300),
-               ),
-            )
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoText(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.inter(
-        fontSize: 11,
-        color: Colors.grey.shade600,
-        height: 1.3,
-      ),
-    );
-  }
-
-  // Action Sheet for Edit/Delete
-  void _showActionSheet(BuildContext context, String name, Color themeColor) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Text(
-                name,
-                style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              _buildActionTile(icon: Icons.edit_rounded, color: themeColor, text: "Edit Profile"),
-              const SizedBox(height: 10),
-              _buildActionTile(icon: Icons.delete_rounded, color: Colors.red, text: "Remove Staff"),
-            ],
+  Widget _buildFilterTab(String title) {
+    bool isSelected = _selectedDept == title;
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: InkWell(
+        onTap: () => setState(() => _selectedDept = title),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.purpleAccent : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? Colors.purpleAccent : const Color(0xFFE2E8F0),
+            ),
           ),
-        );
-      },
+          child: Text(
+            title,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : const Color(0xFF64748B),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildActionTile({required IconData icon, required Color color, required String text}) {
-    return ListTile(
-      onTap: () {},
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-        child: Icon(icon, color: color),
+  Widget _buildEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(60),
+      child: Column(
+        children: [
+          Icon(Icons.search_off_rounded, size: 48, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            "No staff members found",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+        ],
       ),
-      title: Text(
-        text, 
-        style: GoogleFonts.inter(
-          fontWeight: FontWeight.w600, 
-          fontSize: 16,
-          color: color == Colors.red ? Colors.red : Colors.black87
-        )
-      ),
-      trailing: Icon(Icons.chevron_right_rounded, color: Colors.grey.shade300),
     );
   }
 }

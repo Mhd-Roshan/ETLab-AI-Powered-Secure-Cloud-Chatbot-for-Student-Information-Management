@@ -1,0 +1,21 @@
+class ApiConfig {
+  // ⚠️ IMPORTANT: Replace this with your actual Gemini API Key
+  // Get your API key from: https://aistudio.google.com/
+  // 
+  // SETUP INSTRUCTIONS:
+  // 1. Copy this file and rename it to 'api_config.dart' (remove .template)
+  // 2. Replace YOUR_GEMINI_API_KEY_HERE with your actual API key
+  // 3. The actual api_config.dart is gitignored for security
+  // 
+  // For production apps, consider using:
+  // 1. Environment variables
+  // 2. flutter_dotenv package
+  // 3. Firebase Remote Config
+  // 4. Secure storage solutions
+  
+  static const String geminiApiKey = "YOUR_GEMINI_API_KEY_HERE";
+  
+  // You can add other API configurations here as needed
+  // static const String firebaseApiKey = "...";
+  // static const String otherServiceKey = "...";
+}

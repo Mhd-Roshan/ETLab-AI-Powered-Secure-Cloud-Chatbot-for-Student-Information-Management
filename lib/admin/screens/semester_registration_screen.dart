@@ -4,24 +4,34 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:edlab/admin/widgets/admin_sidebar.dart';
 import 'package:edlab/admin/widgets/admin_header.dart';
 
-class HostelScreen extends StatefulWidget {
-  final Color color;
-  const HostelScreen({super.key, this.color = Colors.teal});
+class SemesterRegistrationScreen extends StatefulWidget {
+  const SemesterRegistrationScreen({super.key});
 
   @override
-  State<HostelScreen> createState() => _HostelScreenState();
+  State<SemesterRegistrationScreen> createState() =>
+      _SemesterRegistrationScreenState();
 }
 
-class _HostelScreenState extends State<HostelScreen> {
-  // Default selected Block
-  String _selectedBlock = 'Block A (Boys)';
+class _SemesterRegistrationScreenState
+    extends State<SemesterRegistrationScreen> {
+  String _selectedStatus = 'All'; // Filter: All, Pending, Approved
 
-  // Available Blocks
-  final List<String> _blocks = [
-    'Block A (Boys)',
-    'Block B (Girls)',
-    'Block C (Staff)',
-  ];
+  // Function to Update Status in Firebase
+  Future<void> _updateStatus(String docId, String newStatus) async {
+    await FirebaseFirestore.instance.collection('students').doc(docId).update({
+      'semesterRegistrationStatus': newStatus,
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Registration $newStatus"),
+          backgroundColor: newStatus == 'Approved' ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +53,7 @@ class _HostelScreenState extends State<HostelScreen> {
                   const AdminHeader(),
                   const SizedBox(height: 32),
 
-                  // --- Header & Actions ---
+                  // --- Header ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -51,7 +61,7 @@ class _HostelScreenState extends State<HostelScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Hostel Management",
+                            "Semester Registration",
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -60,7 +70,7 @@ class _HostelScreenState extends State<HostelScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "Manage room allocations and occupancy",
+                            "Spring 2026 • Approval Workflow",
                             style: GoogleFonts.inter(
                               fontSize: 13,
                               color: Colors.grey.shade500,
@@ -68,31 +78,38 @@ class _HostelScreenState extends State<HostelScreen> {
                           ),
                         ],
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // Add Allocation Logic
-                        },
-                        icon: const Icon(Icons.add_home_rounded, size: 18),
-                        label: const Text("Allocate Room"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+
+                      // Filter Tabs
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            _buildFilterTab("All"),
+                            Container(
+                              width: 1,
+                              height: 20,
+                              color: const Color(0xFFF1F5F9),
+                            ),
+                            _buildFilterTab("Pending"),
+                            Container(
+                              width: 1,
+                              height: 20,
+                              color: const Color(0xFFF1F5F9),
+                            ),
+                            _buildFilterTab("Approved"),
+                          ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
 
-                  // --- DATA STREAM ---
+                  // --- STREAM DATA ---
                   StreamBuilder<QuerySnapshot>(
-                    // Fetch students who have a hostel room assigned
                     stream: FirebaseFirestore.instance
                         .collection('students')
                         .snapshots(),
@@ -106,75 +123,76 @@ class _HostelScreenState extends State<HostelScreen> {
                         );
                       }
 
-                      var allDocs = snapshot.data?.docs ?? [];
+                      var docs = snapshot.data?.docs ?? [];
 
-                      // Filter by Selected Block
-                      // (Assuming 'hostelBlock' field exists in Firebase, defaults to 'Block A (Boys)' if missing for demo)
-                      var residents = allDocs.where((doc) {
+                      // Filter Logic
+                      var filteredDocs = docs.where((doc) {
                         var data = doc.data() as Map<String, dynamic>;
-                        // Check if student has a room assigned
-                        if (data['hostelRoom'] == null) return false;
-
-                        String block = data['hostelBlock'] ?? 'Block A (Boys)';
-                        return block == _selectedBlock;
+                        String status =
+                            data['semesterRegistrationStatus'] ?? 'Pending';
+                        if (_selectedStatus == 'All') return true;
+                        return status == _selectedStatus;
                       }).toList();
 
-                      // --- Calculate Stats ---
-                      int totalCapacity =
-                          200; // Example fixed capacity per block
-                      int occupied = residents.length;
-                      int vacant = totalCapacity - occupied;
-                      int maintenance = 2; // Static for demo
+                      // Stats Logic
+                      int total = docs.length;
+                      int pending = docs
+                          .where(
+                            (d) =>
+                                (d.data()
+                                        as Map)['semesterRegistrationStatus'] ==
+                                    'Pending' ||
+                                (d.data()
+                                        as Map)['semesterRegistrationStatus'] ==
+                                    null,
+                          )
+                          .length;
+                      int approved = docs
+                          .where(
+                            (d) =>
+                                (d.data()
+                                    as Map)['semesterRegistrationStatus'] ==
+                                'Approved',
+                          )
+                          .length;
 
                       return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // 1. Stats Row
                           Row(
                             children: [
                               _buildStatCard(
-                                "Total Capacity",
-                                "$totalCapacity Beds",
-                                Colors.indigo,
-                                Icons.bed,
+                                "Applications",
+                                "$total",
+                                Colors.blueAccent,
+                                Icons.description_outlined,
                               ),
                               const SizedBox(width: 20),
                               _buildStatCard(
-                                "Occupied",
-                                "$occupied Students",
+                                "Pending Action",
+                                "$pending",
+                                Colors.orangeAccent,
+                                Icons.pending_outlined,
+                              ),
+                              const SizedBox(width: 20),
+                              _buildStatCard(
+                                "Approved",
+                                "$approved",
                                 Colors.green,
-                                Icons.person,
-                              ),
-                              const SizedBox(width: 20),
-                              _buildStatCard(
-                                "Vacant",
-                                "$vacant Beds",
-                                Colors.orange,
                                 Icons.check_circle_outline,
                               ),
                               const SizedBox(width: 20),
                               _buildStatCard(
-                                "Maintenance",
-                                "$maintenance Rooms",
-                                Colors.red,
-                                Icons.build,
+                                "Fees Due",
+                                "${total - approved}",
+                                Colors.redAccent,
+                                Icons.attach_money_rounded,
                               ),
                             ],
                           ),
                           const SizedBox(height: 32),
 
-                          // 2. Block Tabs
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: _blocks
-                                  .map((block) => _buildBlockTab(block))
-                                  .toList(),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // 3. Residents Table
+                          // 2. Data Table
                           Container(
                             width: double.infinity,
                             decoration: BoxDecoration(
@@ -191,7 +209,7 @@ class _HostelScreenState extends State<HostelScreen> {
                                 ),
                               ],
                             ),
-                            child: residents.isEmpty
+                            child: filteredDocs.isEmpty
                                 ? _buildEmptyState()
                                 : DataTable(
                                     columnSpacing: 20,
@@ -202,15 +220,7 @@ class _HostelScreenState extends State<HostelScreen> {
                                     columns: const [
                                       DataColumn(
                                         label: Text(
-                                          "Room No",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      DataColumn(
-                                        label: Text(
-                                          "Student Name",
+                                          "Student Details",
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -226,7 +236,7 @@ class _HostelScreenState extends State<HostelScreen> {
                                       ),
                                       DataColumn(
                                         label: Text(
-                                          "Type",
+                                          "Sem",
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -234,7 +244,15 @@ class _HostelScreenState extends State<HostelScreen> {
                                       ),
                                       DataColumn(
                                         label: Text(
-                                          "Payment",
+                                          "Fee Status",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          "Reg Status",
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -249,50 +267,31 @@ class _HostelScreenState extends State<HostelScreen> {
                                         ),
                                       ),
                                     ],
-                                    rows: residents.map((doc) {
+                                    rows: filteredDocs.map((doc) {
                                       var data =
                                           doc.data() as Map<String, dynamic>;
+                                      String name =
+                                          "${data['firstName']} ${data['lastName']}";
+                                      String regStatus =
+                                          data['semesterRegistrationStatus'] ??
+                                          "Pending";
+                                      bool isFeePaid =
+                                          data['feesPaid'] ?? false;
+
                                       return DataRow(
                                         cells: [
-                                          DataCell(
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 6,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFF8FAFC),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                border: Border.all(
-                                                  color: const Color(
-                                                    0xFFE2E8F0,
-                                                  ),
-                                                ),
-                                              ),
-                                              child: Text(
-                                                data['hostelRoom'] ?? "000",
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
                                           DataCell(
                                             Row(
                                               children: [
                                                 CircleAvatar(
-                                                  radius: 16,
+                                                  radius: 18,
                                                   backgroundColor:
                                                       Colors.blue.shade50,
                                                   child: Text(
-                                                    (data['firstName']?[0] ??
-                                                        "U"),
+                                                    name[0],
                                                     style: TextStyle(
                                                       color:
                                                           Colors.blue.shade700,
-                                                      fontSize: 12,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                     ),
@@ -306,7 +305,7 @@ class _HostelScreenState extends State<HostelScreen> {
                                                       MainAxisAlignment.center,
                                                   children: [
                                                     Text(
-                                                      "${data['firstName']} ${data['lastName']}",
+                                                      name,
                                                       style: const TextStyle(
                                                         fontWeight:
                                                             FontWeight.w600,
@@ -314,8 +313,8 @@ class _HostelScreenState extends State<HostelScreen> {
                                                       ),
                                                     ),
                                                     Text(
-                                                      data['phone'] ??
-                                                          "No Phone",
+                                                      data['registrationNumber'] ??
+                                                          "--",
                                                       style: TextStyle(
                                                         fontSize: 11,
                                                         color: Colors
@@ -329,13 +328,18 @@ class _HostelScreenState extends State<HostelScreen> {
                                             ),
                                           ),
                                           DataCell(
-                                            Text(data['department'] ?? "--"),
+                                            Text(
+                                              data['department'] ?? "--",
+                                              style: GoogleFonts.inter(
+                                                fontSize: 13,
+                                              ),
+                                            ),
                                           ),
                                           DataCell(
                                             Text(
-                                              data['roomType'] ?? "Non-AC",
-                                              style: GoogleFonts.inter(
-                                                fontSize: 13,
+                                              "S${data['semester'] ?? '1'}",
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
                                               ),
                                             ),
                                           ),
@@ -347,22 +351,18 @@ class _HostelScreenState extends State<HostelScreen> {
                                                     vertical: 4,
                                                   ),
                                               decoration: BoxDecoration(
-                                                color:
-                                                    (data['feesPaid'] == true)
+                                                color: isFeePaid
                                                     ? Colors.green.shade50
-                                                    : Colors.orange.shade50,
+                                                    : Colors.red.shade50,
                                                 borderRadius:
                                                     BorderRadius.circular(6),
                                               ),
                                               child: Text(
-                                                (data['feesPaid'] == true)
-                                                    ? "PAID"
-                                                    : "PENDING",
+                                                isFeePaid ? "PAID" : "DUE",
                                                 style: TextStyle(
-                                                  color:
-                                                      (data['feesPaid'] == true)
+                                                  color: isFeePaid
                                                       ? Colors.green.shade700
-                                                      : Colors.orange.shade700,
+                                                      : Colors.red.shade700,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -370,26 +370,43 @@ class _HostelScreenState extends State<HostelScreen> {
                                             ),
                                           ),
                                           DataCell(
-                                            Row(
-                                              children: [
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.edit_outlined,
-                                                    size: 18,
-                                                    color: Colors.grey,
+                                            _buildStatusBadge(regStatus),
+                                          ),
+                                          DataCell(
+                                            regStatus == 'Approved'
+                                                ? const Icon(
+                                                    Icons.check_circle,
+                                                    color: Colors.green,
+                                                    size: 20,
+                                                  )
+                                                : Row(
+                                                    children: [
+                                                      IconButton(
+                                                        icon: const Icon(
+                                                          Icons.check,
+                                                          color: Colors.green,
+                                                        ),
+                                                        tooltip: "Approve",
+                                                        onPressed: () =>
+                                                            _updateStatus(
+                                                              doc.id,
+                                                              "Approved",
+                                                            ),
+                                                      ),
+                                                      IconButton(
+                                                        icon: const Icon(
+                                                          Icons.close,
+                                                          color: Colors.red,
+                                                        ),
+                                                        tooltip: "Reject",
+                                                        onPressed: () =>
+                                                            _updateStatus(
+                                                              doc.id,
+                                                              "Rejected",
+                                                            ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  onPressed: () {},
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.logout,
-                                                    size: 18,
-                                                    color: Colors.redAccent,
-                                                  ),
-                                                  onPressed: () {},
-                                                ),
-                                              ],
-                                            ),
                                           ),
                                         ],
                                       );
@@ -410,6 +427,27 @@ class _HostelScreenState extends State<HostelScreen> {
   }
 
   // --- WIDGET HELPERS ---
+
+  Widget _buildFilterTab(String title) {
+    bool isActive = _selectedStatus == title;
+    return InkWell(
+      onTap: () => setState(() => _selectedStatus = title),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFF1F5F9) : Colors.transparent,
+        ),
+        child: Text(
+          title,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.black : Colors.grey,
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildStatCard(
     String title,
@@ -432,39 +470,38 @@ class _HostelScreenState extends State<HostelScreen> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
                   ),
-                  child: Icon(icon, color: color, size: 18),
                 ),
-                Icon(Icons.more_vert, size: 16, color: Colors.grey.shade400),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
               ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              value,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F172A),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.grey.shade500,
-              ),
             ),
           ],
         ),
@@ -472,42 +509,36 @@ class _HostelScreenState extends State<HostelScreen> {
     );
   }
 
-  Widget _buildBlockTab(String title) {
-    bool isSelected = _selectedBlock == title;
-    return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: InkWell(
-        onTap: () => setState(() => _selectedBlock = title),
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF0F172A) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF0F172A)
-                  : const Color(0xFFE2E8F0),
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF0F172A).withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Text(
-            title,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : const Color(0xFF64748B),
-            ),
-          ),
+  Widget _buildStatusBadge(String status) {
+    Color color;
+    Color bg;
+
+    switch (status.toLowerCase()) {
+      case 'approved':
+        color = Colors.green.shade700;
+        bg = Colors.green.shade50;
+        break;
+      case 'rejected':
+        color = Colors.red.shade700;
+        bg = Colors.red.shade50;
+        break;
+      default:
+        color = Colors.orange.shade700;
+        bg = Colors.orange.shade50;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -519,20 +550,19 @@ class _HostelScreenState extends State<HostelScreen> {
       padding: const EdgeInsets.all(60),
       child: Column(
         children: [
-          Icon(Icons.hotel_outlined, size: 48, color: Colors.grey.shade300),
+          Icon(
+            Icons.app_registration_rounded,
+            size: 48,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
           Text(
-            "No residents in $_selectedBlock",
+            "No registrations found",
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF0F172A),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Allocate rooms to students to see them here.",
-            style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500),
           ),
         ],
       ),

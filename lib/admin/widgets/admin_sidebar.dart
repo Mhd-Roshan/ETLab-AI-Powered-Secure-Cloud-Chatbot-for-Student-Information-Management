@@ -1,243 +1,220 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:edlab/admin/admin_dashboard.dart';
+import 'package:edlab/admin/screens/students_screen.dart';
+import 'package:edlab/admin/screens/courses_screen.dart';
+import 'package:edlab/admin/screens/ai_chat_screen.dart';
+import 'package:edlab/admin/screens/settings_screen.dart';
+import 'package:edlab/login.dart';
 
 class AdminSidebar extends StatelessWidget {
-  final int selectedIndex;
-  final Function(int) onItemSelected;
-  final VoidCallback onLogout;
-  final bool isDarkMode;
+  final int activeIndex;
 
-  const AdminSidebar({
-    super.key,
-    required this.selectedIndex,
-    required this.onItemSelected,
-    required this.onLogout,
-    required this.isDarkMode,
-  });
+  /// [activeIndex] mapping:
+  /// 0: Dashboard
+  /// 1: Students
+  /// 2: Courses
+  /// 3: AI Chats
+  /// 4: Univ. Schedules
+  /// 5: Settings (Profile)
+  /// -1: None (for sub-pages)
+  const AdminSidebar({super.key, this.activeIndex = -1});
 
   @override
   Widget build(BuildContext context) {
-    // 2026 Palette
-    final bgColor = isDarkMode ? const Color(0xFF0F172A) : Colors.white;
-    final borderColor = isDarkMode ? Colors.white.withOpacity(0.08) : Colors.grey.shade200;
-    
     return Container(
-      width: 280,
+      margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
       decoration: BoxDecoration(
-        color: bgColor,
-        border: Border(right: BorderSide(color: borderColor)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(4, 0),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- 1. BRAND HEADER ---
-          _buildBrandHeader(),
+          const SizedBox(height: 32),
 
-          const SizedBox(height: 30),
-
-          // --- 2. NAVIGATION LINKS ---
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildSectionLabel("OVERVIEW"),
-                _buildNavItem(0, Icons.grid_view_rounded, "Dashboard"),
-                
-                const SizedBox(height: 24),
-                
-                _buildSectionLabel("ACADEMICS"),
-                _buildNavItem(1, Icons.supervisor_account_outlined, "Batches"),
-                _buildNavItem(2, Icons.class_outlined, "Classes"),
-                _buildNavItem(4, Icons.calendar_today_rounded, "Timetable"),
-                
-                const SizedBox(height: 24),
-
-                _buildSectionLabel("INTELLIGENCE"),
-                _buildNavItem(3, Icons.smart_toy_outlined, "Chatbots"),
-                
-                const SizedBox(height: 24),
-                
-                _buildSectionLabel("NOTIFICATIONS"),
-                _buildNavItem(5, Icons.swap_horiz_rounded, "Notifications"),
-              ],
-            ),
-          ),
-
-          // --- 3. MODERN LOGOUT BUTTON ---
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onLogout,
-                borderRadius: BorderRadius.circular(12),
-                hoverColor: Colors.red.withOpacity(0.05),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: isDarkMode 
-                        ? Colors.red.withOpacity(0.1) 
-                        : Colors.red.withOpacity(0.04),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.red.withOpacity(0.2),
-                      width: 1,
-                    ),
+          // --- 1. BRAND LOGO (Home) ---
+          InkWell(
+            onTap: () {
+              if (activeIndex != 0) {
+                Navigator.pushReplacement(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => const AdminDashboard(),
+                    transitionDuration: Duration.zero,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.logout_rounded, color: Colors.red.shade400, size: 20),
-                      const SizedBox(width: 10),
-                      Text(
-                        "Sign Out",
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.red.shade400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- BRAND HEADER ---
-  Widget _buildBrandHeader() {
-    return Container(
-      height: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      alignment: Alignment.centerLeft,
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+                );
+              }
+            },
             child: Image.asset(
               "assets/edlab.png",
-              height: 56, // Increased size
-              width: 56,  // Increased size
-              fit: BoxFit.contain,
+              height: 40,
+              width: 40,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.hub_rounded,
+                color: Colors.indigoAccent,
+                size: 28,
+              ),
             ),
           ),
-          const SizedBox(width: 12),
+
+          const SizedBox(height: 50),
+
+          // --- 2. MENU ITEMS ---
+          _buildModernNavItem(
+            context,
+            index: 0,
+            icon: Icons.dashboard_rounded,
+            tooltip: "Dashboard",
+            page: const AdminDashboard(),
+          ),
+          _buildModernNavItem(
+            context,
+            index: 1,
+            icon: Icons.people_alt_rounded,
+            tooltip: "Students",
+            page: const StudentsScreen(),
+          ),
+          _buildModernNavItem(
+            context,
+            index: 2,
+            icon: Icons.library_books_rounded,
+            tooltip: "Courses",
+            page: const CoursesScreen(),
+          ),
+          _buildModernNavItem(
+            context,
+            index: 3,
+            icon: Icons.auto_awesome_rounded,
+            tooltip: "AI Chats",
+            page: const AiChatScreen(),
+          ),
+
+          const Spacer(),
+
+          // --- 3. LOGOUT ---
+          IconButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+              );
+            },
+            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+            tooltip: "Logout",
+          ),
+          const SizedBox(height: 16),
+
+          // --- 4. PROFILE (Linked to Settings - Index 5) ---
+          Tooltip(
+            message: "Settings & Profile",
+            child: InkWell(
+              onTap: () {
+                if (activeIndex != 5) {
+                  Navigator.pushReplacement(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (_, __, ___) => const SettingsScreen(),
+                      transitionDuration: Duration.zero,
+                    ),
+                  );
+                }
+              },
+              borderRadius: BorderRadius.circular(30),
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: activeIndex == 5
+                        ? Colors.blueAccent
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    const CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Color(0xFFF1F5F9),
+                      backgroundImage: NetworkImage(
+                        'assets/kmct.png',
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.settings,
+                        size: 10,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  // --- SECTION LABELS ---
-  Widget _buildSectionLabel(String label) {
+  Widget _buildModernNavItem(
+    BuildContext context, {
+    required int index,
+    required IconData icon,
+    required String tooltip,
+    required Widget page,
+  }) {
+    bool isActive = activeIndex == index;
+
     return Padding(
-      padding: const EdgeInsets.only(left: 12, bottom: 8),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-          color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
-        ),
-      ),
-    );
-  }
-
-  // --- NAVIGATION ITEM ---
-  Widget _buildNavItem(int index, IconData icon, String label, {bool isSpecial = false}) {
-    final isSelected = selectedIndex == index;
-    
-    // Modern Colors
-    final activeBg = isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF); 
-    final activeIcon = const Color(0xFF3B82F6); 
-    final inactiveIcon = isDarkMode ? Colors.grey.shade500 : Colors.grey.shade500;
-    final activeText = isDarkMode ? Colors.white : const Color(0xFF1E293B);
-    final inactiveText = isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600;
-
-    final specialGradient = LinearGradient(
-      colors: [const Color(0xFF6366F1).withOpacity(0.15), const Color(0xFFA855F7).withOpacity(0.15)],
-    );
-    final specialIconColor = const Color(0xFF8B5CF6);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      child: Material(
-        color: Colors.transparent,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Tooltip(
+        message: tooltip,
         child: InkWell(
-          onTap: () => onItemSelected(index),
-          borderRadius: BorderRadius.circular(12),
-          hoverColor: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.05),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isSelected 
-                  ? (isSpecial ? Colors.transparent : activeBg) 
-                  : Colors.transparent,
-              gradient: (isSelected && isSpecial) ? specialGradient : null,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected && !isSpecial 
-                    ? activeIcon.withOpacity(0.1) 
-                    : Colors.transparent
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: isSelected 
-                      ? (isSpecial ? specialIconColor : activeIcon) 
-                      : inactiveIcon,
+          onTap: () {
+            if (!isActive) {
+              Navigator.pushReplacement(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => page,
+                  transitionDuration: Duration.zero,
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: GoogleFonts.inter(
-                      color: isSelected ? activeText : inactiveText,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                if (isSelected)
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: isSpecial ? specialIconColor : activeIcon,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isSpecial ? specialIconColor : activeIcon).withOpacity(0.4),
-                          blurRadius: 6,
-                        )
-                      ]
-                    ),
-                  ),
-                if (isSpecial && !isSelected)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8B5CF6).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      "NEW",
-                      style: GoogleFonts.inter(
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF8B5CF6),
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: isActive
+                ? BoxDecoration(
+                    color: Colors.blueAccent,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blueAccent.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
                       ),
-                    ),
+                    ],
                   )
-              ],
+                : const BoxDecoration(color: Colors.transparent),
+            child: Icon(
+              icon,
+              size: 24,
+              color: isActive ? Colors.white : const Color(0xFF94A3B8),
             ),
           ),
         ),
