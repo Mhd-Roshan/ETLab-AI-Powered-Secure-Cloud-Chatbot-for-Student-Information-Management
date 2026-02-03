@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:edlab/admin/screens/ai_dashboard.dart';
+import 'package:edlab/admin/screens/ai_chat_screen.dart';
 import 'package:edlab/services/admin_service.dart';
 
 // Ensure these widget files exist in your project
@@ -25,8 +25,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EdLabSmartDashboard(
-          currentUserId: 'admin123', // Replace with actual ID
+        builder: (context) => AiChatScreen(
           initialPrompt: prompt, // ✅ Passes text to AI
         ),
       ),
@@ -512,7 +511,6 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                     textAlignVertical: TextAlignVertical.center,
                     onSubmitted: (value) {
                       widget.onSubmitted(value); // Trigger navigation
-                      _controller.clear();
                     },
                     decoration: InputDecoration(
                       hintText: "Type a command...",
@@ -535,7 +533,6 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                         onPressed: () {
                           if (_controller.text.isNotEmpty) {
                             widget.onSubmitted(_controller.text);
-                            _controller.clear();
                           }
                         },
                       ),

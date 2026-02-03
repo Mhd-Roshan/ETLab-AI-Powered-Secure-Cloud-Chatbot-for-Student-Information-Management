@@ -15,7 +15,6 @@ import '../screens/fees/fees_dashboard.dart';
 import '../screens/surveys_screen.dart';
 import '../screens/alerts_screen.dart';
 import '../screens/sms_screen.dart';
-import '../screens/ai_dashboard.dart';
 
 class AdminWorkspaceGrid extends StatelessWidget {
   const AdminWorkspaceGrid({super.key});
@@ -124,12 +123,6 @@ class AdminWorkspaceGrid extends StatelessWidget {
         'label': 'Surveys',
         'color': Colors.indigoAccent,
         'route': const SurveyScreen(),
-      },
-      {
-        'icon': Icons.auto_awesome,
-        'label': 'AI Dashboard',
-        'color': Colors.indigo,
-        'route': const EdLabSmartDashboard(currentUserId: 'admin'),
       },
     ];
 

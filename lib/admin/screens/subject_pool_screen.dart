@@ -12,242 +12,219 @@ class SubjectPoolScreen extends StatefulWidget {
 }
 
 class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
-  // Changed default from 'All' to 'MCA'
   String _selectedDept = 'MCA';
+  final List<String> _departments = ['MCA', 'MBA'];
+  bool _isProcessing = false; // Loading state to prevent duplicate clicks
 
-  // Removed 'All' from the list
-  final List<String> _departments = ['MCA', 'MBA', 'CSE', 'ECE', 'ME', 'CE'];
+  // --- HELPER: SHOW SNACKBAR ---
+  void _showMsg(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.redAccent : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(20),
+      ),
+    );
+  }
 
   // --- DIALOG: Add Subject ---
   void _showAddSubjectDialog() {
-    final _formKey = GlobalKey<FormState>();
-    String code = '';
-    String name = '';
-    String credits = '3';
-    String dept = _selectedDept; // Default to currently selected tab
-    String instructor = '';
+    final formKey = GlobalKey<FormState>();
+    final codeCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final creditsCtrl = TextEditingController(text: "3");
+    final instructorCtrl = TextEditingController();
+    String dept = _selectedDept;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Add New Subject"),
-        content: SizedBox(
-          width: 400,
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text("Add New Subject"),
+            content: SizedBox(
+              width: 400,
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: "Course Code",
-                          hintText: "e.g. CS301",
-                          border: OutlineInputBorder(),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: codeCtrl,
+                            decoration: const InputDecoration(labelText: "Course Code", hintText: "e.g. CS301", border: OutlineInputBorder()),
+                            validator: (v) => v!.isEmpty ? "Required" : null,
+                          ),
                         ),
-                        validator: (v) => v!.isEmpty ? "Required" : null,
-                        onSaved: (v) => code = v!,
-                      ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: creditsCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: "Credits", border: OutlineInputBorder()),
+                            validator: (v) => v!.isEmpty ? "Required" : null,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: "Credits",
-                          hintText: "e.g. 4",
-                          border: OutlineInputBorder(),
-                        ),
-                        initialValue: "3",
-                        onSaved: (v) => credits = v!,
-                      ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: "Subject Name", border: OutlineInputBorder()),
+                      validator: (v) => v!.isEmpty ? "Required" : null,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: dept,
+                      decoration: const InputDecoration(labelText: "Department", border: OutlineInputBorder()),
+                      items: _departments.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                      onChanged: (v) => dept = v!,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: instructorCtrl,
+                      decoration: const InputDecoration(labelText: "Instructor (Optional)", border: OutlineInputBorder()),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "Subject Name",
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) => v!.isEmpty ? "Required" : null,
-                  onSaved: (v) => name = v!,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: dept,
-                  decoration: const InputDecoration(
-                    labelText: "Department",
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _departments
-                      .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                      .toList(),
-                  onChanged: (v) => dept = v!,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "Instructor (Optional)",
-                    border: OutlineInputBorder(),
-                  ),
-                  onSaved: (v) => instructor = v ?? "TBA",
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_formKey.currentState!.validate()) {
-                _formKey.currentState!.save();
-                await FirebaseFirestore.instance
-                    .collection('courses')
-                    .doc(code)
-                    .set({
-                      'courseCode': code,
-                      'courseName': name,
-                      'credits': int.tryParse(credits) ?? 3,
-                      'department': dept,
-                      'instructor': instructor.isEmpty ? "TBA" : instructor,
-                      'totalStudents': 0,
-                    });
-                if (mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text("Add Course"),
-          ),
-        ],
+            actions: [
+              TextButton(onPressed: _isProcessing ? null : () => Navigator.pop(context), child: const Text("Cancel")),
+              ElevatedButton(
+                onPressed: _isProcessing ? null : () async {
+                  if (formKey.currentState!.validate()) {
+                    setDialogState(() => _isProcessing = true);
+                    
+                    String code = codeCtrl.text.trim().toUpperCase();
+                    final db = FirebaseFirestore.instance.collection('courses');
+
+                    try {
+                      // --- DUPLICATION CHECK ---
+                      final duplicate = await db.doc(code).get();
+                      if (duplicate.exists) {
+                        _showMsg("Course code '$code' already exists!", isError: true);
+                        setDialogState(() => _isProcessing = false);
+                        return;
+                      }
+
+                      // --- CREATE DOC ---
+                      await db.doc(code).set({
+                        'courseCode': code,
+                        'courseName': nameCtrl.text.trim(),
+                        'credits': int.tryParse(creditsCtrl.text) ?? 3,
+                        'department': dept,
+                        'instructor': instructorCtrl.text.isEmpty ? "TBA" : instructorCtrl.text.trim(),
+                        'totalStudents': 0,
+                        'createdAt': FieldValue.serverTimestamp(),
+                      });
+
+                      if (mounted) Navigator.pop(context);
+                      _showMsg("Course added successfully");
+                    } catch (e) {
+                      _showMsg("Error: $e", isError: true);
+                    } finally {
+                      setDialogState(() => _isProcessing = false);
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
+                child: _isProcessing 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text("Add Course"),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   // --- DIALOG: Edit Subject ---
   void _showEditSubjectDialog(DocumentSnapshot doc) {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     var data = doc.data() as Map<String, dynamic>;
-
-    String code = data['courseCode'] ?? '';
-    String name = data['courseName'] ?? '';
-    String credits = (data['credits'] ?? 3).toString();
+    final nameCtrl = TextEditingController(text: data['courseName']);
+    final creditsCtrl = TextEditingController(text: data['credits'].toString());
+    final instructorCtrl = TextEditingController(text: data['instructor']);
     String dept = data['department'] ?? _selectedDept;
-    String instructor = data['instructor'] ?? '';
-
-    // If department from data isn't in our list (e.g. legacy data), fallback to first or selected
-    if (!_departments.contains(dept)) {
-      dept = _departments.contains(_selectedDept)
-          ? _selectedDept
-          : _departments.first;
-    }
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Edit Subject"),
-        content: SizedBox(
-          width: 400,
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text("Edit Subject"),
+            content: SizedBox(
+              width: 400,
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        // Enabled false because typically ID/Code shouldn't change or it messes up references
-                        // If you want to allow changing code, you'd need to handle deleting old doc and creating new one
-                        enabled: false,
-                        initialValue: code,
-                        decoration: const InputDecoration(
-                          labelText: "Course Code",
-                          hintText: "e.g. CS301",
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (v) => v!.isEmpty ? "Required" : null,
-                        onSaved: (v) => code = v!,
-                      ),
+                    TextFormField(
+                      initialValue: data['courseCode'],
+                      enabled: false, // ID shouldn't change
+                      decoration: const InputDecoration(labelText: "Course Code", border: OutlineInputBorder()),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        initialValue: credits,
-                        decoration: const InputDecoration(
-                          labelText: "Credits",
-                          hintText: "e.g. 4",
-                          border: OutlineInputBorder(),
-                        ),
-                        onSaved: (v) => credits = v!,
-                      ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: "Subject Name", border: OutlineInputBorder()),
+                      validator: (v) => v!.isEmpty ? "Required" : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: creditsCtrl,
+                      decoration: const InputDecoration(labelText: "Credits", border: OutlineInputBorder()),
+                      validator: (v) => v!.isEmpty ? "Required" : null,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: dept,
+                      decoration: const InputDecoration(labelText: "Department", border: OutlineInputBorder()),
+                      items: _departments.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                      onChanged: (v) => dept = v!,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: instructorCtrl,
+                      decoration: const InputDecoration(labelText: "Instructor", border: OutlineInputBorder()),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  initialValue: name,
-                  decoration: const InputDecoration(
-                    labelText: "Subject Name",
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) => v!.isEmpty ? "Required" : null,
-                  onSaved: (v) => name = v!,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: dept,
-                  decoration: const InputDecoration(
-                    labelText: "Department",
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _departments
-                      .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                      .toList(),
-                  onChanged: (v) => dept = v!,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  initialValue: instructor,
-                  decoration: const InputDecoration(
-                    labelText: "Instructor (Optional)",
-                    border: OutlineInputBorder(),
-                  ),
-                  onSaved: (v) => instructor = v ?? "TBA",
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_formKey.currentState!.validate()) {
-                _formKey.currentState!.save();
-                await FirebaseFirestore.instance
-                    .collection('courses')
-                    .doc(doc.id) // Update existing doc
-                    .update({
-                      // 'courseCode': code, // Don't update code if it's the doc ID/key
-                      'courseName': name,
-                      'credits': int.tryParse(credits) ?? 3,
-                      'department': dept,
-                      'instructor': instructor.isEmpty ? "TBA" : instructor,
-                    });
-                if (mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text("Save Changes"),
-          ),
-        ],
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+              ElevatedButton(
+                onPressed: _isProcessing ? null : () async {
+                  if (formKey.currentState!.validate()) {
+                    setDialogState(() => _isProcessing = true);
+                    try {
+                      await FirebaseFirestore.instance.collection('courses').doc(doc.id).update({
+                        'courseName': nameCtrl.text.trim(),
+                        'credits': int.tryParse(creditsCtrl.text) ?? 3,
+                        'department': dept,
+                        'instructor': instructorCtrl.text.trim(),
+                      });
+                      if (mounted) Navigator.pop(context);
+                      _showMsg("Course updated");
+                    } finally {
+                      setDialogState(() => _isProcessing = false);
+                    }
+                  }
+                },
+                child: const Text("Save Changes"),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -260,17 +237,12 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
         title: const Text("Delete Subject?"),
         content: const Text("This action cannot be undone."),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           TextButton(
             onPressed: () {
-              FirebaseFirestore.instance
-                  .collection('courses')
-                  .doc(docId)
-                  .delete();
+              FirebaseFirestore.instance.collection('courses').doc(docId).delete();
               Navigator.pop(context);
+              _showMsg("Course deleted", isError: true);
             },
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),
@@ -292,106 +264,45 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 32,
-                    ),
+                    padding: const EdgeInsets.all(32),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const AdminHeader(),
                         const SizedBox(height: 32),
-
-                        // Title Row
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  "Subject Pool",
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF0F172A),
-                                  ),
-                                ),
+                                Text("Subject Pool", style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                                 const SizedBox(height: 4),
-                                Text(
-                                  "Manage curriculum and electives",
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ),
+                                Text("Manage curriculum and electives", style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500)),
                               ],
                             ),
                             ElevatedButton.icon(
                               onPressed: _showAddSubjectDialog,
                               icon: const Icon(Icons.add, size: 18),
                               label: const Text("Add Subject"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blueAccent,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF5C51E1), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                             ),
                           ],
                         ),
                         const SizedBox(height: 24),
-
-                        // Department Tabs
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: _departments
-                                .map((dept) => _buildFilterTab(dept))
-                                .toList(),
-                          ),
-                        ),
+                        Row(children: _departments.map((dept) => _buildFilterTab(dept)).toList()),
                         const SizedBox(height: 32),
-
-                        // Courses Grid
                         StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('courses')
-                              .snapshots(),
+                          stream: FirebaseFirestore.instance.collection('courses').orderBy('createdAt', descending: true).snapshots(),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(40),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            }
-
+                            if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
                             var docs = snapshot.data?.docs ?? [];
-                            // Exact match filtering
-                            var filteredDocs = docs.where((doc) {
-                              var data = doc.data() as Map<String, dynamic>;
-                              return (data['department'] ?? '') ==
-                                  _selectedDept;
-                            }).toList();
-
-                            if (filteredDocs.isEmpty) {
-                              return _buildEmptyState();
-                            }
+                            var filteredDocs = docs.where((doc) => (doc.data() as Map)['department'] == _selectedDept).toList();
+                            if (filteredDocs.isEmpty) return _buildEmptyState();
 
                             return Wrap(
-                              spacing: 20, // Reduced spacing
-                              runSpacing: 20,
-                              children: filteredDocs.map((doc) {
-                                return _buildSubjectCard(doc);
-                              }).toList(),
+                              spacing: 20, runSpacing: 20,
+                              children: filteredDocs.map((doc) => _buildSubjectCard(doc)).toList(),
                             );
                           },
                         ),
@@ -420,20 +331,9 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFF0F172A) : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF0F172A)
-                  : const Color(0xFFE2E8F0),
-            ),
+            border: Border.all(color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0)),
           ),
-          child: Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : const Color(0xFF64748B),
-            ),
-          ),
+          child: Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : const Color(0xFF64748B))),
         ),
       ),
     );
@@ -441,170 +341,41 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
 
   Widget _buildSubjectCard(DocumentSnapshot doc) {
     var data = doc.data() as Map<String, dynamic>;
-    Color accentColor = _getDeptColor(data['department']);
-
     return Container(
-      width: 250, // Reduced from 280 for more compact fit
-      padding: const EdgeInsets.all(20), // Reduced padding
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20), // Slightly rounder
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      width: 250,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  data['courseCode'] ?? "CODE",
-                  style: TextStyle(
-                    color: accentColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text(data['courseCode'] ?? "CODE", style: const TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold))),
               PopupMenuButton<String>(
-                icon: const Icon(
-                  Icons.more_horiz,
-                  size: 18,
-                  color: Colors.grey,
-                ),
+                icon: const Icon(Icons.more_horiz, size: 18, color: Colors.grey),
                 onSelected: (val) {
                   if (val == 'edit') _showEditSubjectDialog(doc);
                   if (val == 'delete') _deleteSubject(doc.id);
                 },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'edit', child: Text("Edit")),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text("Delete", style: TextStyle(color: Colors.red)),
-                  ),
-                ],
+                itemBuilder: (context) => [const PopupMenuItem(value: 'edit', child: Text("Edit")), const PopupMenuItem(value: 'delete', child: Text("Delete", style: TextStyle(color: Colors.red)))],
               ),
             ],
           ),
           const SizedBox(height: 12),
-
-          Text(
-            data['courseName'] ?? "Untitled Course",
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.bold,
-              fontSize: 15, // Slightly smaller font
-              color: const Color(0xFF0F172A),
-            ),
-          ),
-
+          Text(data['courseName'] ?? "Untitled", maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: const Color(0xFF0F172A))),
           const SizedBox(height: 6),
-
-          Row(
-            children: [
-              Icon(
-                Icons.school_outlined,
-                size: 14,
-                color: Colors.grey.shade500,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                "${data['credits'] ?? 0} Credits",
-                style: GoogleFonts.inter(
-                  color: Colors.grey.shade500,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-
+          Row(children: [const Icon(Icons.school_outlined, size: 14, color: Colors.grey), const SizedBox(width: 4), Text("${data['credits'] ?? 0} Credits", style: GoogleFonts.inter(color: Colors.grey, fontSize: 12))]),
           const SizedBox(height: 16),
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
           const SizedBox(height: 12),
-
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 10,
-                backgroundColor: Color(0xFFF1F5F9),
-                child: Icon(Icons.person, size: 12, color: Colors.grey),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  data['instructor'] ?? "TBA",
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF334155),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          Row(children: [const CircleAvatar(radius: 10, backgroundColor: Color(0xFFF1F5F9), child: Icon(Icons.person, size: 12, color: Colors.grey)), const SizedBox(width: 8), Expanded(child: Text(data['instructor'] ?? "TBA", style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: const Color(0xFF334155))))]),
         ],
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(60),
-      child: Column(
-        children: [
-          Icon(
-            Icons.library_books_outlined,
-            size: 48,
-            color: Colors.grey.shade300,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "No subjects found for $_selectedDept",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Add a new subject to get started.",
-            style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getDeptColor(String? dept) {
-    switch (dept) {
-      case 'CSE':
-        return Colors.blue;
-      case 'MCA':
-        return Colors.indigo;
-      case 'MBA':
-        return Colors.purple;
-      case 'ECE':
-        return Colors.orange;
-      case 'ME':
-        return Colors.red;
-      default:
-        return Colors.green;
-    }
+    return Container(width: double.infinity, padding: const EdgeInsets.all(60), child: Column(children: [Icon(Icons.library_books_outlined, size: 48, color: Colors.grey.shade300), const SizedBox(height: 16), Text("No subjects found for $_selectedDept", style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)))]));
   }
 }

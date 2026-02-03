@@ -12,15 +12,101 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
-  // Default selected department
+  // Department and Division selection
   String _selectedDept = 'MCA';
-
+  String _selectedDivision = 'S1';
+  
   // Available Departments
-  List<String> get _departments => ['MCA', 'MBA', 'CSE', 'ECE', 'ME', 'CE'];
+  List<String> get _departments => ['MCA', 'MBA'];
+  
+  // Available Divisions (same for both departments)
+  List<String> get _divisions => ['S1', 'S2'];
 
-  // Level Selection for MCA
-  String _selectedLevel = 'S1';
-  List<String> get _levels => ['S1', 'S2', 'S3', 'S4'];
+  // --- DATABASE ACTIONS ---
+
+  // Delete Student Logic
+  Future<void> _deleteStudent(String docId, String name) async {
+    bool confirm = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Confirm Delete"),
+            content: Text("Are you sure you want to delete student $name?"),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("Cancel")),
+              TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text("Delete", style: TextStyle(color: Colors.red))),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirm) {
+      try {
+        await FirebaseFirestore.instance.collection('students').doc(docId).delete();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Student deleted successfully")),
+          );
+        }
+      } catch (e) {
+        debugPrint("Error deleting: $e");
+      }
+    }
+  }
+
+  // Edit Student Logic
+  void _showEditDialog(DocumentSnapshot doc) {
+    var data = doc.data() as Map<String, dynamic>;
+    final fNameController = TextEditingController(text: data['firstName']);
+    final lNameController = TextEditingController(text: data['lastName']);
+    final attendanceController = TextEditingController(
+        text: (data['attendancePercentage'] ?? 85).toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Edit Student Details"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+                controller: fNameController,
+                decoration: const InputDecoration(labelText: "First Name")),
+            TextField(
+                controller: lNameController,
+                decoration: const InputDecoration(labelText: "Last Name")),
+            TextField(
+                controller: attendanceController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Attendance %")),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              await FirebaseFirestore.instance
+                  .collection('students')
+                  .doc(doc.id)
+                  .update({
+                'firstName': fNameController.text,
+                'lastName': lNameController.text,
+                'attendancePercentage':
+                    double.tryParse(attendanceController.text) ?? 85.0,
+              });
+              if (mounted) Navigator.pop(context);
+            },
+            child: const Text("Save Changes"),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +128,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   const AdminHeader(),
                   const SizedBox(height: 32),
 
-                  // --- Header & Department Selector ---
+                  // --- Header ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -67,18 +153,55 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           ),
                         ],
                       ),
-                      // Export Button
-                      OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.download_rounded, size: 18),
-                        label: const Text("Export Report"),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // --- Department Tabs ---
+                  Row(
+                    children: [
+                      Text(
+                        "Department",
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: _departments
+                                .map((dept) => _buildDeptTab(dept))
+                                .toList(),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // --- Division Tabs ---
+                  Row(
+                    children: [
+                      Text(
+                        "Division",
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: _divisions
+                                .map((division) => _buildDivisionTab(division))
+                                .toList(),
                           ),
                         ),
                       ),
@@ -86,139 +209,48 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // --- Department Tabs ---
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _departments
-                          .map((dept) => _buildDeptTab(dept))
-                          .toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // --- Level Selector (Visible only for MCA) ---
-                  if (_selectedDept == 'MCA') ...[
-                    Text(
-                      "Semester / Level",
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: (_levels)
-                            .map((level) => _buildLevelTab(level))
-                            .toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
                   // --- DATA STREAM ---
                   StreamBuilder<QuerySnapshot>(
-                    // Query students based on the selected Department
                     stream: FirebaseFirestore.instance
                         .collection('students')
-                        // Note: In a real app, ensure your Firestore has 'department' field matching these values
-                        // If strict matching fails, remove the .where clause to see all data for testing
-                        // .where('department', isEqualTo: _selectedDept)
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(40),
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
+                        return const Center(child: CircularProgressIndicator());
                       }
 
-                      // Filter manually if Firestore index is missing, or use the .where above
                       var allDocs = snapshot.data?.docs ?? [];
-                      // Simple client-side filter for prototype robustness
+                      // Filter by department and division
                       var students = allDocs.where((doc) {
                         var data = doc.data() as Map<String, dynamic>;
-                        // Flexible matching (e.g., "Computer Science" matches "CSE" logic if needed)
-                        // Here we assume simple matching or show all if department field is missing/messy
                         String docDept = (data['department'] ?? "")
                             .toString()
                             .toUpperCase();
-                        String docLevel =
-                            (data['level'] ?? data['semester'] ?? "")
-                                .toString()
-                                .toUpperCase();
+                        String docDivision = (data['division'] ?? data['semester'] ?? "")
+                            .toString()
+                            .toUpperCase();
 
+                        // Check department match
+                        bool deptMatch = false;
                         if (_selectedDept == 'MCA') {
-                          bool matchesDept =
-                              docDept.contains('MCA') ||
-                              docDept.contains('COMPUTER APPLICATION');
-                          bool matchesLevel = docLevel.contains(_selectedLevel);
-                          return matchesDept && matchesLevel;
+                          deptMatch = docDept.contains('MCA') || 
+                                     docDept.contains('COMPUTER APPLICATION');
+                        } else if (_selectedDept == 'MBA') {
+                          deptMatch = docDept.contains('MBA') || 
+                                     docDept.contains('BUSINESS');
                         }
-                        if (_selectedDept == 'MBA')
-                          return docDept.contains('MBA') ||
-                              docDept.contains('BUSINESS');
-                        if (_selectedDept == 'CSE')
-                          return docDept.contains('CSE') ||
-                              docDept.contains('COMPUTER SCIENCE');
-                        return docDept.contains(_selectedDept);
+
+                        // Check division match
+                        bool divisionMatch = docDivision.contains(_selectedDivision);
+
+                        return deptMatch && divisionMatch;
                       }).toList();
 
-                      if (students.isEmpty) {
-                        return _buildEmptyState();
-                      }
-
-                      // Calculate Department Average
-                      double totalPerc = 0;
-                      for (var s in students) {
-                        var d = s.data() as Map<String, dynamic>;
-                        totalPerc +=
-                            (d['attendancePercentage'] ??
-                            75.0); // Fallback to 75 if missing
-                      }
-                      double deptAvg = totalPerc / students.length;
+                      if (students.isEmpty) return _buildEmptyState();
 
                       return Column(
                         children: [
-                          // Summary Cards for this Dept
-                          Row(
-                            children: [
-                              _buildSummaryCard(
-                                "Total Students",
-                                students.length.toString(),
-                                Colors.blueAccent,
-                                Icons.people_alt_outlined,
-                              ),
-                              const SizedBox(width: 20),
-                              _buildSummaryCard(
-                                "Avg. Attendance",
-                                "${deptAvg.toStringAsFixed(1)}%",
-                                deptAvg > 75 ? Colors.green : Colors.orange,
-                                Icons.bar_chart_rounded,
-                              ),
-                              const SizedBox(width: 20),
-                              _buildSummaryCard(
-                                "Critical Risk",
-                                students
-                                    .where(
-                                      (s) =>
-                                          ((s.data()
-                                                  as Map)['attendancePercentage'] ??
-                                              0) <
-                                          65,
-                                    )
-                                    .length
-                                    .toString(),
-                                Colors.redAccent,
-                                Icons.warning_amber_rounded,
-                              ),
-                            ],
-                          ),
+                          _buildSummaryRow(students),
                           const SizedBox(height: 24),
 
                           // --- STUDENT TABLE ---
@@ -227,12 +259,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: const Color(0xFFF1F5F9),
-                              ),
+                              border: Border.all(color: const Color(0xFFF1F5F9)),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.02),
+                                  color: Colors.black.withValues(alpha: 0.02),
                                   blurRadius: 20,
                                   offset: const Offset(0, 5),
                                 ),
@@ -245,219 +275,56 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               dataRowMinHeight: 70,
                               dataRowMaxHeight: 70,
                               columns: const [
-                                DataColumn(
-                                  label: Text(
-                                    "Student Name",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    "Reg Number",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    "Attendance %",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    "Performance",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    "Status",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    "Actions",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
+                                DataColumn(label: Text("Student Name", style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text("Reg Number", style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text("Attendance %", style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text("Performance", style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text("Status", style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold))),
                               ],
                               rows: students.map((doc) {
                                 var data = doc.data() as Map<String, dynamic>;
-
-                                // Data Extraction with Fallbacks
-                                String name =
-                                    "${data['firstName']} ${data['lastName']}";
-                                String reg =
-                                    data['registrationNumber'] ?? "---";
-                                // If 'attendancePercentage' doesn't exist in DB, mock it for UI demo based on GPA or random
-                                double percentage =
-                                    (data['attendancePercentage'] is num)
-                                    ? (data['attendancePercentage'] as num)
-                                          .toDouble()
+                                String name = "${data['firstName']} ${data['lastName']}";
+                                String reg = data['registrationNumber'] ?? "---";
+                                double percentage = (data['attendancePercentage'] is num)
+                                    ? (data['attendancePercentage'] as num).toDouble()
                                     : 85.0;
-
-                                bool isActive =
-                                    (data['status'] ?? 'active') == 'active';
 
                                 return DataRow(
                                   cells: [
-                                    // 1. Name
-                                    DataCell(
-                                      Row(
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 18,
-                                            backgroundColor:
-                                                Colors.indigo.shade50,
-                                            child: Text(
-                                              name[0],
-                                              style: TextStyle(
-                                                color: Colors.indigo.shade700,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                name,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                              Text(
-                                                data['email'] ?? "",
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: Colors.grey.shade500,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    // 2. Reg No
-                                    DataCell(
-                                      Text(
-                                        reg,
-                                        style: GoogleFonts.inter(fontSize: 13),
-                                      ),
-                                    ),
-
-                                    // 3. Percentage Bar
-                                    DataCell(
-                                      Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                "${percentage.toStringAsFixed(0)}%",
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Container(
-                                            width: 100,
-                                            height: 6,
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade100,
-                                              borderRadius:
-                                                  BorderRadius.circular(3),
-                                            ),
-                                            child: FractionallySizedBox(
-                                              alignment: Alignment.centerLeft,
-                                              widthFactor: percentage / 100,
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  color: _getColorForPercentage(
-                                                    percentage,
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(3),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    // 4. Performance (Visual)
+                                    DataCell(Text(name, style: const TextStyle(fontWeight: FontWeight.w600))),
+                                    DataCell(Text(reg)),
+                                    DataCell(_buildAttendanceBar(percentage)),
                                     DataCell(_buildPerformanceTag(percentage)),
-
-                                    // 5. Active Status
+                                    DataCell(_buildStatusChip(data['status'] ?? 'active')),
                                     DataCell(
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isActive
-                                              ? Colors.green.shade50
-                                              : Colors.red.shade50,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
+                                      PopupMenuButton<String>(
+                                        onSelected: (value) {
+                                          if (value == 'edit') {
+                                            _showEditDialog(doc);
+                                          } else if (value == 'delete') {
+                                            _deleteStudent(doc.id, name);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: 'edit',
+                                            child: ListTile(
+                                              leading: Icon(Icons.edit, size: 20),
+                                              title: Text("Edit"),
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
                                           ),
-                                          border: Border.all(
-                                            color: isActive
-                                                ? Colors.green.shade100
-                                                : Colors.red.shade100,
+                                          const PopupMenuItem(
+                                            value: 'delete',
+                                            child: ListTile(
+                                              leading: Icon(Icons.delete, color: Colors.red, size: 20),
+                                              title: Text("Delete", style: TextStyle(color: Colors.red)),
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
                                           ),
-                                        ),
-                                        child: Text(
-                                          isActive ? "Active" : "Inactive",
-                                          style: TextStyle(
-                                            color: isActive
-                                                ? Colors.green.shade700
-                                                : Colors.red.shade700,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                    // 6. Actions
-                                    DataCell(
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.more_vert,
-                                          color: Colors.grey,
-                                          size: 20,
-                                        ),
-                                        onPressed: () {},
+                                        ],
+                                        icon: const Icon(Icons.more_vert, color: Colors.grey),
                                       ),
                                     ),
                                   ],
@@ -478,34 +345,70 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
-  // --- WIDGET HELPERS ---
+  // --- UI COMPONENTS ---
 
-  Widget _buildLevelTab(String level) {
-    bool isSelected = _selectedLevel == level;
-    return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: InkWell(
-        onTap: () => setState(() => _selectedLevel = level),
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.indigoAccent : Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? Colors.indigoAccent : const Color(0xFFE2E8F0),
-            ),
-          ),
-          child: Text(
-            level,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : const Color(0xFF64748B),
+  Widget _buildSummaryRow(List<DocumentSnapshot> students) {
+    double totalPerc = 0;
+    for (var s in students) {
+      var d = s.data() as Map<String, dynamic>;
+      totalPerc += (d['attendancePercentage'] ?? 75.0);
+    }
+    double deptAvg = totalPerc / students.length;
+
+    return Row(
+      children: [
+        _buildSummaryCard("Total Students", students.length.toString(), Colors.blueAccent, Icons.people_alt_outlined),
+        const SizedBox(width: 20),
+        _buildSummaryCard("Avg. Attendance", "${deptAvg.toStringAsFixed(1)}%", deptAvg > 75 ? Colors.green : Colors.orange, Icons.bar_chart_rounded),
+        const SizedBox(width: 20),
+        _buildSummaryCard(
+          "Critical Risk",
+          students.where((s) => ((s.data() as Map)['attendancePercentage'] ?? 0) < 65).length.toString(),
+          Colors.redAccent,
+          Icons.warning_amber_rounded,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAttendanceBar(double percentage) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("${percentage.toStringAsFixed(0)}%", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        const SizedBox(height: 6),
+        Container(
+          width: 100,
+          height: 6,
+          decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(3)),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: percentage / 100,
+            child: Container(
+              decoration: BoxDecoration(
+                color: _getColorForPercentage(percentage),
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    bool isActive = status == 'active';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.green.shade50 : Colors.red.shade50,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: isActive ? Colors.green.shade100 : Colors.red.shade100),
+      ),
+      child: Text(
+        isActive ? "Active" : "Inactive",
+        style: TextStyle(color: isActive ? Colors.green.shade700 : Colors.red.shade700, fontSize: 11, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -529,7 +432,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.blueAccent.withOpacity(0.3),
+                      color: Colors.blueAccent.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -549,12 +452,37 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
-  Widget _buildSummaryCard(
-    String title,
-    String value,
-    Color color,
-    IconData icon,
-  ) {
+  Widget _buildDivisionTab(String division) {
+    bool isSelected = _selectedDivision == division;
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: InkWell(
+        onTap: () => setState(() => _selectedDivision = division),
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.indigoAccent : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? Colors.indigoAccent : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Text(
+            division,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : const Color(0xFF64748B),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(String title, String value, Color color, IconData icon) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -562,45 +490,20 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFF1F5F9)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.01),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0F172A),
-                  ),
-                ),
+                Text(title, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500)),
+                Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold)),
               ],
             ),
           ],
@@ -614,26 +517,29 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(60),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(24), 
+        border: Border.all(color: const Color(0xFFF1F5F9))
       ),
       child: Column(
         children: [
           Icon(Icons.school_outlined, size: 48, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
-            "No students found in $_selectedDept${_selectedDept == 'MCA' ? ' ($_selectedLevel)' : ''}",
+            "No students found in $_selectedDept ($_selectedDivision)",
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
+              fontSize: 16, 
               fontWeight: FontWeight.w600,
               color: const Color(0xFF0F172A),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            "Try selecting a different department or add students.",
-            style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500),
+            "Try selecting a different department or division.",
+            style: GoogleFonts.inter(
+              fontSize: 13, 
+              color: Colors.grey.shade500
+            ),
           ),
         ],
       ),
@@ -641,32 +547,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Color _getColorForPercentage(double p) {
-    if (p >= 85) return const Color(0xFF10B981); // Emerald
-    if (p >= 75) return const Color(0xFF3B82F6); // Blue
-    if (p >= 65) return const Color(0xFFF59E0B); // Amber
-    return const Color(0xFFEF4444); // Red
+    if (p >= 85) return const Color(0xFF10B981);
+    if (p >= 75) return const Color(0xFF3B82F6);
+    if (p >= 65) return const Color(0xFFF59E0B);
+    return const Color(0xFFEF4444);
   }
 
   Widget _buildPerformanceTag(double p) {
-    String text;
-    Color color;
-    if (p >= 85) {
-      text = "Excellent";
-      color = const Color(0xFF10B981);
-    } else if (p >= 75) {
-      text = "Good";
-      color = const Color(0xFF3B82F6);
-    } else if (p >= 65) {
-      text = "Average";
-      color = const Color(0xFFF59E0B);
-    } else {
-      text = "Poor";
-      color = const Color(0xFFEF4444);
-    }
-
-    return Text(
-      text,
-      style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
-    );
+    String text = p >= 85 ? "Excellent" : p >= 75 ? "Good" : p >= 65 ? "Average" : "Poor";
+    Color color = _getColorForPercentage(p);
+    return Text(text, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12));
   }
 }

@@ -1,101 +1,131 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart'; // Add intl to pubspec.yaml
+import 'package:intl/intl.dart';
 import 'package:edlab/admin/widgets/admin_sidebar.dart';
 import 'package:edlab/admin/widgets/admin_header.dart';
 
-class SurveyScreen extends StatelessWidget {
+class SurveyScreen extends StatefulWidget {
   const SurveyScreen({super.key});
 
+  @override
+  State<SurveyScreen> createState() => _SurveyScreenState();
+}
+
+class _SurveyScreenState extends State<SurveyScreen> {
+  bool _isProcessing = false;
+
+  // --- HELPER: SHOW MESSAGES ---
+  void _showMsg(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.redAccent : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(20),
+      ),
+    );
+  }
+
   // --- ADD SURVEY DIALOG ---
-  void _addSurvey(BuildContext context, String type) {
+  void _addSurvey(String type) {
     final nameCtrl = TextEditingController();
     String? selectedDept = 'MCA';
     String? selectedBatch = '2024';
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
+        builder: (context, setDialogState) {
           return AlertDialog(
-            title: Text("Add $type Survey"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Survey Name",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (type == 'General') ...[
-                  DropdownButtonFormField<String>(
-                    value: selectedDept,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text("Create $type Survey", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
                     decoration: const InputDecoration(
-                      labelText: "Department",
+                      labelText: "Survey Title",
+                      hintText: "e.g., Course Feedback 2026",
                       border: OutlineInputBorder(),
                     ),
-                    items: ['MCA', 'MBA', 'CSE', 'ECE']
-                        .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                        .toList(),
-                    onChanged: (v) => setState(() => selectedDept = v),
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: selectedBatch,
-                    decoration: const InputDecoration(
-                      labelText: "Batch",
-                      border: OutlineInputBorder(),
+                  if (type == 'General') ...[
+                    DropdownButtonFormField<String>(
+                      value: selectedDept,
+                      decoration: const InputDecoration(labelText: "Target Department", border: OutlineInputBorder()),
+                      items: ['MCA', 'MBA'].map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                      onChanged: (v) => setDialogState(() => selectedDept = v),
                     ),
-                    items: ['2023', '2024', '2025', '2026']
-                        .map((b) => DropdownMenuItem(value: b, child: Text(b)))
-                        .toList(),
-                    onChanged: (v) => setState(() => selectedBatch = v),
-                  ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: selectedBatch,
+                      decoration: const InputDecoration(labelText: "Target Batch", border: OutlineInputBorder()),
+                      items: ['2023', '2024', '2025', '2026'].map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                      onChanged: (v) => setDialogState(() => selectedBatch = v),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Cancel"),
-              ),
+              TextButton(onPressed: _isProcessing ? null : () => Navigator.pop(context), child: const Text("Cancel")),
               ElevatedButton(
-                onPressed: () async {
-                  if (nameCtrl.text.isNotEmpty) {
-                    // GENERATE ID (e.g., TE5-Jul-2023)
-                    String idPrefix = type == 'Teacher Evaluation'
-                        ? "TE"
-                        : "GS";
-                    String datePart = DateFormat(
-                      'MMM-yyyy',
-                    ).format(DateTime.now());
-                    String randomNum = DateTime.now().millisecond
-                        .toString()
-                        .substring(0, 1);
-                    String generatedId = "$idPrefix$randomNum-$datePart";
+                onPressed: _isProcessing ? null : () async {
+                  String name = nameCtrl.text.trim();
+                  if (name.isEmpty) {
+                    _showMsg("Survey name is required", isError: true);
+                    return;
+                  }
 
-                    await FirebaseFirestore.instance.collection('surveys').add({
+                  setDialogState(() => _isProcessing = true);
+                  final db = FirebaseFirestore.instance.collection('surveys');
+
+                  try {
+                    // --- DUPLICATION CHECK ---
+                    // Prevent two surveys of the same type having the same name
+                    final duplicate = await db.where('type', isEqualTo: type).where('name', isEqualTo: name).get();
+                    
+                    if (duplicate.docs.isNotEmpty) {
+                      _showMsg("A $type survey named '$name' already exists!", isError: true);
+                      setDialogState(() => _isProcessing = false);
+                      return;
+                    }
+
+                    // --- GENERATE UNIQUE ID ---
+                    String idPrefix = type == 'Teacher Evaluation' ? "TE" : "GS";
+                    String datePart = DateFormat('yyMM').format(DateTime.now());
+                    String uniquePart = DateTime.now().millisecond.toString();
+                    String generatedId = "$idPrefix-$datePart-$uniquePart";
+
+                    await db.add({
                       'surveyId': generatedId,
-                      'name': nameCtrl.text,
-                      'type': type, // 'Teacher Evaluation' or 'General'
+                      'name': name,
+                      'type': type,
                       'status': 'Active',
                       'department': type == 'General' ? selectedDept : 'All',
                       'batch': type == 'General' ? selectedBatch : 'All',
-                      'createdBy': 'admin',
+                      'createdBy': 'Super Admin',
                       'createdAt': FieldValue.serverTimestamp(),
+                      'responseCount': 0,
                     });
-                    if (context.mounted) Navigator.pop(context);
+
+                    if (mounted) Navigator.pop(context);
+                    _showMsg("$type Survey created successfully");
+                  } catch (e) {
+                    _showMsg("Error: $e", isError: true);
+                  } finally {
+                    setDialogState(() => _isProcessing = false);
                   }
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text("Save"),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0EA5E9), foregroundColor: Colors.white),
+                child: _isProcessing 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text("Create Survey"),
               ),
             ],
           );
@@ -104,9 +134,25 @@ class SurveyScreen extends StatelessWidget {
     );
   }
 
-  // --- DELETE SURVEY ---
   void _deleteSurvey(String docId) {
-    FirebaseFirestore.instance.collection('surveys').doc(docId).delete();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Survey?"),
+        content: const Text("This will permanently remove the survey and all collected responses."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () {
+              FirebaseFirestore.instance.collection('surveys').doc(docId).delete();
+              Navigator.pop(context);
+              _showMsg("Survey deleted", isError: true);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -119,39 +165,27 @@ class SurveyScreen extends StatelessWidget {
           const SizedBox(width: 90, child: AdminSidebar(activeIndex: -1)),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+              padding: const EdgeInsets.all(32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const AdminHeader(),
                   const SizedBox(height: 32),
-                  Text(
-                    "Survey Management",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF0F172A),
-                    ),
-                  ),
+                  Text("Survey Management",
+                      style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                  const SizedBox(height: 8),
+                  Text("Publish and monitor institutional feedback forms", style: GoogleFonts.inter(color: Colors.grey)),
                   const SizedBox(height: 32),
 
-                  // 1. TEACHER EVALUATION SECTION
-                  _buildSectionHeader(
-                    "Teacher Evaluation Surveys",
-                    () => _addSurvey(context, "Teacher Evaluation"),
-                  ),
+                  _buildSectionHeader("Faculty Evaluation", Icons.psychology_outlined, () => _addSurvey("Teacher Evaluation")),
                   const SizedBox(height: 16),
-                  _buildSurveyTable(context, "Teacher Evaluation"),
+                  _buildSurveyTable("Teacher Evaluation"),
 
                   const SizedBox(height: 40),
 
-                  // 2. GENERAL SURVEYS SECTION
-                  _buildSectionHeader(
-                    "General Surveys",
-                    () => _addSurvey(context, "General"),
-                  ),
+                  _buildSectionHeader("General Feedback", Icons.assignment_outlined, () => _addSurvey("General")),
                   const SizedBox(height: 16),
-                  _buildSurveyTable(context, "General"),
+                  _buildSurveyTable("General"),
                 ],
               ),
             ),
@@ -161,53 +195,33 @@ class SurveyScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title, VoidCallback onAdd) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0).withOpacity(0.5),
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.analytics_outlined,
-                size: 20,
-                color: Colors.grey,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF475569),
-                ),
-              ),
-            ],
+  Widget _buildSectionHeader(String title, IconData icon, VoidCallback onAdd) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: const Color(0xFF475569), size: 22),
+            const SizedBox(width: 10),
+            Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF475569))),
+          ],
+        ),
+        ElevatedButton.icon(
+          onPressed: onAdd,
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text("New Survey"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF0EA5E9),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          ElevatedButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text("Add a Survey"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0EA5E9), // Light Blue
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSurveyTable(BuildContext context, String surveyType) {
+  Widget _buildSurveyTable(String surveyType) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('surveys')
@@ -215,152 +229,63 @@ class SurveyScreen extends StatelessWidget {
           .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const LinearProgressIndicator();
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(20),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: const Text(
-              "No surveys found.",
-              style: TextStyle(color: Colors.grey),
-            ),
-          );
-        }
+        if (snapshot.connectionState == ConnectionState.waiting) return const LinearProgressIndicator();
+        var docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) return _buildEmptyState();
 
         return Container(
           width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: Colors.grey.shade200),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
           ),
           child: DataTable(
-            headingRowColor: MaterialStateProperty.all(const Color(0xFFF1F5F9)),
+            horizontalMargin: 24,
+            headingRowHeight: 50,
             columns: [
-              const DataColumn(
-                label: Text(
-                  "Survey Id",
-                  style: TextStyle(
-                    color: Color(0xFF0EA5E9),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const DataColumn(
-                label: Text(
-                  "Name",
-                  style: TextStyle(
-                    color: Color(0xFF0EA5E9),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              const DataColumn(label: Text("ID", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0EA5E9)))),
+              const DataColumn(label: Text("TITLE", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0EA5E9)))),
               if (surveyType == 'General') ...[
-                const DataColumn(
-                  label: Text(
-                    "Department",
-                    style: TextStyle(
-                      color: Color(0xFF0EA5E9),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const DataColumn(
-                  label: Text(
-                    "Batch",
-                    style: TextStyle(
-                      color: Color(0xFF0EA5E9),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                const DataColumn(label: Text("TARGET", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0EA5E9)))),
               ],
-              const DataColumn(
-                label: Text(
-                  "Status",
-                  style: TextStyle(
-                    color: Color(0xFF0EA5E9),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const DataColumn(
-                label: Text(
-                  "Created By",
-                  style: TextStyle(
-                    color: Color(0xFF0EA5E9),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const DataColumn(
-                label: Text(
-                  "Create Time",
-                  style: TextStyle(
-                    color: Color(0xFF0EA5E9),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const DataColumn(
-                label: Text(
-                  "Action",
-                  style: TextStyle(
-                    color: Color(0xFF0EA5E9),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              const DataColumn(label: Text("RESPONSES", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0EA5E9)))),
+              const DataColumn(label: Text("DATE", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0EA5E9)))),
+              const DataColumn(label: Text("ACTIONS", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0EA5E9)))),
             ],
-            rows: snapshot.data!.docs.map((doc) {
+            rows: docs.map((doc) {
               var data = doc.data() as Map<String, dynamic>;
+              DateTime? date = data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : null;
 
-              // Format Timestamp
-              String timeStr = "--";
-              if (data['createdAt'] != null) {
-                timeStr = DateFormat(
-                  'yyyy-MM-dd\nHH:mm:ss',
-                ).format((data['createdAt'] as Timestamp).toDate());
-              }
-
-              return DataRow(
-                cells: [
-                  DataCell(Text(data['surveyId'] ?? "")),
-                  DataCell(
-                    Text(
-                      data['name'] ?? "",
-                      style: const TextStyle(color: Color(0xFF0EA5E9)),
-                    ),
-                  ), // Blue Link color
-                  if (surveyType == 'General') ...[
-                    DataCell(Text(data['department'] ?? "")),
-                    DataCell(Text(data['batch'] ?? "")),
-                  ],
-                  DataCell(Text(data['status'] ?? "Active")),
-                  DataCell(Text(data['createdBy'] ?? "admin")),
-                  DataCell(Text(timeStr, style: const TextStyle(fontSize: 11))),
-                  DataCell(
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: Colors.redAccent,
-                        size: 18,
-                      ),
-                      onPressed: () => _deleteSurvey(doc.id),
-                    ),
-                  ),
+              return DataRow(cells: [
+                DataCell(Text(data['surveyId'] ?? "--", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+                DataCell(Text(data['name'] ?? "--", style: const TextStyle(fontWeight: FontWeight.w600))),
+                if (surveyType == 'General') ...[
+                  DataCell(Text("${data['department']} • ${data['batch']}", style: const TextStyle(fontSize: 12))),
                 ],
-              );
+                DataCell(Text(data['responseCount'].toString())),
+                DataCell(Text(date != null ? DateFormat('MMM dd, yyyy').format(date) : "Pending")),
+                DataCell(Row(
+                  children: [
+                    IconButton(icon: const Icon(Icons.analytics_outlined, size: 18, color: Colors.blueGrey), onPressed: () {}),
+                    IconButton(icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent), onPressed: () => _deleteSurvey(doc.id)),
+                  ],
+                )),
+              ]);
             }).toList(),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF1F5F9))),
+      child: const Center(child: Text("No active surveys found.", style: TextStyle(color: Colors.grey))),
     );
   }
 }

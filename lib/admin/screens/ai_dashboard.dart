@@ -80,7 +80,7 @@ class _EdLabSmartDashboardState extends State<EdLabSmartDashboard> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text("EdLab Neural Admin"),
+        title: const Text("EdLab AI"),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
@@ -105,8 +105,8 @@ class _EdLabSmartDashboardState extends State<EdLabSmartDashboard> {
                   ),
                 ),
                 Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: _aiService.getChatHistory(widget.currentUserId),
+                  child: FutureBuilder<QuerySnapshot>(
+                    future: _aiService.getChatHistory(widget.currentUserId),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData)
                         return const Center(child: CircularProgressIndicator());
