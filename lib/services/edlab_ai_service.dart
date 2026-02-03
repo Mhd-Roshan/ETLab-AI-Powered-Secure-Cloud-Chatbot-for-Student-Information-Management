@@ -3,7 +3,10 @@ import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/foundation.dart';
 
 class EdLabAIService {
-  late GenerativeModel _model;
+  // ✅ FREE ACCESS: Using your API Key
+  final String apiKey = "AIzaSyA1xWbpOjsikqSlhIKD1J2TEYqFkGp8pE";
+
+  late final GenerativeModel _model;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   EdLabAIService() {
