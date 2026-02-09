@@ -70,7 +70,7 @@ class User {
   // Create User from JSON (from Firestore)
   factory User.fromJson(Map<String, dynamic> json) {
     // Helper function to parse dates from Firestore (handles both Timestamp and String)
-    DateTime? _parseDate(dynamic value) {
+    DateTime? parseDate(dynamic value) {
       if (value == null) return null;
       if (value is DateTime) return value;
       if (value is String) return DateTime.parse(value);
@@ -97,8 +97,8 @@ class User {
       phone: json['phone'] as String?,
       department: json['department'] as String?,
       isActive: json['isActive'] as bool? ?? true,
-      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
-      lastLogin: _parseDate(json['lastLogin']),
+      createdAt: parseDate(json['createdAt']) ?? DateTime.now(),
+      lastLogin: parseDate(json['lastLogin']),
     );
   }
 

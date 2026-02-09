@@ -168,8 +168,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   StreamBuilder<DocumentSnapshot>(
                     stream: _settingsRef.snapshots(),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting)
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return const LinearProgressIndicator();
+                      }
 
                       // Default Data if document doesn't exist
                       Map<String, dynamic> data =
@@ -258,7 +259,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 "Receive alerts for new registrations",
                               ),
                               value: data['notifications'] ?? true,
-                              activeColor: Colors.blueAccent,
+                              activeThumbColor: Colors.blueAccent,
                               onChanged: (val) => _settingsRef.set({
                                 'notifications': val,
                               }, SetOptions(merge: true)),
@@ -275,7 +276,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                               subtitle: const Text("Switch interface theme"),
                               value: data['darkMode'] ?? false,
-                              activeColor: Colors.purpleAccent,
+                              activeThumbColor: Colors.purpleAccent,
                               onChanged: (val) => _settingsRef.set({
                                 'darkMode': val,
                               }, SetOptions(merge: true)),

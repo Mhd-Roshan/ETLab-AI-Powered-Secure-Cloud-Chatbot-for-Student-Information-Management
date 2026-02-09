@@ -226,22 +226,24 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         String docDept = (data['department'] ?? "")
                             .toString()
                             .toUpperCase();
-                        String docDivision = (data['division'] ?? data['semester'] ?? "")
-                            .toString()
-                            .toUpperCase();
-
-                        // Check department match
-                        bool deptMatch = false;
-                        if (_selectedDept == 'MCA') {
-                          deptMatch = docDept.contains('MCA') || 
-                                     docDept.contains('COMPUTER APPLICATION');
-                        } else if (_selectedDept == 'MBA') {
-                          deptMatch = docDept.contains('MBA') || 
-                                     docDept.contains('BUSINESS');
+                        
+                        // Get semester/division - handle both string and number
+                        String docDivision = "";
+                        if (data['division'] != null) {
+                          docDivision = data['division'].toString().toUpperCase();
+                        } else if (data['semester'] != null) {
+                          // Convert semester number to division format (1 -> S1, 2 -> S2)
+                          int semNum = data['semester'] is int 
+                              ? data['semester'] 
+                              : int.tryParse(data['semester'].toString()) ?? 0;
+                          docDivision = 'S$semNum';
                         }
 
+                        // Check department match
+                        bool deptMatch = docDept == _selectedDept;
+
                         // Check division match
-                        bool divisionMatch = docDivision.contains(_selectedDivision);
+                        bool divisionMatch = docDivision == _selectedDivision;
 
                         return deptMatch && divisionMatch;
                       }).toList();
@@ -284,7 +286,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               ],
                               rows: students.map((doc) {
                                 var data = doc.data() as Map<String, dynamic>;
-                                String name = "${data['firstName']} ${data['lastName']}";
+                                String firstName = data['firstName'] ?? "";
+                                String lastName = data['lastName'] ?? "";
+                                String name = lastName.isNotEmpty ? "$firstName $lastName" : firstName;
                                 String reg = data['registrationNumber'] ?? "---";
                                 double percentage = (data['attendancePercentage'] is num)
                                     ? (data['attendancePercentage'] as num).toDouble()

@@ -71,7 +71,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: dept,
+                          initialValue: dept,
                           decoration: const InputDecoration(labelText: "Dept", border: OutlineInputBorder()),
                           items: ['MCA', 'MBA']
                               .map((d) => DropdownMenuItem(value: d, child: Text(d)))

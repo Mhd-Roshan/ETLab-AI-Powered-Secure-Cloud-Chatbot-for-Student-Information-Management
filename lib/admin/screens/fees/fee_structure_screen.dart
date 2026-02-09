@@ -12,6 +12,67 @@ class FeeStructureScreen extends StatefulWidget {
 
 class _FeeStructureScreenState extends State<FeeStructureScreen> {
   bool _isProcessing = false;
+  bool _isSeeding = false;
+
+  // --- SEED FEE STRUCTURES ---
+  Future<void> _seedFeeStructures() async {
+    if (_isSeeding) return;
+    
+    setState(() => _isSeeding = true);
+
+    try {
+      final db = FirebaseFirestore.instance.collection('fee_structures');
+      
+      // Define fee structures for MCA and MBA
+      final feeStructures = [
+        {'title': 'MCA Tuition Fee (Semester)', 'amount': 65000.0},
+        {'title': 'MBA Tuition Fee (Semester)', 'amount': 75000.0},
+        {'title': 'Exam Fee', 'amount': 5000.0},
+        {'title': 'Library Fee', 'amount': 2000.0},
+        {'title': 'Lab Fee', 'amount': 3000.0},
+        {'title': 'Sports Fee', 'amount': 1500.0},
+        {'title': 'Development Fee', 'amount': 2500.0},
+        {'title': 'Hostel Fee (Per Semester)', 'amount': 25000.0},
+        {'title': 'Bus Fee (Per Semester)', 'amount': 8000.0},
+        {'title': 'Caution Deposit (Refundable)', 'amount': 5000.0},
+      ];
+
+      final batch = db.firestore.batch();
+      int added = 0;
+
+      for (var fee in feeStructures) {
+        // Check if already exists
+        final existing = await db.where('title', isEqualTo: fee['title']).get();
+        if (existing.docs.isEmpty) {
+          final docRef = db.doc();
+          batch.set(docRef, {
+            ...fee,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+          added++;
+        }
+      }
+
+      if (added > 0) {
+        await batch.commit();
+        if (mounted) {
+          _showMsg("✓ Successfully seeded $added fee structures!");
+        }
+      } else {
+        if (mounted) {
+          _showMsg("All fee structures already exist", isError: true);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showMsg("Error seeding: $e", isError: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSeeding = false);
+      }
+    }
+  }
 
   // --- HELPER: SHOW SNACKBAR MESSAGES ---
   void _showMsg(String msg, {bool isError = false}) {
@@ -153,6 +214,29 @@ class _FeeStructureScreenState extends State<FeeStructureScreen> {
         ),
         actions: [
           Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ElevatedButton.icon(
+              onPressed: _isSeeding ? null : _seedFeeStructures,
+              icon: _isSeeding 
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.auto_awesome, size: 18),
+              label: Text(_isSeeding ? "Seeding..." : "Seed Data"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
               onPressed: _showAddFeeTypeDialog,
@@ -228,13 +312,13 @@ class _FeeStructureScreenState extends State<FeeStructureScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), shape: BoxShape.circle),
             child: const Icon(Icons.receipt_long_rounded, color: Colors.orange, size: 20),
           ),
           const SizedBox(width: 16),

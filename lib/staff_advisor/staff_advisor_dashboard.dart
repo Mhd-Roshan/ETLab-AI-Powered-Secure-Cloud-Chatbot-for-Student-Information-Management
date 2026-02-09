@@ -210,10 +210,10 @@ class _StaffAdvisorDashboardState extends State<StaffAdvisorDashboard> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Colors.grey[200],
-            // Using an icon fallback instead of network image to prevent errors if offline
-            child: Icon(Icons.person, color: textGray500), 
+            backgroundColor: Colors.grey[200], 
             radius: 18,
+            // Using an icon fallback instead of network image to prevent errors if offline
+            child: Icon(Icons.person, color: textGray500),
           ),
           const SizedBox(width: 12),
           Expanded(

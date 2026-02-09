@@ -2,10 +2,12 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edlab/admin/admin_dashboard.dart';
 import 'package:edlab/hod/hod_dashboard.dart';
 import 'package:edlab/staff/staff_dashboard.dart';
 import 'package:edlab/staff_advisor/staff_advisor_dashboard.dart';
+import 'package:edlab/student/student_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -89,34 +91,177 @@ class _LoginPageState extends State<LoginPage>
       _isLoading = true;
     });
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Check Firebase for user
+      final username = _usernameController.text.trim();
+      final password = _passwordController.text.trim();
+      
+      debugPrint("=== LOGIN DEBUG ===");
+      debugPrint("Attempting login with username: $username");
+      
+      // Try multiple search strategies
+      QuerySnapshot querySnapshot;
+      
+      // Strategy 1: Search by username field (case-insensitive)
+      querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .limit(1)
+          .get();
+      
+      debugPrint("Search by username: ${querySnapshot.docs.length} results");
+      
+      // Strategy 2: If not found, try email field
+      if (querySnapshot.docs.isEmpty) {
+        querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: username)
+            .limit(1)
+            .get();
+        debugPrint("Search by email: ${querySnapshot.docs.length} results");
+      }
+      
+      // Strategy 3: If still not found, get all users and search manually
+      if (querySnapshot.docs.isEmpty) {
+        debugPrint("Trying manual search...");
+        final allUsers = await FirebaseFirestore.instance
+            .collection('users')
+            .get();
+        
+        debugPrint("Total users in collection: ${allUsers.docs.length}");
+        
+        for (var doc in allUsers.docs) {
+          final data = doc.data();
+          debugPrint("User doc ID: ${doc.id}");
+          debugPrint("Username: ${data['username']}");
+          debugPrint("Email: ${data['email']}");
+          
+          final docUsername = (data['username'] ?? '').toString().toLowerCase();
+          final docEmail = (data['email'] ?? '').toString().toLowerCase();
+          final searchTerm = username.toLowerCase();
+          
+          if (docUsername == searchTerm || docEmail == searchTerm) {
+            querySnapshot = await FirebaseFirestore.instance
+                .collection('users')
+                .where(FieldPath.documentId, isEqualTo: doc.id)
+                .get();
+            debugPrint("Found match in doc: ${doc.id}");
+            break;
+          }
+        }
+      }
+      
+      if (querySnapshot.docs.isEmpty) {
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'USER NOT FOUND - Check Firebase Console',
+                style: GoogleFonts.courierPrime(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+      
+      final userData = querySnapshot.docs.first.data() as Map<String, dynamic>;
+      final storedPassword = userData['password'] ?? '';
+      final role = userData['role'] ?? 'staff';
+      final isActive = userData['isActive'] ?? true;
+      final actualUsername = userData['username'] ?? userData['email'] ?? username;
+      
+      debugPrint("Found user with role: $role");
+      debugPrint("Stored password: $storedPassword");
+      debugPrint("Input password: $password");
+      
+      // Check if user is active
+      if (!isActive) {
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'ACCOUNT SUSPENDED',
+                style: GoogleFonts.courierPrime(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Verify password (in production, use proper hashing!)
+      if (storedPassword != password) {
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'INCORRECT PASSWORD',
+                style: GoogleFonts.courierPrime(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+      
+      debugPrint("Login successful!");
+      
+      setState(() {
+        _isLoading = false;
+      });
 
-    String role = _determineUserRole(_usernameController.text);
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (mounted) {
-      _navigateToDashboard(context, role);
+      if (mounted) {
+        _navigateToDashboard(context, role, actualUsername);
+      }
+    } catch (e) {
+      debugPrint("Login error: $e");
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'ERROR: ${e.toString()}',
+              style: GoogleFonts.courierPrime(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
-  String _determineUserRole(String username) {
-    final upperUser = username.toUpperCase().trim();
-    if (upperUser.contains('ADVISOR') || upperUser.contains('STAFFAD'))
-      return 'staff_advisor';
-    if (upperUser.contains('HOD')) return 'hod';
-    if (upperUser.contains('ADMIN')) return 'admin';
-    if (upperUser.startsWith('SA')) return 'staff_advisor';
-    if (upperUser.startsWith('H')) return 'hod';
-    if (upperUser.startsWith('A')) return 'admin';
-    if (upperUser.startsWith('S')) return 'staff';
-    return 'staff';
-  }
-
-  void _navigateToDashboard(BuildContext context, String role) {
+  void _navigateToDashboard(BuildContext context, String role, String username) {
     Widget dashboard;
 
     // Explicitly assigning the widget based on role
@@ -129,6 +274,9 @@ class _LoginPageState extends State<LoginPage>
         break;
       case 'staff_advisor':
         dashboard = const StaffAdvisorDashboard();
+        break;
+      case 'student':
+        dashboard = StudentDashboard(studentRegNo: username);
         break;
       case 'staff':
       default:

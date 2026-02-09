@@ -1,0 +1,93 @@
+{
+  "announcements": [
+    {
+      "title": "Guest Lecture: Future of AI",
+      "content": "Join us for an insightful session on Artificial Intelligence",
+      "priority": "medium",
+      "isActive": true,
+      "type": "lecture",
+      "location": "Main Auditorium",
+      "department": "CSE",
+      "time": "2:00 PM",
+      "speaker": "Dr. John Smith"
+    },
+    {
+      "title": "Data Structure Mid-Term Exam",
+      "content": "Mid-term examination for Data Structures course",
+      "priority": "high",
+      "isActive": true,
+      "type": "exam",
+      "location": "Exam Hall B",
+      "department": "CSE",
+      "time": "9:00 AM",
+      "duration": "2 hours"
+    },
+    {
+      "title": "Python Project Submission",
+      "content": "Final project submission deadline for Python Programming",
+      "priority": "high",
+      "isActive": true,
+      "type": "assignment",
+      "location": "Online Portal",
+      "department": "CSE",
+      "time": "11:59 PM",
+      "submissionLink": "https://portal.edlab.edu"
+    },
+    {
+      "title": "Android Development Workshop",
+      "content": "Hands-on workshop on building Android apps with Flutter",
+      "priority": "medium",
+      "isActive": true,
+      "type": "workshop",
+      "location": "Computer Lab 3",
+      "department": "CSE",
+      "time": "10:00 AM",
+      "duration": "3 hours",
+      "registrationRequired": true
+    },
+    {
+      "title": "Inter-Department Football Match",
+      "content": "CSE vs ECE - Annual sports tournament",
+      "priority": "low",
+      "isActive": true,
+      "type": "sports",
+      "location": "Sports Ground",
+      "department": "All",
+      "time": "4:00 PM",
+      "teams": "CSE vs ECE"
+    },
+    {
+      "title": "Career Guidance Seminar",
+      "content": "Industry experts share insights on career opportunities",
+      "priority": "medium",
+      "isActive": true,
+      "type": "seminar",
+      "location": "Seminar Hall",
+      "department": "All",
+      "time": "3:00 PM",
+      "speakers": "Industry Professionals"
+    },
+    {
+      "title": "Mathematics Quiz Competition",
+      "content": "Test your mathematical skills and win prizes",
+      "priority": "low",
+      "isActive": true,
+      "type": "competition",
+      "location": "Room A-201",
+      "department": "All",
+      "time": "2:30 PM",
+      "prizes": "Cash prizes for winners"
+    },
+    {
+      "title": "Technical Fest Registration",
+      "content": "Register for the annual technical festival TechFest 2024",
+      "priority": "high",
+      "isActive": true,
+      "type": "event",
+      "location": "Online Registration",
+      "department": "All",
+      "time": "Open Now",
+      "deadline": "Feb 20, 2024"
+    }
+  ]
+}

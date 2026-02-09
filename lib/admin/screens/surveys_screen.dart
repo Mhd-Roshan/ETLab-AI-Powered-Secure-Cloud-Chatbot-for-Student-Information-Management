@@ -56,14 +56,14 @@ class _SurveyScreenState extends State<SurveyScreen> {
                   const SizedBox(height: 16),
                   if (type == 'General') ...[
                     DropdownButtonFormField<String>(
-                      value: selectedDept,
+                      initialValue: selectedDept,
                       decoration: const InputDecoration(labelText: "Target Department", border: OutlineInputBorder()),
                       items: ['MCA', 'MBA'].map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
                       onChanged: (v) => setDialogState(() => selectedDept = v),
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: selectedBatch,
+                      initialValue: selectedBatch,
                       decoration: const InputDecoration(labelText: "Target Batch", border: OutlineInputBorder()),
                       items: ['2023', '2024', '2025', '2026'].map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
                       onChanged: (v) => setDialogState(() => selectedBatch = v),

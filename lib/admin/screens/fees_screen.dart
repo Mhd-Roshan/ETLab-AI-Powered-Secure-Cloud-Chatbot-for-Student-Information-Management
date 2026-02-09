@@ -19,6 +19,120 @@ class FeesScreen extends StatefulWidget {
 }
 
 class _FeesScreenState extends State<FeesScreen> {
+  bool _isSeeding = false;
+
+  // --- SEED FEES FUNCTION ---
+  Future<void> _seedFees() async {
+    if (_isSeeding) return;
+    
+    setState(() => _isSeeding = true);
+
+    try {
+      final db = FirebaseFirestore.instance;
+      
+      // Fetch some students to assign fees to
+      final studentsSnapshot = await db.collection('students').limit(10).get();
+      
+      if (studentsSnapshot.docs.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("No students found. Please add students first."),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        setState(() => _isSeeding = false);
+        return;
+      }
+
+      final batch = db.batch();
+      final now = DateTime.now();
+      
+      for (int i = 0; i < studentsSnapshot.docs.length && i < 10; i++) {
+        final studentDoc = studentsSnapshot.docs[i];
+        final studentData = studentDoc.data();
+        final department = studentData['department'] ?? 'MCA';
+        final semester = studentData['semester'] ?? 1;
+        
+        // Fee amounts based on department
+        final tuitionFee = department == 'MBA' ? 75000.0 : 65000.0;
+        final examFee = 5000.0;
+        final libraryFee = 2000.0;
+        final totalFee = tuitionFee + examFee + libraryFee;
+        
+        // Random payment status
+        final isPaid = i % 3 != 0; // 2 out of 3 paid
+        final amountPaid = isPaid ? totalFee : (totalFee * 0.5); // Half paid if not fully paid
+        final balance = totalFee - amountPaid;
+        
+        // Random payment date within last 30 days
+        final daysAgo = i * 3;
+        final paymentDate = now.subtract(Duration(days: daysAgo));
+        
+        // Payment method
+        final paymentMethods = ['Cash', 'Online', 'Cheque', 'UPI', 'Card'];
+        final paymentMethod = paymentMethods[i % paymentMethods.length];
+        
+        // Create fee collection record
+        final feeRef = db.collection('fee_collections').doc();
+        batch.set(feeRef, {
+          'studentId': studentDoc.id,
+          'studentName': '${studentData['firstName'] ?? ''} ${studentData['lastName'] ?? ''}'.trim(),
+          'registrationNumber': studentData['registrationNumber'] ?? 'REG-${1000 + i}',
+          'department': department,
+          'semester': semester,
+          'academicYear': '2024-2025',
+          'feeType': 'Semester Fee',
+          'tuitionFee': tuitionFee,
+          'examFee': examFee,
+          'libraryFee': libraryFee,
+          'totalAmount': totalFee,
+          'amountPaid': amountPaid,
+          'balance': balance,
+          'paymentMethod': paymentMethod,
+          'transactionId': 'TXN${DateTime.now().millisecondsSinceEpoch}${i}',
+          'status': isPaid ? 'Paid' : 'Partial',
+          'date': Timestamp.fromDate(paymentDate),
+          'dueDate': Timestamp.fromDate(now.add(const Duration(days: 30))),
+          'remarks': isPaid ? 'Full payment received' : 'Partial payment - balance pending',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        
+        // Update student's feesPaid status
+        batch.update(studentDoc.reference, {
+          'feesPaid': isPaid,
+          'feesBalance': balance,
+        });
+      }
+
+      await batch.commit();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("✓ Successfully seeded 10 fee records!"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error seeding fees: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSeeding = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,17 +153,49 @@ class _FeesScreenState extends State<FeesScreen> {
                   const AdminHeader(),
                   const SizedBox(height: 32),
 
-                  Text(
-                    "Fees & Accounts",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF0F172A),
-                    ),
-                  ),
-                  Text(
-                    "Monitor revenue streams and ledger balances",
-                    style: GoogleFonts.inter(color: Colors.grey.shade600),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Fees & Accounts",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            "Monitor revenue streams and ledger balances",
+                            style: GoogleFonts.inter(color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _isSeeding ? null : _seedFees,
+                        icon: _isSeeding 
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.add_circle_outline, size: 18),
+                        label: Text(_isSeeding ? "Seeding..." : "Seed 10 Fees"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 32),
 
@@ -226,7 +372,7 @@ class _FeesScreenState extends State<FeesScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 5)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 20, offset: const Offset(0, 5)),
         ],
       ),
       child: Material(
@@ -254,7 +400,7 @@ class _FeesScreenState extends State<FeesScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(icon, color: color, size: 28),
@@ -286,14 +432,14 @@ class _FeesScreenState extends State<FeesScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 20),

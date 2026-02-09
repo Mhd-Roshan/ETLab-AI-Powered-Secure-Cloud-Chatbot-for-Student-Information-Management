@@ -24,7 +24,7 @@ class _StaffScreenState extends State<StaffScreen> {
     final idCtrl = TextEditingController(text: data?['staffId'] ?? '');
     
     String role = data?['designation'] ?? 'Professor';
-    String dept = data?['department'] ?? 'CSE';
+    String dept = data?['department'] ?? 'MCA';
     String status = data?['status'] ?? 'Active';
 
     bool isEdit = docId != null;
@@ -52,7 +52,7 @@ class _StaffScreenState extends State<StaffScreen> {
                       _buildInput("Employee ID", idCtrl, Icons.badge_outlined, isEnabled: !isEdit),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: role,
+                        initialValue: role,
                         decoration: const InputDecoration(labelText: "Designation", border: OutlineInputBorder()),
                         items: ['Professor', 'Asst. Professor', 'Lab Assistant', 'Admin Staff']
                             .map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
@@ -60,16 +60,16 @@ class _StaffScreenState extends State<StaffScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: dept,
+                        initialValue: dept,
                         decoration: const InputDecoration(labelText: "Department", border: OutlineInputBorder()),
-                        items: ['CSE', 'ECE', 'ME', 'CE', 'MCA', 'MBA', 'Admin']
+                        items: ['MCA', 'MBA']
                             .map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
                         onChanged: (v) => setDialogState(() => dept = v!),
                       ),
                       if (isEdit) ...[
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
-                          value: status,
+                          initialValue: status,
                           decoration: const InputDecoration(labelText: "Status", border: OutlineInputBorder()),
                           items: ['Active', 'On Leave']
                               .map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
@@ -277,7 +277,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Row(
-                              children: ['All', 'CSE', 'ECE', 'ME', 'CE', 'MCA', 'MBA']
+                              children: ['All', 'MCA', 'MBA']
                                   .map((dept) => _buildFilterTab(dept)).toList(),
                             ),
                           ),
@@ -287,7 +287,7 @@ class _StaffScreenState extends State<StaffScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white, borderRadius: BorderRadius.circular(24),
                               border: Border.all(color: const Color(0xFFF1F5F9)),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 5))],
+                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 20, offset: const Offset(0, 5))],
                             ),
                             child: filteredDocs.isEmpty
                                 ? _buildEmptyState()
@@ -346,7 +346,7 @@ class _StaffScreenState extends State<StaffScreen> {
     Color color = isActive ? Colors.green : Colors.orange;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
       child: Text(isActive ? "Active" : "On Leave", style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
     );
   }
@@ -358,7 +358,7 @@ class _StaffScreenState extends State<StaffScreen> {
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF1F5F9))),
         child: Row(
           children: [
-            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 20)),
+            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 20)),
             const SizedBox(width: 16),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),

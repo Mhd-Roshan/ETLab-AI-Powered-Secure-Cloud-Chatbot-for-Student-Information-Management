@@ -149,14 +149,14 @@ class FeeReportsScreen extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: const Color(0xFFF1F5F9)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 8))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 20, offset: const Offset(0, 8))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 20),
@@ -199,7 +199,7 @@ class FeeReportsScreen extends StatelessWidget {
                 )
               ],
             ),
-          )).toList(),
+          )),
         ],
       ),
     );
@@ -222,7 +222,7 @@ class FeeReportsScreen extends StatelessWidget {
               const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 30),
               const SizedBox(height: 20),
               Text("$studentCount", style: GoogleFonts.plusJakartaSans(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
-              Text("Students with pending dues", style: GoogleFonts.inter(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+              Text("Students with pending dues", style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
               const SizedBox(height: 24),
               const Divider(color: Colors.white24),
               TextButton(

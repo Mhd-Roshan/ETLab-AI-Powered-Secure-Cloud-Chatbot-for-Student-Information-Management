@@ -50,7 +50,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: priority,
+                        initialValue: priority,
                         decoration: const InputDecoration(
                           labelText: "Priority",
                         ),
@@ -65,7 +65,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: target,
+                        initialValue: target,
                         decoration: const InputDecoration(
                           labelText: "Target Audience",
                         ),

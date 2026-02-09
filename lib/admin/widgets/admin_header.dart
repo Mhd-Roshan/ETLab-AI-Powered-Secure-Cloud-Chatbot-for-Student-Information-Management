@@ -340,7 +340,7 @@ class AdminHeader extends StatelessWidget {
                     ),
                   ),
                 );
-              }).toList(),
+              }),
 
               // Footer
               PopupMenuItem(

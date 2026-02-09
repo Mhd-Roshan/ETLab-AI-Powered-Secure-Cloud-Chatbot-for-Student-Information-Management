@@ -14,6 +14,68 @@ class AccountsScreen extends StatefulWidget {
 
 class _AccountsScreenState extends State<AccountsScreen> {
   bool _isProcessing = false;
+  bool _isSeeding = false;
+
+  // --- SEED ACCOUNTS ---
+  Future<void> _seedAccounts() async {
+    if (_isSeeding) return;
+    
+    setState(() => _isSeeding = true);
+
+    try {
+      final db = FirebaseFirestore.instance.collection('accounts');
+      
+      // Define ledger accounts
+      final accounts = [
+        {'name': 'Tuition Fee Collection', 'type': 'Income', 'balance': 2500000.0},
+        {'name': 'Exam Fee Collection', 'type': 'Income', 'balance': 450000.0},
+        {'name': 'Library Fee Collection', 'type': 'Income', 'balance': 180000.0},
+        {'name': 'Hostel Fee Collection', 'type': 'Income', 'balance': 1200000.0},
+        {'name': 'Staff Salary Account', 'type': 'Expense', 'balance': 1800000.0},
+        {'name': 'Infrastructure Development', 'type': 'Expense', 'balance': 500000.0},
+        {'name': 'Lab Equipment Fund', 'type': 'Asset', 'balance': 750000.0},
+        {'name': 'Emergency Reserve Fund', 'type': 'Asset', 'balance': 1000000.0},
+        {'name': 'Student Welfare Fund', 'type': 'Asset', 'balance': 250000.0},
+        {'name': 'Scholarship Fund', 'type': 'Expense', 'balance': 300000.0},
+      ];
+
+      final batch = db.firestore.batch();
+      int added = 0;
+
+      for (var account in accounts) {
+        // Check if already exists
+        final existing = await db.where('name', isEqualTo: account['name']).get();
+        if (existing.docs.isEmpty) {
+          final docRef = db.doc();
+          batch.set(docRef, {
+            ...account,
+            'createdAt': FieldValue.serverTimestamp(),
+            'status': 'Active',
+          });
+          added++;
+        }
+      }
+
+      if (added > 0) {
+        await batch.commit();
+        if (mounted) {
+          _showMsg("✓ Successfully seeded $added ledger accounts!");
+        }
+      } else {
+        if (mounted) {
+          _showMsg("All accounts already exist", isError: true);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showMsg("Error seeding: $e", isError: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSeeding = false);
+      }
+    }
+  }
 
   // --- HELPER: SHOW MESSAGES ---
   void _showMsg(String msg, {bool isError = false}) {
@@ -51,7 +113,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: accountType,
+                    initialValue: accountType,
                     decoration: const InputDecoration(labelText: "Account Type", border: OutlineInputBorder()),
                     items: ['Asset', 'Income', 'Expense'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                     onChanged: (v) => setDialogState(() => accountType = v!),
@@ -155,6 +217,27 @@ class _AccountsScreenState extends State<AccountsScreen> {
                       ),
                       const Spacer(),
                       ElevatedButton.icon(
+                        onPressed: _isSeeding ? null : _seedAccounts,
+                        icon: _isSeeding 
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.auto_awesome, size: 18),
+                        label: Text(_isSeeding ? "Seeding..." : "Seed Data"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
                         onPressed: _showAddAccountDialog,
                         icon: const Icon(Icons.add, size: 18),
                         label: const Text("Add Ledger"),
@@ -247,7 +330,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 8))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 20, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +340,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: typeColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                 child: Text(data['type'] ?? "Asset", style: TextStyle(color: typeColor, fontWeight: FontWeight.bold, fontSize: 10)),
               ),
               IconButton(onPressed: () => _confirmDelete(id, data['name']), icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20)),
@@ -309,7 +392,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9))),
         child: Row(
           children: [
-            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: color, size: 24)),
+            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: color, size: 24)),
             const SizedBox(width: 20),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

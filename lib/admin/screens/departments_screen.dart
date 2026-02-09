@@ -12,133 +12,185 @@ class DepartmentsScreen extends StatefulWidget {
 }
 
 class _DepartmentsScreenState extends State<DepartmentsScreen> {
-  bool _isCreating = false; // To handle loading state during duplication check
+  bool _isProcessing = false;
 
-  // --- ADD DEPARTMENT DIALOG ---
-  void _showAddDeptDialog() {
-    final nameCtrl = TextEditingController();
-    final codeCtrl = TextEditingController();
-    final hodCtrl = TextEditingController();
-    final staffCtrl = TextEditingController();
+  // --- ADD/EDIT DEPARTMENT DIALOG ---
+  void _showDeptDialog({String? docId, Map<String, dynamic>? data}) {
+    final nameCtrl = TextEditingController(text: data?['name'] ?? '');
+    final codeCtrl = TextEditingController(text: data?['code'] ?? '');
+    final hodCtrl = TextEditingController(text: data?['hodName'] ?? '');
+    final staffCtrl = TextEditingController(text: data?['totalStaff']?.toString() ?? '');
+    final descCtrl = TextEditingController(text: data?['description'] ?? '');
+
+    bool isEdit = docId != null;
 
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent closing during DB check
+      barrierDismissible: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Text("Add New Department"),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: "Dept Name (e.g. Computer Science)",
-                      border: OutlineInputBorder(),
-                    ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: codeCtrl,
-                    decoration: const InputDecoration(
-                      labelText: "Dept Code (e.g. CSE)",
-                      border: OutlineInputBorder(),
-                    ),
+                  child: Icon(
+                    isEdit ? Icons.edit_rounded : Icons.add_business_rounded,
+                    color: Colors.orangeAccent,
+                    size: 20,
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: hodCtrl,
-                    decoration: const InputDecoration(
-                      labelText: "HOD Name",
-                      border: OutlineInputBorder(),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  isEdit ? "Edit Department" : "Add New Department",
+                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 500,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: "Department Name",
+                        hintText: "e.g., Master of Computer Applications",
+                        prefixIcon: const Icon(Icons.business_rounded, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: staffCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Total Faculty",
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: codeCtrl,
+                      enabled: !isEdit, // Code cannot be changed
+                      decoration: InputDecoration(
+                        labelText: "Department Code",
+                        hintText: "e.g., MCA",
+                        prefixIcon: const Icon(Icons.tag_rounded, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: hodCtrl,
+                      decoration: InputDecoration(
+                        labelText: "Head of Department",
+                        hintText: "e.g., Dr. Rajesh Kumar",
+                        prefixIcon: const Icon(Icons.person_rounded, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: staffCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Total Faculty",
+                        hintText: "e.g., 15",
+                        prefixIcon: const Icon(Icons.groups_rounded, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descCtrl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: "Description (Optional)",
+                        hintText: "Brief description of the department",
+                        prefixIcon: const Icon(Icons.description_rounded, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
               TextButton(
-                onPressed: _isCreating ? null : () => Navigator.pop(context),
+                onPressed: _isProcessing ? null : () => Navigator.pop(context),
                 child: const Text("Cancel"),
               ),
-              ElevatedButton(
-                onPressed: _isCreating
+              ElevatedButton.icon(
+                onPressed: _isProcessing
                     ? null
                     : () async {
                         String name = nameCtrl.text.trim();
                         String code = codeCtrl.text.trim().toUpperCase();
 
                         if (name.isEmpty || code.isEmpty) {
-                          _showErrorSnackBar("Name and Code are required");
+                          _showMsg("Name and Code are required", isError: true);
                           return;
                         }
 
-                        setDialogState(() => _isCreating = true);
+                        setDialogState(() => _isProcessing = true);
 
                         try {
-                          // 1. Check for Duplicate Code
-                          final codeCheck = await FirebaseFirestore.instance
-                              .collection('departments')
-                              .where('code', isEqualTo: code)
-                              .get();
+                          final db = FirebaseFirestore.instance.collection('departments');
 
-                          if (codeCheck.docs.isNotEmpty) {
-                            _showErrorSnackBar("Department code '$code' already exists!");
-                            setDialogState(() => _isCreating = false);
-                            return;
+                          if (!isEdit) {
+                            // Check for duplicates only when creating
+                            final codeCheck = await db.where('code', isEqualTo: code).get();
+                            if (codeCheck.docs.isNotEmpty) {
+                              _showMsg("Department code '$code' already exists!", isError: true);
+                              setDialogState(() => _isProcessing = false);
+                              return;
+                            }
+
+                            final nameCheck = await db.where('name', isEqualTo: name).get();
+                            if (nameCheck.docs.isNotEmpty) {
+                              _showMsg("Department name '$name' already exists!", isError: true);
+                              setDialogState(() => _isProcessing = false);
+                              return;
+                            }
                           }
 
-                          // 2. Check for Duplicate Name
-                          final nameCheck = await FirebaseFirestore.instance
-                              .collection('departments')
-                              .where('name', isEqualTo: name)
-                              .get();
-
-                          if (nameCheck.docs.isNotEmpty) {
-                            _showErrorSnackBar("Department name '$name' already exists!");
-                            setDialogState(() => _isCreating = false);
-                            return;
-                          }
-
-                          // 3. No duplicates found -> Create
-                          await FirebaseFirestore.instance.collection('departments').add({
+                          Map<String, dynamic> deptData = {
                             'name': name,
                             'code': code,
                             'hodName': hodCtrl.text.trim(),
                             'totalStaff': int.tryParse(staffCtrl.text) ?? 0,
-                            'createdAt': FieldValue.serverTimestamp(),
-                          });
+                            'description': descCtrl.text.trim(),
+                          };
 
-                          if (mounted) {
-                            Navigator.pop(context);
-                            _showSuccessSnackBar("Department added successfully!");
+                          if (isEdit) {
+                            await db.doc(docId).update(deptData);
+                            _showMsg("Department updated successfully!");
+                          } else {
+                            deptData['createdAt'] = FieldValue.serverTimestamp();
+                            await db.add(deptData);
+                            _showMsg("Department added successfully!");
                           }
+
+                          if (mounted) Navigator.pop(context);
                         } catch (e) {
-                          _showErrorSnackBar("Database Error: $e");
+                          _showMsg("Error: $e", isError: true);
                         } finally {
-                          setDialogState(() => _isCreating = false);
+                          setDialogState(() => _isProcessing = false);
                         }
                       },
+                icon: _isProcessing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : Icon(isEdit ? Icons.save_rounded : Icons.add_rounded),
+                label: Text(isEdit ? "Update" : "Create"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: Colors.orangeAccent,
                   foregroundColor: Colors.white,
-                  minimumSize: const Size(100, 45),
+                  minimumSize: const Size(120, 45),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: _isCreating
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text("Create"),
               ),
             ],
           );
@@ -148,21 +200,72 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
   }
 
   // --- DELETE DEPARTMENT ---
-  void _deleteDept(String docId) {
+  void _deleteDept(String docId, String deptName) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete Department?"),
-        content: const Text("This action cannot be undone."),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.warning_rounded, color: Colors.red, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text("Delete Department?"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Are you sure you want to delete '$deptName'?"),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.red),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "This action cannot be undone.",
+                      style: TextStyle(fontSize: 12, color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           TextButton(
-            onPressed: () {
-              FirebaseFirestore.instance.collection('departments').doc(docId).delete();
-              Navigator.pop(context);
-              _showSuccessSnackBar("Department deleted.");
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              await FirebaseFirestore.instance.collection('departments').doc(docId).delete();
+              if (mounted) {
+                Navigator.pop(context);
+                _showMsg("Department deleted successfully");
+              }
             },
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            icon: const Icon(Icons.delete_rounded),
+            label: const Text("Delete"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ],
       ),
@@ -170,15 +273,14 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
   }
 
   // --- HELPERS ---
-  void _showErrorSnackBar(String message) {
+  void _showMsg(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating),
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     );
   }
 
@@ -211,14 +313,15 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                         ],
                       ),
                       ElevatedButton.icon(
-                        onPressed: _showAddDeptDialog,
+                        onPressed: () => _showDeptDialog(),
                         icon: const Icon(Icons.add_business_rounded, size: 18),
                         label: const Text("Add Department"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orangeAccent,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
                         ),
                       ),
                     ],
@@ -240,7 +343,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                           maxCrossAxisExtent: 350,
                           mainAxisSpacing: 24,
                           crossAxisSpacing: 24,
-                          childAspectRatio: 1.4,
+                          childAspectRatio: 1.1, // Adjusted from 1.4 to give more height
                         ),
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
@@ -250,6 +353,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                       );
                     },
                   ),
+                  const SizedBox(height: 40), // Add bottom spacing
                 ],
               ),
             ),
@@ -264,82 +368,232 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
     String name = data['name'] ?? "Department";
     String hod = data['hodName'] ?? "TBA";
     int staff = data['totalStaff'] ?? 0;
+    String description = data['description'] ?? "";
 
-    Color accentColor = [Colors.blue, Colors.purple, Colors.orange, Colors.teal, Colors.pink][code.length % 5];
+    Color accentColor = code == 'MCA' 
+        ? const Color(0xFF6366F1) 
+        : code == 'MBA' 
+            ? const Color(0xFFEC4899)
+            : Colors.orange;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 5))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 5),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Prevent overflow
+          children: [
+          // Header with Code Badge and Actions
+          Container(
             padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  accentColor.withValues(alpha: 0.1),
+                  accentColor.withValues(alpha: 0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: accentColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                  child: Text(code, style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    code,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ),
-                PopupMenuButton(
-                  icon: const Icon(Icons.more_horiz, color: Colors.grey),
-                  onSelected: (val) { if (val == 'delete') _deleteDept(docId); },
-                  itemBuilder: (context) => [const PopupMenuItem(value: 'delete', child: Text("Delete", style: TextStyle(color: Colors.red)))],
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => _showDeptDialog(docId: docId, data: data),
+                      icon: const Icon(Icons.edit_rounded, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: accentColor,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      tooltip: "Edit Department",
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () => _deleteDept(docId, name),
+                      icon: const Icon(Icons.delete_rounded, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.red,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      tooltip: "Delete Department",
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
-                const SizedBox(height: 4),
-                Row(children: [
-                  const Icon(Icons.person_outline, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text("HOD: $hod", style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600)),
-                ]),
-              ],
+
+          // Department Info
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0F172A),
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.person_outline, size: 16, color: Colors.blue.shade700),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Head of Department",
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                color: Colors.grey.shade500,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              hod,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: const Color(0xFF0F172A),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (description.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
-          const Spacer(),
+
+          // Spacer removed - using Flexible instead
+
+          // Footer with Stats
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFF8FAFC)))),
-            child: _buildMiniStat(staff.toString(), "Total Faculty", Colors.green),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.groups_rounded, color: Colors.green.shade700, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      staff.toString(),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    Text(
+                      "Total Faculty",
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMiniStat(String val, String label, Color color) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-          child: Icon(Icons.groups_rounded, color: color, size: 16),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(val, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
-            Text(label, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade500)),
-          ],
-        ),
-      ],
+      ),
     );
   }
 

@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:edlab/admin/screens/ai_chat_screen.dart';
 import 'package:edlab/services/admin_service.dart';
+import 'package:edlab/services/voice_service.dart';
+import 'package:edlab/admin/widgets/static_insights_widget.dart';
 
 // Ensure these widget files exist in your project
 import 'widgets/admin_sidebar.dart';
@@ -96,14 +99,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                       const SizedBox(width: 20),
 
-                      // ✅ CLICKABLE INSIGHTS
+                      // ✅ STATIC INSIGHTS (3 Cards Layout)
                       Expanded(
                         flex: 2,
-                        child: GestureDetector(
-                          onTap: () => _navigateToAi(
-                            "Analyze current student stability and retention risks based on recent data.",
-                          ),
-                          child: const AiInsightCard(),
+                        child: StaticInsightsWidget(
+                          onInsightTap: (prompt) => _navigateToAi(prompt),
                         ),
                       ),
                     ],
@@ -401,148 +401,401 @@ class AiChatAssistantCard extends StatefulWidget {
 
 class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
   final TextEditingController _controller = TextEditingController();
+  final VoiceService _voiceService = VoiceService();
+  bool _isVoiceInitialized = false;
+  bool _isListening = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVoice();
+  }
+
+  Future<void> _initializeVoice() async {
+    final initialized = await _voiceService.initialize();
+    if (mounted) {
+      setState(() {
+        _isVoiceInitialized = initialized;
+      });
+    }
+
+    // Set up voice callbacks
+    _voiceService.onSpeechResult = (result) {
+      if (mounted) {
+        _controller.text = result;
+        // Auto-submit voice input
+        if (result.isNotEmpty) {
+          widget.onSubmitted(result);
+        }
+      }
+    };
+
+    _voiceService.onListeningStateChanged = (isListening) {
+      if (mounted) {
+        setState(() {
+          _isListening = isListening;
+        });
+      }
+    };
+
+    _voiceService.onSpeechError = (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Voice error: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    };
+  }
+
+  Future<void> _toggleVoiceListening() async {
+    if (!_isVoiceInitialized) return;
+
+    if (_isListening) {
+      await _voiceService.stopListening();
+    } else {
+      await _voiceService.startListening();
+    }
+  }
+
+  @override
+  void dispose() {
+    _voiceService.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 160,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899)],
+          colors: [
+            Colors.white.withValues(alpha: 0.25),
+            Colors.white.withValues(alpha: 0.1),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.3),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 32,
+            offset: const Offset(0, 16),
+            spreadRadius: -4,
+          ),
+          BoxShadow(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -40,
-            right: -40,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.1),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF6366F1).withValues(alpha: 0.8),
+                  const Color(0xFF8B5CF6).withValues(alpha: 0.7),
+                  const Color(0xFFEC4899).withValues(alpha: 0.6),
+                ],
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Stack(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      "EdLab AI",
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
+                // Floating glass orbs for depth
+                Positioned(
+                  top: -30,
+                  right: -30,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.2),
+                          Colors.white.withValues(alpha: 0.05),
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        "Gemini 2.0", // Updated model name
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  "Ask about enrollment trends...",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white70,
-                    fontSize: 12,
                   ),
                 ),
-                // ✅ REAL INPUT FIELD
-                Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(12),
+                Positioned(
+                  bottom: -20,
+                  left: -20,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.15),
+                          Colors.white.withValues(alpha: 0.03),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: TextField(
-                    controller: _controller,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: Colors.black87,
-                    ),
-                    textAlignVertical: TextAlignVertical.center,
-                    onSubmitted: (value) {
-                      widget.onSubmitted(value); // Trigger navigation
-                    },
-                    decoration: InputDecoration(
-                      hintText: "Type a command...",
-                      hintStyle: GoogleFonts.poppins(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                ),
+                // Main content
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.3),
+                                  Colors.white.withValues(alpha: 0.1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.auto_awesome,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            "EdLab AI",
+                            style: GoogleFonts.inter(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.3),
+                                  Colors.black.withValues(alpha: 0.1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              "Gemini 2.0",
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 0,
-                      ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(
-                          Icons.arrow_forward,
-                          size: 16,
-                          color: Color(0xFF6366F1),
+                      Text(
+                        "Ask about enrollment trends...",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
-                        onPressed: () {
-                          if (_controller.text.isNotEmpty) {
-                            widget.onSubmitted(_controller.text);
-                          }
-                        },
                       ),
-                    ),
+                      // Glass input field
+                      Container(
+                        height: 42,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white.withValues(alpha: 0.95),
+                              Colors.white.withValues(alpha: 0.85),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                              spreadRadius: -4,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: TextField(
+                              controller: _controller,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: const Color(0xFF1F2937),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlignVertical: TextAlignVertical.center,
+                              onSubmitted: (value) {
+                                widget.onSubmitted(value);
+                              },
+                              decoration: InputDecoration(
+                                hintText: _isListening ? "Listening..." : "Type a command...",
+                                hintStyle: GoogleFonts.inter(
+                                  color: _isListening ? const Color(0xFF6366F1) : const Color(0xFF6B7280),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 0,
+                                ),
+                                suffixIcon: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Voice button
+                                    Container(
+                                      margin: const EdgeInsets.only(right: 4, top: 6, bottom: 6),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: _isListening
+                                              ? [
+                                                  const Color(0xFFEF4444),
+                                                  const Color(0xFFDC2626),
+                                                ]
+                                              : [
+                                                  const Color(0xFF10B981),
+                                                  const Color(0xFF059669),
+                                                ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: (_isListening ? const Color(0xFFEF4444) : const Color(0xFF10B981))
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: IconButton(
+                                        icon: AnimatedSwitcher(
+                                          duration: const Duration(milliseconds: 200),
+                                          child: Icon(
+                                            _isListening ? Icons.stop_rounded : Icons.mic_rounded,
+                                            key: ValueKey(_isListening),
+                                            size: 16,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        onPressed: _isVoiceInitialized ? _toggleVoiceListening : null,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 30,
+                                          minHeight: 30,
+                                        ),
+                                      ),
+                                    ),
+                                    // Submit button
+                                    Container(
+                                      margin: const EdgeInsets.only(right: 6, top: 6, bottom: 6),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Color(0xFF6366F1),
+                                            Color(0xFF8B5CF6),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.arrow_forward_rounded,
+                                          size: 16,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: () {
+                                          if (_controller.text.isNotEmpty) {
+                                            widget.onSubmitted(_controller.text);
+                                          }
+                                        },
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 30,
+                                          minHeight: 30,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

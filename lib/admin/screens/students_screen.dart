@@ -18,7 +18,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
   bool _isProcessing = false; // Loading state for form submission
 
   // Data Lists
-  final List<String> _departments = ['MCA', 'MBA', 'CSE', 'ECE', 'ME', 'CE', 'EEE'];
+  final List<String> _departments = ['MCA', 'MBA'];
 
   final List<String> _batches = List.generate(6, (index) {
     int startYear = 2021 + index;
@@ -35,6 +35,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
     final phoneCtrl = TextEditingController(text: data?['phone'] ?? '');
 
     String status = data?['status'] ?? 'active';
+    String department = data?['department'] ?? _selectedDept ?? 'MCA';
+    String batch = data?['batch'] ?? _selectedBatch ?? '2024-2026';
     bool isEdit = docId != null;
 
     showDialog(
@@ -64,8 +66,12 @@ class _StudentsScreenState extends State<StudentsScreen> {
                           children: [
                             const Icon(Icons.info_outline, size: 16, color: Colors.blue),
                             const SizedBox(width: 8),
-                            Text("Target: $_selectedDept • $_selectedBatch",
-                                style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text(
+                              isEdit 
+                                ? "Editing: $department • $batch"
+                                : "Target: $_selectedDept • $_selectedBatch",
+                              style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
                           ],
                         ),
                       ),
@@ -73,7 +79,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                         children: [
                           Expanded(child: _buildInput("First Name", fNameCtrl)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildInput("Last Name", lNameCtrl)),
+                          Expanded(child: _buildInput("Last Name", lNameCtrl, isRequired: false)),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -87,8 +93,34 @@ class _StudentsScreenState extends State<StudentsScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: department,
+                              decoration: const InputDecoration(labelText: "Department", border: OutlineInputBorder()),
+                              items: _departments
+                                  .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                                  .toList(),
+                              onChanged: (val) => setDialogState(() => department = val!),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: batch,
+                              decoration: const InputDecoration(labelText: "Batch", border: OutlineInputBorder()),
+                              items: _batches
+                                  .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+                                  .toList(),
+                              onChanged: (val) => setDialogState(() => batch = val!),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: status,
+                        initialValue: status,
                         decoration: const InputDecoration(labelText: "Status", border: OutlineInputBorder()),
                         items: ['active', 'inactive', 'suspended']
                             .map((s) => DropdownMenuItem(value: s, child: Text(s.toUpperCase())))
@@ -140,8 +172,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
                         'registrationNumber': regNo,
                         'email': email,
                         'phone': phoneCtrl.text.trim(),
-                        'department': _selectedDept,
-                        'batch': _selectedBatch,
+                        'department': department,
+                        'batch': batch,
                         'status': status,
                       };
 
@@ -180,12 +212,15 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
-  Widget _buildInput(String label, TextEditingController ctrl, {bool isEnabled = true}) {
+  Widget _buildInput(String label, TextEditingController ctrl, {bool isEnabled = true, bool isRequired = true}) {
     return TextFormField(
       controller: ctrl,
       enabled: isEnabled,
-      validator: (v) => v!.isEmpty ? "Required" : null,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      validator: isRequired ? (v) => v!.isEmpty ? "Required" : null : null,
+      decoration: InputDecoration(
+        labelText: isRequired ? label : "$label (Optional)", 
+        border: const OutlineInputBorder()
+      ),
     );
   }
 
@@ -297,7 +332,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 5))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 20, offset: const Offset(0, 5))],
       ),
       child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('students')
@@ -325,7 +360,10 @@ class _StudentsScreenState extends State<StudentsScreen> {
                   CircleAvatar(radius: 16, backgroundColor: Colors.blue.shade50, child: Text((data['firstName']?[0] ?? "U"), style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold))),
                   const SizedBox(width: 12),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Text("${data['firstName']} ${data['lastName']}", style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text(
+                      "${data['firstName']}${data['lastName']?.toString().isNotEmpty == true ? ' ${data['lastName']}' : ''}", 
+                      style: const TextStyle(fontWeight: FontWeight.w600)
+                    ),
                     Text(data['email'] ?? "", style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
                   ]),
                 ])),
@@ -348,7 +386,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
     Color color = status == 'active' ? Colors.green : Colors.red;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
       child: Text(status.toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }
@@ -368,7 +406,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
         width: 200, height: 180, padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFE2E8F0))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 24)),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 24)),
           const Spacer(),
           Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
           const SizedBox(height: 4),

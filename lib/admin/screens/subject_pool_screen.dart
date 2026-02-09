@@ -80,7 +80,7 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: dept,
+                      initialValue: dept,
                       decoration: const InputDecoration(labelText: "Department", border: OutlineInputBorder()),
                       items: _departments.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
                       onChanged: (v) => dept = v!,
@@ -102,13 +102,25 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
                     setDialogState(() => _isProcessing = true);
                     
                     String code = codeCtrl.text.trim().toUpperCase();
+                    String name = nameCtrl.text.trim();
                     final db = FirebaseFirestore.instance.collection('courses');
 
                     try {
-                      // --- DUPLICATION CHECK ---
-                      final duplicate = await db.doc(code).get();
-                      if (duplicate.exists) {
+                      // --- DUPLICATION CHECK: Course Code ---
+                      final duplicateCode = await db.doc(code).get();
+                      if (duplicateCode.exists) {
                         _showMsg("Course code '$code' already exists!", isError: true);
+                        setDialogState(() => _isProcessing = false);
+                        return;
+                      }
+
+                      // --- DUPLICATION CHECK: Course Name ---
+                      final duplicateName = await db
+                          .where('courseName', isEqualTo: name)
+                          .where('department', isEqualTo: dept)
+                          .get();
+                      if (duplicateName.docs.isNotEmpty) {
+                        _showMsg("Subject name '$name' already exists in $dept!", isError: true);
                         setDialogState(() => _isProcessing = false);
                         return;
                       }
@@ -116,7 +128,7 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
                       // --- CREATE DOC ---
                       await db.doc(code).set({
                         'courseCode': code,
-                        'courseName': nameCtrl.text.trim(),
+                        'courseName': name,
                         'credits': int.tryParse(creditsCtrl.text) ?? 3,
                         'department': dept,
                         'instructor': instructorCtrl.text.isEmpty ? "TBA" : instructorCtrl.text.trim(),
@@ -186,7 +198,7 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: dept,
+                      initialValue: dept,
                       decoration: const InputDecoration(labelText: "Department", border: OutlineInputBorder()),
                       items: _departments.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
                       onChanged: (v) => dept = v!,
@@ -206,15 +218,36 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
                 onPressed: _isProcessing ? null : () async {
                   if (formKey.currentState!.validate()) {
                     setDialogState(() => _isProcessing = true);
+                    
+                    String newName = nameCtrl.text.trim();
+                    String currentName = data['courseName'];
+                    
                     try {
+                      // --- DUPLICATION CHECK: Course Name (only if name changed) ---
+                      if (newName != currentName) {
+                        final duplicateName = await FirebaseFirestore.instance
+                            .collection('courses')
+                            .where('courseName', isEqualTo: newName)
+                            .where('department', isEqualTo: dept)
+                            .get();
+                        
+                        if (duplicateName.docs.isNotEmpty) {
+                          _showMsg("Subject name '$newName' already exists in $dept!", isError: true);
+                          setDialogState(() => _isProcessing = false);
+                          return;
+                        }
+                      }
+                      
                       await FirebaseFirestore.instance.collection('courses').doc(doc.id).update({
-                        'courseName': nameCtrl.text.trim(),
+                        'courseName': newName,
                         'credits': int.tryParse(creditsCtrl.text) ?? 3,
                         'department': dept,
                         'instructor': instructorCtrl.text.trim(),
                       });
                       if (mounted) Navigator.pop(context);
                       _showMsg("Course updated");
+                    } catch (e) {
+                      _showMsg("Error: $e", isError: true);
                     } finally {
                       setDialogState(() => _isProcessing = false);
                     }
@@ -344,14 +377,14 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
     return Container(
       width: 250,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9)), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text(data['courseCode'] ?? "CODE", style: const TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold))),
+              Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.indigo.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Text(data['courseCode'] ?? "CODE", style: const TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold))),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_horiz, size: 18, color: Colors.grey),
                 onSelected: (val) {

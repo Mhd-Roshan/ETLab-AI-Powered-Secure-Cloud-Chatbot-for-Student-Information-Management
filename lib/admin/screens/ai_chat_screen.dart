@@ -4,6 +4,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edlab/admin/widgets/admin_sidebar.dart';
 import 'package:edlab/services/edlab_ai_service.dart';
+import 'package:edlab/services/voice_service.dart';
+import 'package:edlab/services/translation_service.dart';
 
 class AiChatScreen extends StatefulWidget {
   final String? initialPrompt;
@@ -16,11 +18,18 @@ class AiChatScreen extends StatefulWidget {
 class _AiChatScreenState extends State<AiChatScreen> {
   final TextEditingController _promptController = TextEditingController();
   final EdLabAIService _aiService = EdLabAIService();
+  final VoiceService _voiceService = VoiceService();
+  final TranslationService _translationService = TranslationService();
   final String _currentUserId = 'admin';
 
-  String _currentResponse = """# Welcome to EdLab Intelligence! 🎓
+  String _currentResponse = """# Welcome to EdLab Intelligence! 🎓🎤
 
-I'm your AI assistant with **instant access** to all university data. Ask me anything about:
+I'm your AI assistant with **instant access** to all university data and **voice capabilities**!
+
+## 🎤 **Voice Features**
+- **Voice Input**: Click the microphone to speak your questions
+- **Text-to-Speech**: Hear responses read aloud
+- **Multilingual Support**: Speak in your preferred language
 
 ## 📊 **Available Data & Insights**
 - **Students**: Attendance, grades, performance analytics
@@ -40,19 +49,54 @@ I'm your AI assistant with **instant access** to all university data. Ask me any
 ## 🚀 **Visualization Support**
 I can suggest charts, graphs, and data visualizations based on your queries!
 
-**Ready to explore your data? Ask me anything!**
+**Ready to explore your data? Ask me anything in text or voice!**
 """;
   bool _isLoading = false;
+  bool _isVoiceMode = false;
+  bool _isListening = false;
+  final bool _isSpeaking = false;
   String _lastPrompt = "";
+  String _voiceInputText = "";
 
   @override
   void initState() {
     super.initState();
+    _initializeVoiceService();
     if (widget.initialPrompt != null && widget.initialPrompt!.isNotEmpty) {
       _promptController.text = widget.initialPrompt!;
       Future.delayed(const Duration(milliseconds: 500), () {
         _sendMessage();
       });
+    }
+  }
+
+  void _initializeVoiceService() async {
+    final voiceInitialized = await _voiceService.initialize();
+    if (voiceInitialized) {
+      _voiceService.onSpeechResult = (result) {
+        setState(() {
+          _voiceInputText = result;
+          _promptController.text = result;
+        });
+        // Auto-send when voice input is complete
+        if (result.isNotEmpty) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (!_isListening && _promptController.text.isNotEmpty) {
+              _sendMessage();
+            }
+          });
+        }
+      };
+
+      _voiceService.onSpeechError = (error) {
+        _showSnackBar("Voice error: $error", isError: true);
+      };
+
+      _voiceService.onListeningStateChanged = (isListening) {
+        setState(() {
+          _isListening = isListening;
+        });
+      };
     }
   }
 
@@ -109,6 +153,114 @@ I can suggest charts, graphs, and data visualizations based on your queries!
       _promptController.text = _lastPrompt;
       _sendMessage();
     }
+  }
+
+  void _toggleVoiceMode() {
+    setState(() {
+      _isVoiceMode = !_isVoiceMode;
+    });
+    
+    if (!_isVoiceMode) {
+      _voiceService.stopListening();
+    }
+    
+    _showSnackBar(
+      _isVoiceMode 
+        ? "Voice mode enabled - Click microphone to speak"
+        : "Voice mode disabled - Using text input"
+    );
+  }
+
+  void _startListening() async {
+    if (!_voiceService.speechEnabled) {
+      _showSnackBar("Voice recognition not available", isError: true);
+      return;
+    }
+
+    setState(() {
+      _voiceInputText = "";
+    });
+
+    await _voiceService.setLanguage(_translationService.currentVoiceCode);
+    await _voiceService.startListening();
+  }
+
+  void _stopListening() async {
+    await _voiceService.stopListening();
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: isError ? Colors.red : null,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Widget _buildVoiceControls() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Voice mode toggle
+        IconButton(
+          onPressed: _toggleVoiceMode,
+          icon: Icon(
+            _isVoiceMode ? Icons.keyboard : Icons.mic,
+            color: _isVoiceMode ? const Color(0xFF6366F1) : Colors.grey,
+          ),
+          tooltip: _isVoiceMode ? 'Switch to text input' : 'Switch to voice input',
+        ),
+        
+        if (_isVoiceMode) ...[
+          const SizedBox(width: 8),
+          // Listening indicator or voice input button
+          if (_isListening)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.red.shade100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.mic, color: Colors.red, size: 16),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Listening...',
+                    style: TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ],
+              ),
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: _startListening,
+              icon: const Icon(Icons.mic, size: 16),
+              label: const Text('Speak'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6366F1),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            ),
+          
+          const SizedBox(width: 8),
+          
+          // Stop listening button
+          if (_isListening)
+            IconButton(
+              onPressed: _stopListening,
+              icon: const Icon(Icons.stop, color: Colors.red),
+              tooltip: "Stop listening",
+            ),
+        ],
+      ],
+    );
   }
 
   Widget _buildQuickActionButton(String label, String prompt) {
@@ -237,11 +389,14 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                                 child: const Icon(Icons.auto_awesome, color: Colors.white),
                               ),
                               const SizedBox(width: 16),
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text("EdLab Intelligence", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  Text("Firebase AI • Real-time Data Access", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                  const Text("EdLab Intelligence", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  Text(
+                                    "Firebase AI • Real-time Data Access • Voice Enabled",
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
                                 ],
                               ),
                               const Spacer(),
@@ -301,6 +456,31 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                           ),
                           child: Column(
                             children: [
+                              // Voice input display
+                              if (_isVoiceMode && _voiceInputText.isNotEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.blue.shade200),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.mic, color: Colors.blue, size: 16),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _voiceInputText,
+                                          style: const TextStyle(fontStyle: FontStyle.italic),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              
                               Row(
                                 children: [
                                   Expanded(
@@ -308,7 +488,9 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                                       controller: _promptController,
                                       onSubmitted: (_) => _sendMessage(),
                                       decoration: InputDecoration(
-                                        hintText: "Ask anything about university data...",
+                                        hintText: _isVoiceMode 
+                                          ? "Voice input enabled - Click microphone to speak..."
+                                          : "Ask anything about university data...",
                                         filled: true,
                                         fillColor: const Color(0xFFF8FAFC),
                                         border: OutlineInputBorder(
@@ -324,10 +506,16 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                                           borderSide: const BorderSide(color: Color(0xFF6366F1)),
                                         ),
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                        prefixIcon: _isVoiceMode 
+                                          ? const Icon(Icons.mic, color: Color(0xFF6366F1))
+                                          : null,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  const SizedBox(width: 8),
+                                  // Voice controls
+                                  _buildVoiceControls(),
+                                  const SizedBox(width: 8),
                                   Material(
                                     color: const Color(0xFF6366F1),
                                     borderRadius: BorderRadius.circular(16),
@@ -368,5 +556,11 @@ I can suggest charts, graphs, and data visualizations based on your queries!
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _voiceService.dispose();
+    super.dispose();
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../firebase_options.dart'; // Import the generated options
-import 'student_dashboard.dart';
+import '../firebase_options.dart';
+import '../login.dart';
 
 void main() async {
   // 1. Ensure widget binding is initialized
@@ -27,8 +27,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.indigo,
         useMaterial3: true,
       ),
-      // For testing, we use a reg number from your firebase_init.js script
-      home: const StudentDashboard(studentRegNo: "TVE20CS001"), 
+      home: const LoginPage(), // Start with login screen
     );
   }
 }

@@ -108,8 +108,9 @@ class _EdLabSmartDashboardState extends State<EdLabSmartDashboard> {
                   child: FutureBuilder<QuerySnapshot>(
                     future: _aiService.getChatHistory(widget.currentUserId),
                     builder: (context, snapshot) {
-                      if (!snapshot.hasData)
+                      if (!snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator());
+                      }
                       final docs = snapshot.data!.docs;
                       return ListView.builder(
                         itemCount: docs.length,

@@ -13,6 +13,92 @@ class FeeCollectionScreen extends StatefulWidget {
 
 class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
   bool _isProcessing = false;
+  bool _isSeeding = false;
+
+  // --- SEED FEE COLLECTIONS ---
+  Future<void> _seedFeeCollections() async {
+    if (_isSeeding) return;
+    
+    setState(() => _isSeeding = true);
+
+    try {
+      final db = FirebaseFirestore.instance;
+      
+      // Fetch some students
+      final studentsSnapshot = await db.collection('students').limit(10).get();
+      
+      if (studentsSnapshot.docs.isEmpty) {
+        if (mounted) {
+          _showMsg("No students found. Please add students first.", isError: true);
+        }
+        setState(() => _isSeeding = false);
+        return;
+      }
+
+      final batch = db.batch();
+      final now = DateTime.now();
+      final feeTypes = ['Tuition Fee', 'Exam Fee', 'Library Fee', 'Hostel Fee', 'Bus Fee'];
+      
+      for (int i = 0; i < studentsSnapshot.docs.length && i < 10; i++) {
+        final studentDoc = studentsSnapshot.docs[i];
+        final studentData = studentDoc.data();
+        final feeType = feeTypes[i % feeTypes.length];
+        
+        // Random amounts based on fee type
+        double amount = 0;
+        switch (feeType) {
+          case 'Tuition Fee':
+            amount = studentData['department'] == 'MBA' ? 75000.0 : 65000.0;
+            break;
+          case 'Exam Fee':
+            amount = 5000.0;
+            break;
+          case 'Library Fee':
+            amount = 2000.0;
+            break;
+          case 'Hostel Fee':
+            amount = 25000.0;
+            break;
+          case 'Bus Fee':
+            amount = 8000.0;
+            break;
+        }
+        
+        // Random payment date within last 30 days
+        final daysAgo = i * 3;
+        final paymentDate = now.subtract(Duration(days: daysAgo));
+        
+        // Generate receipt ID
+        final receiptId = "TXN-${DateTime.now().millisecondsSinceEpoch}${i}";
+        
+        // Create fee collection record
+        final feeRef = db.collection('fee_collections').doc();
+        batch.set(feeRef, {
+          'receiptId': receiptId,
+          'studentName': '${studentData['firstName'] ?? ''} ${studentData['lastName'] ?? ''}'.trim(),
+          'regNo': studentData['registrationNumber'] ?? 'REG-${1000 + i}',
+          'type': feeType,
+          'amount': amount,
+          'date': Timestamp.fromDate(paymentDate),
+          'status': 'Success',
+        });
+      }
+
+      await batch.commit();
+
+      if (mounted) {
+        _showMsg("✓ Successfully seeded 10 fee collection records!");
+      }
+    } catch (e) {
+      if (mounted) {
+        _showMsg("Error seeding: $e", isError: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSeeding = false);
+      }
+    }
+  }
 
   // --- HELPER: SHOW SNACKBAR ---
   void _showMsg(String msg, {bool isError = false}) {
@@ -56,7 +142,7 @@ class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: feeType,
+                    initialValue: feeType,
                     decoration: const InputDecoration(labelText: "Category", border: OutlineInputBorder()),
                     items: ['Tuition Fee', 'Bus Fee', 'Exam Fee', 'Hostel Fee', 'Fine']
                         .map((f) => DropdownMenuItem(value: f, child: Text(f)))
@@ -153,6 +239,29 @@ class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
         ),
         actions: [
           Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ElevatedButton.icon(
+              onPressed: _isSeeding ? null : _seedFeeCollections,
+              icon: _isSeeding 
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.auto_awesome, size: 18),
+              label: Text(_isSeeding ? "Seeding..." : "Seed Data"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
               onPressed: _showCollectFeeDialog,
@@ -232,7 +341,7 @@ class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 5))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 20, offset: const Offset(0, 5))],
       ),
       child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('fee_collections').orderBy('date', descending: true).snapshots(),
@@ -295,7 +404,7 @@ class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9))),
         child: Row(
           children: [
-            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: color, size: 24)),
+            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: color, size: 24)),
             const SizedBox(width: 20),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

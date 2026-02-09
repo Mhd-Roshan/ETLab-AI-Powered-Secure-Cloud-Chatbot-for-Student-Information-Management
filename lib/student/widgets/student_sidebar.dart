@@ -6,12 +6,65 @@ class StudentSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Extract initials for fallback - with safety checks
+    List<String> nameParts = name.trim().split(' ').where((part) => part.isNotEmpty).toList();
+    String initials = 'S'; // Default
+    
+    if (nameParts.isNotEmpty) {
+      if (nameParts.length >= 2 && nameParts[0].isNotEmpty && nameParts[1].isNotEmpty) {
+        initials = '${nameParts[0][0]}${nameParts[1][0]}';
+      } else if (nameParts[0].isNotEmpty) {
+        initials = nameParts[0][0];
+      }
+    }
+
     return Drawer(
       child: Column(
         children: [
           UserAccountsDrawerHeader(
             decoration: const BoxDecoration(color: Color(0xFF5C51E1)),
-            currentAccountPicture: CircleAvatar(backgroundImage: NetworkImage(profileUrl)),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: ClipOval(
+                child: Image.network(
+                  profileUrl,
+                  width: 72,
+                  height: 72,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          initials.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
             accountName: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
             accountEmail: Text(email),
           ),

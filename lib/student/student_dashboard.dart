@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/student_service.dart';
 import 'widgets/student_sidebar.dart';
+import 'student_profile_page.dart';
+import 'timetable_screen.dart';
+import 'academics_screen.dart';
+import 'attendance_screen.dart';
+import 'results_screen.dart';
+import 'student_chat_screen.dart';
 
 class StudentDashboard extends StatefulWidget {
   final String studentRegNo;
@@ -15,37 +21,130 @@ class _StudentDashboardState extends State<StudentDashboard> {
   final StudentService _studentService = StudentService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // 0 = Home, 1 = Academics, 2 = Chat, 3 = Profile
   int _currentIndex = 0;
+  
+  // Cache the future to prevent rebuilds - initialized on first access
+  Future<DocumentSnapshot?>? _userDataFuture;
+
+  Future<DocumentSnapshot?> _getUserData() {
+    _userDataFuture ??= _studentService.getUserByIdentifier(widget.studentRegNo);
+    return _userDataFuture!;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: _studentService.getStudentProfile(widget.studentRegNo),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+    return FutureBuilder<DocumentSnapshot?>(
+      future: _getUserData(),
+      builder: (context, futureSnapshot) {
+        if (futureSnapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        var student = snapshot.data!;
 
-        List<Widget> pages = [
-          _buildHomeContent(student),
-          const Center(child: Text("Academics Content")),
-          const Center(child: Text("AI Assistant Chat")),
-          const Center(child: Text("Profile Settings")),
-        ];
+        if (futureSnapshot.hasError) {
+          debugPrint("Error: ${futureSnapshot.error}");
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text('Error loading student data'),
+                  const SizedBox(height: 8),
+                  Text('${futureSnapshot.error}', style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+          );
+        }
 
-        return Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: const Color(0xFFF8F9FE),
-          drawer: StudentSidebar(
-            name: "${student['firstName']} ${student['lastName']}",
-            email: student['email'],
-            profileUrl:
-                'https://i.pravatar.cc/150?u=${student['registrationNumber']}',
-          ),
-          appBar: _currentIndex == 0
+        if (!futureSnapshot.hasData || futureSnapshot.data == null || !futureSnapshot.data!.exists) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.person_off, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text('Student not found'),
+                  const SizedBox(height: 8),
+                  Text('ID: ${widget.studentRegNo}', style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Extract data from users collection
+        final doc = futureSnapshot.data!;
+        final Map<String, dynamic> userData = doc.data() as Map<String, dynamic>? ?? {};
+        
+        // Map users collection fields to student fields
+        final Map<String, dynamic> studentData = {
+          'registrationNumber': userData['username'] ?? widget.studentRegNo,
+          'firstName': userData['firstname'] ?? userData['firstName'] ?? 'Student',
+          'lastName': userData['lastname'] ?? userData['lastName'] ?? '',
+          'email': userData['email'] ?? '',
+          'phone': userData['phone'] ?? '',
+          'department': userData['department'] ?? 'N/A',
+          'semester': userData['semester'] ?? 1,
+          'batch': userData['batch'] ?? 2024,
+          'gpa': userData['gpa'] ?? 0.0,
+          'collegeCode': userData['collegeCode'] ?? '',
+          'collegeName': userData['collegeName'] ?? '',
+          'isActive': userData['isActive'] ?? true,
+          'role': userData['role'] ?? 'student',
+        };
+        
+        debugPrint("=== STUDENT DATA LOADED ===");
+        debugPrint("User Data: $userData");
+        debugPrint("Mapped Student Data: $studentData");
+
+        // Get attendance for profile
+        return StreamBuilder<QuerySnapshot>(
+          stream: _studentService.getAttendance(widget.studentRegNo),
+          builder: (context, attendanceSnap) {
+            String attendancePercentage = "81.8%";
+            if (attendanceSnap.hasData && attendanceSnap.data!.docs.isNotEmpty) {
+              double val = attendanceSnap.data!.docs.where((d) => d['status'] == 'present').length /
+                  attendanceSnap.data!.docs.length;
+              attendancePercentage = "${(val * 100).toInt()}%";
+            }
+
+            // Define Pages - Each screen is now separate
+            final List<Widget> pages = [
+              _buildHomeScreen(studentData),     // Index 0 - Home
+              const AcademicsScreen(),            // Index 1 - Academics  
+              const StudentChatScreen(),          // Index 2 - Chat
+              StudentProfilePage(
+                userData: studentData,
+                attendancePercentage: attendancePercentage,
+              ),      // Index 3 - Profile
+            ];
+
+            return Scaffold(
+              key: _scaffoldKey,
+              backgroundColor: const Color(0xFFF8F9FE),
+              
+              // Sidebar (only show on home screen)
+              drawer: _currentIndex == 0 
+                ? StudentSidebar(
+                    name: "${studentData['firstName'] ?? 'Student'} ${studentData['lastName'] ?? ''}",
+                    email: studentData['email'] ?? '',
+                    profileUrl: 'https://i.pravatar.cc/150?u=${studentData['registrationNumber'] ?? 'default'}',
+                  )
+                : null,
+
+              // AppBar: Show only on Home (Index 0)
+              appBar: _currentIndex == 0
               ? AppBar(
                   backgroundColor: Colors.white,
                   elevation: 0,
@@ -75,30 +174,42 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     const SizedBox(width: 10),
                   ],
                 )
-              : null,
+              : null, // Hide AppBar on other pages if they have their own
+
+          // Body Content - Switch based on current index
           body: pages[_currentIndex],
+
+          // Bottom Navigation Bar - THE ONE AND ONLY
           bottomNavigationBar: _buildBottomNavBar(),
+
+          // Floating Action Button (Only on Home)
           floatingActionButton: _currentIndex == 0
               ? _buildFloatingActionButton()
               : null,
+        );
+          },
         );
       },
     );
   }
 
-  Widget _buildHomeContent(DocumentSnapshot student) {
+  // ================= HOME SCREEN BUILDER =================
+  Widget _buildHomeScreen(Map<String, dynamic> studentData) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 10),
-          _buildHeader(student),
+          _buildHeader(studentData),
           const SizedBox(height: 20),
           _buildAIInsightCard(),
           const SizedBox(height: 25),
 
-          _buildScheduleSection(student['department'], student['semester']),
+          _buildScheduleSection(
+            studentData['department'] ?? 'CSE', 
+            studentData['semester'] ?? 4
+          ),
           const SizedBox(height: 25),
 
           const Text(
@@ -113,27 +224,93 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  Widget _buildHeader(DocumentSnapshot student) {
+  // ================= WIDGETS =================
+
+  Widget _buildHeader(Map<String, dynamic> studentData) {
     return Row(
       children: [
         Stack(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 38,
-              backgroundImage: NetworkImage(
-                'https://i.pravatar.cc/150?u=rahul',
+              backgroundColor: const Color(0xFF5C51E1),
+              child: CircleAvatar(
+                radius: 36,
+                backgroundColor: Colors.grey.shade200,
+                child: ClipOval(
+                  child: Image.network(
+                    'https://i.pravatar.cc/150?u=${studentData['registrationNumber'] ?? 'default'}',
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Fallback to initials if image fails - with safety checks
+                      String firstName = (studentData['firstName'] ?? 'S').toString().trim();
+                      String lastName = (studentData['lastName'] ?? '').toString().trim();
+                      
+                      String initials = 'S';
+                      if (firstName.isNotEmpty) {
+                        initials = firstName[0];
+                        if (lastName.isNotEmpty) {
+                          initials += lastName[0];
+                        }
+                      }
+                      
+                      return Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            initials.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                          strokeWidth: 2,
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
             Positioned(
               bottom: 0,
               right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF5C51E1),
-                  shape: BoxShape.circle,
+              child: GestureDetector(
+                // CLICKING THE PENCIL NAVIGATES TO PROFILE TAB (Index 3)
+                onTap: () {
+                  setState(() {
+                    _currentIndex = 3; 
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF5C51E1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.edit, color: Colors.white, size: 12),
                 ),
-                child: const Icon(Icons.edit, color: Colors.white, size: 12),
               ),
             ),
           ],
@@ -148,7 +325,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
               Text(
-                "${student['firstName']} ${student['lastName']}",
+                "${studentData['firstName'] ?? 'Student'} ${studentData['lastName'] ?? 'User'}",
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -156,7 +333,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                "${student['department']} | Sem ${student['semester']}",
+                "${studentData['department'] ?? 'Dept'} | Sem ${studentData['semester'] ?? 'N/A'}",
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -169,6 +346,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildScheduleSection(String dept, int sem) {
+    // Get today's classes from timetable
+    final todayClasses = _getTodayClasses();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -179,47 +359,137 @@ class _StudentDashboardState extends State<StudentDashboard> {
               "Today's Schedule",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const Text(
-              "See All",
-              style: TextStyle(
-                color: Color(0xFF5C51E1),
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
+            TextButton(
+              onPressed: () {
+                // Navigate to full timetable screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TimetableScreen(),
+                  ),
+                );
+              },
+              child: const Text(
+                "See All",
+                style: TextStyle(
+                  color: Color(0xFF5C51E1),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        StreamBuilder<QuerySnapshot>(
-          stream: _studentService.getCourses(dept, sem),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const LinearProgressIndicator();
-            var courses = snapshot.data!.docs;
-            if (courses.isEmpty) return const Text("No classes today.");
-
-            return ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: courses.length,
-              itemBuilder: (context, index) {
-                var data = courses[index];
-                return _scheduleTimelineItem(
-                  data['courseName'],
-                  "9:00 AM - 10:00 AM",
-                  index == 0 ? "Now" : "Room S4",
-                  index == 0,
-                  index == courses.length - 1,
-                  index == 0,
-                  Icons.book_outlined,
-                  const Color(0xFFE8E7FF),
-                  const Color(0xFF5C51E1),
-                );
-              },
-            );
-          },
-        ),
+        
+        if (todayClasses.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Text(
+                "No classes today! 🎉",
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: todayClasses.length > 3 ? 3 : todayClasses.length, // Show max 3
+            itemBuilder: (context, index) {
+              var classData = todayClasses[index];
+              final isNow = index == 0; // First class is "now"
+              final isLast = index == (todayClasses.length > 3 ? 2 : todayClasses.length - 1);
+              
+              return _scheduleTimelineItem(
+                classData['subject'],
+                classData['time'],
+                isNow ? "Now" : "Room ${classData['room'] ?? 'S4'}",
+                index == 0,
+                isLast,
+                isNow,
+                Icons.book_outlined,
+                const Color(0xFFE8E7FF),
+                classData['color'],
+              );
+            },
+          ),
       ],
     );
+  }
+  
+  // Get today's classes based on day of week
+  List<Map<String, dynamic>> _getTodayClasses() {
+    final now = DateTime.now();
+    final weekday = now.weekday;
+    
+    // Weekend check
+    if (weekday == DateTime.saturday || weekday == DateTime.sunday) {
+      return [];
+    }
+    
+    // Return classes based on odd/even days (matching timetable logic)
+    if (now.day % 2 == 0) {
+      return [
+        {
+          'time': '09:00 AM',
+          'subject': 'Mathematics',
+          'color': Colors.orange,
+          'room': 'A101'
+        },
+        {
+          'time': '11:00 AM',
+          'subject': 'Computer Lab',
+          'color': Colors.purple,
+          'room': 'Lab 2'
+        },
+        {
+          'time': '02:00 PM',
+          'subject': 'Data Structure',
+          'color': const Color(0xFF5C51E1),
+          'room': 'B203'
+        },
+      ];
+    } else {
+      return [
+        {
+          'time': '08:30 AM',
+          'subject': 'Python',
+          'color': Colors.green,
+          'room': 'Lab 1'
+        },
+        {
+          'time': '10:30 AM',
+          'subject': 'English Literature',
+          'color': Colors.red,
+          'room': 'C105'
+        },
+        {
+          'time': '01:00 PM',
+          'subject': 'Android',
+          'color': Colors.teal,
+          'room': 'Lab 3'
+        },
+        {
+          'time': '03:00 PM',
+          'subject': 'Digital Fundamental',
+          'color': Colors.orange,
+          'room': 'A202'
+        },
+      ];
+    }
   }
 
   Widget _scheduleTimelineItem(
@@ -307,46 +577,63 @@ class _StudentDashboardState extends State<StudentDashboard> {
       mainAxisSpacing: 15,
       crossAxisSpacing: 15,
       children: [
-        _actionCard(Icons.calendar_month_rounded, "Attendance", Colors.blue),
-        _actionCard(Icons.bar_chart_rounded, "Results", Colors.purple),
-        _actionCard(Icons.assignment_turned_in_rounded, "Tasks", Colors.green),
-        _actionCard(Icons.account_balance_wallet_rounded, "Fees", Colors.teal),
-        _actionCard(Icons.poll_rounded, "Survey", Colors.pink),
-        _actionCard(Icons.event_note_rounded, "Exams", Colors.red),
+        _actionCard(Icons.calendar_month_rounded, "Attendance", Colors.blue, () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AttendanceScreen(studentRegNo: widget.studentRegNo),
+            ),
+          );
+        }),
+        _actionCard(Icons.bar_chart_rounded, "Results", Colors.purple, () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ResultsScreen(),
+            ),
+          );
+        }),
+        _actionCard(Icons.assignment_turned_in_rounded, "Tasks", Colors.green, null),
+        _actionCard(Icons.account_balance_wallet_rounded, "Fees", Colors.teal, null),
+        _actionCard(Icons.poll_rounded, "Survey", Colors.pink, null),
+        _actionCard(Icons.event_note_rounded, "Exams", Colors.red, null),
       ],
     );
   }
 
-  Widget _actionCard(IconData icon, String label, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
+  Widget _actionCard(IconData icon, String label, Color color, VoidCallback? onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(icon, color: color, size: 30),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-          ),
-        ],
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 30),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -394,7 +681,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5C51E1).withOpacity(0.3),
+            color: const Color(0xFF5C51E1).withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -409,8 +696,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 Row(
                   children: [
                     Icon(Icons.auto_awesome, color: Colors.white, size: 16),
-                    const SizedBox(width: 5),
-                    const Text(
+                    SizedBox(width: 5),
+                    Text(
                       "AI INSIGHT",
                       style: TextStyle(
                         color: Colors.white70,
@@ -420,8 +707,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   "Attendance Alert",
                   style: TextStyle(
                     color: Colors.white,
@@ -429,7 +716,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Text(
+                Text(
                   "Reach 75% in Data Structures soon.",
                   style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
@@ -446,7 +733,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return Container(
       decoration: BoxDecoration(
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+          ),
         ],
       ),
       child: BottomNavigationBar(
@@ -484,7 +774,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5C51E1).withOpacity(0.3),
+            color: const Color(0xFF5C51E1).withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),

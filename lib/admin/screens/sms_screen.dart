@@ -179,7 +179,7 @@ class _SmsScreenState extends State<SmsScreen> {
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
-                                value: _selectedAudience,
+                                initialValue: _selectedAudience,
                                 decoration: const InputDecoration(
                                   border: OutlineInputBorder(),
                                   contentPadding: EdgeInsets.symmetric(
@@ -304,15 +304,17 @@ class _SmsScreenState extends State<SmsScreen> {
                                     .snapshots(),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState ==
-                                      ConnectionState.waiting)
+                                      ConnectionState.waiting) {
                                     return const LinearProgressIndicator();
+                                  }
 
                                   var docs = snapshot.data?.docs ?? [];
-                                  if (docs.isEmpty)
+                                  if (docs.isEmpty) {
                                     return const Text(
                                       "No messages sent yet.",
                                       style: TextStyle(color: Colors.grey),
                                     );
+                                  }
 
                                   return ListView.separated(
                                     shrinkWrap: true,
