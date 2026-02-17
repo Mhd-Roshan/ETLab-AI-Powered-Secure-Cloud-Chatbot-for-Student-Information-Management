@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../../services/student_service.dart';
+
 class StudentSidebar extends StatelessWidget {
-  final String name, email, profileUrl;
-  const StudentSidebar({super.key, required this.name, required this.email, required this.profileUrl});
+  final String name, email, profileUrl, regNo;
+  const StudentSidebar({
+    super.key,
+    required this.name,
+    required this.email,
+    required this.profileUrl,
+    required this.regNo,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Extract initials for fallback - with safety checks
-    List<String> nameParts = name.trim().split(' ').where((part) => part.isNotEmpty).toList();
-    String initials = 'S'; // Default
-    
-    if (nameParts.isNotEmpty) {
-      if (nameParts.length >= 2 && nameParts[0].isNotEmpty && nameParts[1].isNotEmpty) {
-        initials = '${nameParts[0][0]}${nameParts[1][0]}';
-      } else if (nameParts[0].isNotEmpty) {
-        initials = nameParts[0][0];
-      }
-    }
-
+    final StudentService studentService = StudentService();
+    // ...
     return Drawer(
       child: Column(
         children: [
@@ -32,11 +30,19 @@ class StudentSidebar extends StatelessWidget {
                   height: 72,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
+                    List<String> nameParts = name
+                        .trim()
+                        .split(' ')
+                        .where((part) => part.isNotEmpty)
+                        .toList();
+                    String initials = nameParts.length >= 2
+                        ? '${nameParts[0][0]}${nameParts[1][0]}'
+                        : (nameParts.isNotEmpty ? nameParts[0][0] : 'S');
                     return Container(
                       width: 72,
                       height: 72,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
                           colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
                         ),
                         shape: BoxShape.circle,
@@ -53,29 +59,46 @@ class StudentSidebar extends StatelessWidget {
                       ),
                     );
                   },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    );
-                  },
                 ),
               ),
             ),
-            accountName: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            accountName: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             accountEmail: Text(email),
           ),
-          _drawerItem(Icons.dashboard_outlined, "Dashboard", () => Navigator.pop(context)),
+          _drawerItem(
+            Icons.dashboard_outlined,
+            "Dashboard",
+            () => Navigator.pop(context),
+          ),
           _drawerItem(Icons.calendar_month_outlined, "Attendance", () {}),
           _drawerItem(Icons.receipt_long_outlined, "Fee Details", () {}),
           _drawerItem(Icons.book_outlined, "Academics", () {}),
-          _drawerItem(Icons.chat_bubble_outline, "AI Assistant", () {}),
+          _drawerItem(Icons.cloud_sync, "Seed All Data", () async {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Seeding database...")),
+            );
+            await studentService.seedDevData(regNo);
+            if (context.mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    "Database seeded! Restart screen to see changes.",
+                  ),
+                ),
+              );
+            }
+          }),
           const Spacer(),
           const Divider(),
-          _drawerItem(Icons.logout, "Logout", () => Navigator.pushReplacementNamed(context, '/login')),
+          _drawerItem(
+            Icons.logout,
+            "Logout",
+            () => Navigator.pushReplacementNamed(context, '/login'),
+          ),
           const SizedBox(height: 20),
         ],
       ),

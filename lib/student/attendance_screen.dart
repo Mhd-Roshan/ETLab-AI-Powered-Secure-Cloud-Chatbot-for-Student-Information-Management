@@ -1,90 +1,171 @@
 import 'package:flutter/material.dart';
+import 'timetable_screen.dart';
 
 class AttendanceScreen extends StatefulWidget {
   final String? studentRegNo;
-  
-  const AttendanceScreen({super.key, this.studentRegNo});
+  final String? overallAttendance;
+
+  const AttendanceScreen({
+    super.key,
+    this.studentRegNo,
+    this.overallAttendance,
+  });
 
   @override
   State<AttendanceScreen> createState() => _AttendanceScreenState();
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
-  String selectedSemester = "Semester 4 (Current)";
-  final List<String> semesters = [
-    "Semester 4 (Current)",
-    "Semester 3",
-    "Semester 2",
-    "Semester 1"
-  ];
-
+  String selectedSemester = "Semester 1 (Current)";
+  final List<String> semesters = ["Semester 1 (Current)"];
   String searchQuery = "";
 
-  // Dummy subject-wise attendance data (replace with Firebase later)
-  final List<Map<String, dynamic>> subjectAttendance = [
+  // Hardcoded subjects to approximate 75% overall
+  // Target: 75%
+  // Total classes across 5 subjects: let's say 40 per subject -> 200 total
+  // Total present needed: 150
+  // 1. Math: 30/40 (75%)
+  // 2. Physics: 28/40 (70%)
+  // 3. Chemistry: 32/40 (80%)
+  // 4. Computer: 34/40 (85%)
+  // 5. English: 26/40 (65%)
+  // Sum Present: 30+28+32+34+26 = 150. Sum Total: 200. 150/200 = 75%.
+  final List<Map<String, dynamic>> _staticSubjects = [
     {
-      'subject': 'Data Structures',
-      'code': 'CS401',
-      'present': 28,
-      'total': 35,
-      'color': const Color(0xFF5C51E1),
-      'icon': Icons.code,
-    },
-    {
-      'subject': 'Mathematics',
-      'code': 'MA402',
+      'subject': 'ADVANCED DATA STRUCTURES',
+      'code': 'MCA101',
       'present': 30,
-      'total': 38,
-      'color': Colors.orange,
-      'icon': Icons.calculate,
+      'total': 40,
     },
     {
-      'subject': 'Python Programming',
-      'code': 'CS403',
+      'subject': 'ADVANCED SOFTWARE ENGINEERING',
+      'code': 'MCA102',
+      'present': 28,
+      'total': 40,
+    },
+    {
+      'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
+      'code': 'MCA103',
       'present': 32,
-      'total': 36,
-      'color': Colors.green,
-      'icon': Icons.computer,
+      'total': 40,
     },
     {
-      'subject': 'Digital Fundamentals',
-      'code': 'EC404',
-      'present': 25,
-      'total': 35,
-      'color': Colors.red,
-      'icon': Icons.memory,
+      'subject': 'MATHEMATICAL FOUNDATIONS FOR COMPUTING',
+      'code': 'MCA104',
+      'present': 34,
+      'total': 40,
     },
     {
-      'subject': 'English Literature',
-      'code': 'EN405',
-      'present': 33,
-      'total': 37,
-      'color': Colors.purple,
-      'icon': Icons.book,
+      'subject': 'DATA STRUCTURES LAB',
+      'code': 'MCA105',
+      'present': 26,
+      'total': 40,
     },
     {
-      'subject': 'Android Development',
-      'code': 'CS406',
-      'present': 27,
-      'total': 33,
-      'color': Colors.teal,
-      'icon': Icons.phone_android,
+      'subject': 'PROGRAMMING LAB',
+      'code': 'MCA106',
+      'present': 31,
+      'total': 40,
+    },
+    {
+      'subject': 'WEB PROGRAMMING LAB',
+      'code': 'MCA107',
+      'present': 29,
+      'total': 40,
     },
   ];
+
+  // Helper to assign consistent colors to subjects based on name
+  Color _getColorForSubject(String subject) {
+    if (subject.isEmpty) return Colors.grey;
+    final int hash = subject.codeUnits.fold(0, (a, b) => a + b);
+    final List<Color> colors = [
+      const Color(0xFF5C51E1),
+      Colors.orange,
+      Colors.green,
+      Colors.red,
+      Colors.purple,
+      Colors.teal,
+      Colors.blue,
+      Colors.indigo,
+    ];
+    return colors[hash % colors.length];
+  }
+
+  // Helper to assign consistent icons to subjects
+  IconData _getIconForSubject(String subject) {
+    subject = subject.toLowerCase();
+    if (subject.contains('math')) return Icons.calculate;
+    if (subject.contains('programming') ||
+        subject.contains('code') ||
+        subject.contains('python') ||
+        subject.contains('java')) {
+      return Icons.code;
+    }
+    if (subject.contains('computer') || subject.contains('web')) {
+      return Icons.computer;
+    }
+    if (subject.contains('digital') || subject.contains('electronics')) {
+      return Icons.memory;
+    }
+    if (subject.contains('english') || subject.contains('literature')) {
+      return Icons.book;
+    }
+    if (subject.contains('android') || subject.contains('mobile')) {
+      return Icons.phone_android;
+    }
+    if (subject.contains('network')) return Icons.wifi;
+    if (subject.contains('database')) return Icons.storage;
+    return Icons.subject;
+  }
+
+  // Calculate total present classes
+  int _calculateTotalPresent() {
+    return _staticSubjects.fold(
+      0,
+      (sum, item) => sum + (item['present'] as int),
+    );
+  }
+
+  // Calculate total classes held
+  int _calculateTotalClasses() {
+    return _staticSubjects.fold(0, (sum, item) => sum + (item['total'] as int));
+  }
+
+  // Calculate overall percentage
+  double _calculateOverallPercentage() {
+    int totalPresent = _calculateTotalPresent();
+    int totalClasses = _calculateTotalClasses();
+    if (totalClasses == 0) return 0.0;
+    return (totalPresent / totalClasses) * 100;
+  }
+
+  // Get filtered subjects with UI properties
+  List<Map<String, dynamic>> _getFilteredSubjects() {
+    // First map to UI model
+    List<Map<String, dynamic>> subjectAttendance = _staticSubjects.map((data) {
+      return {
+        ...data,
+        'color': _getColorForSubject(data['subject']),
+        'icon': _getIconForSubject(data['subject']),
+      };
+    }).toList();
+
+    // Then filter
+    if (searchQuery.isEmpty) return subjectAttendance;
+
+    return subjectAttendance.where((subject) {
+      return subject['subject'].toString().toLowerCase().contains(
+            searchQuery.toLowerCase(),
+          ) ||
+          subject['code'].toString().toLowerCase().contains(
+            searchQuery.toLowerCase(),
+          );
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Calculate overall attendance
-    int totalPresent = subjectAttendance.fold(0, (sum, item) => sum + (item['present'] as int));
-    int totalClasses = subjectAttendance.fold(0, (sum, item) => sum + (item['total'] as int));
-    double overallPercentage = (totalPresent / totalClasses) * 100;
-
-    // Filter subjects based on search
-    final filteredSubjects = subjectAttendance.where((subject) {
-      return subject['subject'].toString().toLowerCase().contains(searchQuery.toLowerCase()) ||
-             subject['code'].toString().toLowerCase().contains(searchQuery.toLowerCase());
-    }).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
@@ -92,7 +173,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 20,
+            color: Colors.black,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -110,8 +195,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Overall Attendance Card
-            _buildOverallAttendanceCard(overallPercentage, totalPresent, totalClasses),
-            
+            _buildOverallAttendanceCard(
+              _calculateOverallPercentage(),
+              _calculateTotalPresent(),
+              _calculateTotalClasses(),
+            ),
+
             const SizedBox(height: 20),
 
             // Semester Dropdown
@@ -122,7 +211,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -131,7 +220,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: selectedSemester,
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down,
+                    color: Colors.grey,
+                  ),
                   isExpanded: true,
                   style: const TextStyle(
                     color: Colors.black87,
@@ -144,7 +236,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       value: value,
                       child: Row(
                         children: [
-                          const Icon(Icons.school_outlined, size: 20, color: Colors.grey),
+                          const Icon(
+                            Icons.school_outlined,
+                            size: 20,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(width: 12),
                           Text(value),
                         ],
@@ -162,36 +258,77 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
             const SizedBox(height: 16),
 
-            // Search Bar
-            Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+            // Daily Log / Timetable Shortcut Section
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TimetableScreen(),
                   ),
-                ],
-              ),
-              child: TextField(
-                onChanged: (value) {
-                  setState(() {
-                    searchQuery = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  hintText: "Search subjects...",
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5C51E1).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.calendar_month_rounded,
+                        color: Color(0xFF5C51E1),
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Daily Attendance Log",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "View attendance status per day",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 18,
+                      color: Color(0xFF5C51E1),
+                    ),
+                  ],
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 20),
 
             // Subject-wise Attendance Header
@@ -203,20 +340,37 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 color: Colors.black87,
               ),
             ),
-            
+
             const SizedBox(height: 12),
 
             // Subject Cards List
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: filteredSubjects.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _buildSubjectCard(filteredSubjects[index]);
+            Builder(
+              builder: (context) {
+                // Filter subjects based on search
+                final filteredSubjects = _getFilteredSubjects();
+
+                if (filteredSubjects.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text("No subjects found"),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filteredSubjects.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    return _buildSubjectCard(filteredSubjects[index]);
+                  },
+                );
               },
             ),
-            
+
             const SizedBox(height: 20),
           ],
         ),
@@ -224,7 +378,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
-  Widget _buildOverallAttendanceCard(double percentage, int present, int total) {
+  Widget _buildOverallAttendanceCard(
+    double percentage,
+    int present,
+    int total,
+  ) {
     Color cardColor;
     String status;
     IconData statusIcon;
@@ -247,14 +405,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [cardColor, cardColor.withValues(alpha: 0.7)],
+          colors: [cardColor, cardColor.withOpacity(0.7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: cardColor.withValues(alpha: 0.3),
+            color: cardColor.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -272,7 +430,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 child: CircularProgressIndicator(
                   value: percentage / 100,
                   strokeWidth: 8,
-                  backgroundColor: Colors.white.withValues(alpha: 0.3),
+                  backgroundColor: Colors.white.withOpacity(0.3),
                   valueColor: const AlwaysStoppedAnimation(Colors.white),
                 ),
               ),
@@ -288,18 +446,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   ),
                   Text(
                     "$present/$total",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
                   ),
                 ],
               ),
             ],
           ),
-          
+
           const SizedBox(width: 20),
-          
+
           // Details
           Expanded(
             child: Column(
@@ -320,20 +475,17 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     const SizedBox(width: 6),
                     Text(
                       status,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  percentage >= 75 
-                      ? "Keep up the good work!" 
+                  percentage >= 75
+                      ? "Keep up the good work!"
                       : "Attend more classes to reach 75%",
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white.withOpacity(0.9),
                     fontSize: 12,
                   ),
                 ),
@@ -348,7 +500,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Widget _buildSubjectCard(Map<String, dynamic> subject) {
     int present = subject['present'];
     int total = subject['total'];
-    double percentage = (present / total) * 100;
+    double percentage = total > 0 ? (present / total) * 100 : 0.0;
     Color subjectColor = subject['color'];
 
     return Container(
@@ -357,7 +509,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -374,18 +526,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: subjectColor.withValues(alpha: 0.1),
+                    color: subjectColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    subject['icon'],
-                    color: subjectColor,
-                    size: 24,
-                  ),
+                  child: Icon(subject['icon'], color: subjectColor, size: 24),
                 ),
-                
+
                 const SizedBox(width: 12),
-                
+
                 // Subject Name & Code
                 Expanded(
                   child: Column(
@@ -401,22 +549,22 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       ),
                       Text(
                         subject['code'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Percentage Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: percentage >= 75 
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : Colors.red.withValues(alpha: 0.1),
+                    color: percentage >= 75
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.red.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -430,9 +578,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Progress Bar
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
@@ -443,26 +591,20 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 valueColor: AlwaysStoppedAnimation(subjectColor),
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Present/Total Text
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   "$present Present / $total Total",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 Text(
                   "${total - present} Absent",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),

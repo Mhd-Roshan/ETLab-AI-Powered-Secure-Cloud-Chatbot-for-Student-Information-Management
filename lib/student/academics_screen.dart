@@ -1,22 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'exams_screen.dart';
 import 'timetable_screen.dart';
 import 'attendance_screen.dart';
 import 'results_screen.dart';
 import 'assignments_screen.dart';
+import 'materials_screen.dart';
+import 'fees_screen.dart';
+import 'notifications_screen.dart';
+import 'survey_screen.dart';
 
 class AcademicsScreen extends StatefulWidget {
-  const AcademicsScreen({super.key});
+  final String? attendancePercentage;
+  final String? studentId;
+  const AcademicsScreen({super.key, this.attendancePercentage, this.studentId});
 
   @override
   State<AcademicsScreen> createState() => _AcademicsScreenState();
 }
 
 class _AcademicsScreenState extends State<AcademicsScreen> {
-  // Reference to the collection created in your firebase_init.js
-  final CollectionReference _announcementsRef = 
-      FirebaseFirestore.instance.collection('announcements');
+  final Stream<QuerySnapshot> _announcementsStream = FirebaseFirestore.instance
+      .collection('announcements')
+      .orderBy('postedDate', descending: true)
+      .limit(5)
+      .snapshots();
 
   @override
   Widget build(BuildContext context) {
@@ -30,11 +40,10 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildTopBar(),
-              const SizedBox(height: 24),
-              _buildAiInsightCard(),
+
               const SizedBox(height: 24),
               // Real-world Firestore Section
-              _buildRealtimeUpcomingSection(), 
+              _buildRealtimeUpcomingSection(),
               const SizedBox(height: 24),
               _buildGridMenu(context),
             ],
@@ -50,124 +59,57 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         // Using a Drawer trigger if you have a drawer, else just an icon
-        Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, size: 28),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ),
-        const Text(
-          "Academics",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        Stack(
+        Row(
           children: [
-            const Icon(Icons.notifications_outlined, size: 28),
-            Positioned(
-              right: 2,
-              top: 2,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: Colors.redAccent,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
+            Container(
+              height: 8,
+              width: 8,
+              decoration: const BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
               ),
-            )
-          ],
-        )
-      ],
-    );
-  }
-
-  // --- 2. AI Insight Card (Static for now, Logic can be added later) ---
-  Widget _buildAiInsightCard() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3D6AF2), Color(0xFF7E5BEF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF3D6AF2).withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      "AI INSIGHT",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        "New",
-                        style: TextStyle(color: Colors.white, fontSize: 10),
-                      ),
-                    )
-                  ],
-                ),
-                const SizedBox(height: 8),
-                RichText(
-                  text: const TextSpan(
-                    style: TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
-                    children: [
-                      TextSpan(text: "Your attendance in "),
-                      TextSpan(
-                        text: "Mathematics",
-                        style: TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
-                      ),
-                      TextSpan(text: " is trending lower. Check schedule for make-up classes."),
-                    ],
+            const SizedBox(width: 6),
+            Text(
+              "LIVE",
+              style: GoogleFonts.pressStart2p(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+        Image.asset('assets/edlab.png', height: 40),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationsScreen(),
+              ),
+            );
+          },
+          child: Stack(
+            children: [
+              const Icon(Icons.notifications_outlined, size: 28),
+              Positioned(
+                right: 2,
+                top: 2,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                 ),
-              ],
-            ),
-          )
-        ],
-      ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -184,10 +126,18 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
             ),
             GestureDetector(
               onTap: () {
-                // Navigate to a full announcements page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
+                );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -205,120 +155,73 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        
-        // STREAM BUILDER: Fetches data live from Firebase
-        StreamBuilder<QuerySnapshot>(
-          stream: _announcementsRef
-              .where('isActive', isEqualTo: true) // Only active items
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              // Show error with fallback to dummy data
-              debugPrint("Firebase Error: ${snapshot.error}");
-              return Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.warning, color: Colors.orange, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "Using offline data. Check Firebase connection.",
-                            style: TextStyle(color: Colors.orange[800], fontSize: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildEmptyState(), // Show dummy events
-                ],
-              );
-            }
 
+        StreamBuilder<QuerySnapshot>(
+          stream: _announcementsStream,
+          builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: CircularProgressIndicator(),
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: CircularProgressIndicator(strokeWidth: 3),
                 ),
               );
             }
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              // Fallback to local dummy data if database is empty - ensures UI is never blank
               return _buildEmptyState();
             }
 
-            // Sort documents by postedDate in code (instead of Firestore query)
             var docs = snapshot.data!.docs;
-            docs.sort((a, b) {
-              var aData = a.data() as Map<String, dynamic>;
-              var bData = b.data() as Map<String, dynamic>;
-              
-              if (aData['postedDate'] == null) return 1;
-              if (bData['postedDate'] == null) return -1;
-              
-              DateTime aDate = (aData['postedDate'] as Timestamp).toDate();
-              DateTime bDate = (bData['postedDate'] as Timestamp).toDate();
-              
-              return bDate.compareTo(aDate); // Descending order
-            });
-            
-            // Take only top 3
-            var topDocs = docs.take(3).toList();
 
             return ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: topDocs.length,
+              itemCount: docs.length,
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                var doc = topDocs[index];
+                var doc = docs[index];
                 Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-                // Map Firebase priority to Colors
-                Color iconColor = Colors.blue;
-                Color bgColor = Colors.blue.withValues(alpha: 0.1);
-                IconData icon = Icons.notifications_active;
+                // Determine Type & Styling
+                String type =
+                    data['type']?.toString().toLowerCase() ?? 'announcement';
+                String title = data['title'] ?? 'Notice';
+                String content = data['content'] ?? 'Important update';
 
-                if (data['priority'] == 'high') {
-                  iconColor = Colors.red;
-                  bgColor = Colors.red.withValues(alpha: 0.1);
-                  icon = Icons.priority_high;
-                } else if (data['priority'] == 'medium') {
-                  iconColor = Colors.blue;
-                  bgColor = Colors.blue.withValues(alpha: 0.1);
-                  icon = Icons.event;
-                } else {
-                  iconColor = Colors.green;
-                  bgColor = Colors.green.withValues(alpha: 0.1);
-                  icon = Icons.info_outline;
+                Color itemColor = Colors.blue;
+                IconData itemIcon = Icons.notifications_none;
+
+                if (type == 'exam' || title.toLowerCase().contains('exam')) {
+                  itemColor = Colors.red;
+                  itemIcon = Icons.edit_calendar;
+                } else if (type == 'holiday' ||
+                    title.toLowerCase().contains('holiday')) {
+                  itemColor = Colors.green;
+                  itemIcon = Icons.beach_access;
+                } else if (type == 'assignment' ||
+                    title.toLowerCase().contains('assignment')) {
+                  itemColor = Colors.orange;
+                  itemIcon = Icons.assignment_turned_in;
+                } else if (data['priority'] == 'high') {
+                  itemColor = Colors.redAccent;
+                  itemIcon = Icons.priority_high;
                 }
 
-                // Format Timestamp
-                String timeString = "Recently";
+                // Format Date
+                String timeStr = "Recently";
                 if (data['postedDate'] != null) {
-                  try {
-                    DateTime dt = (data['postedDate'] as Timestamp).toDate();
-                    timeString = DateFormat('MMM d, h:mm a').format(dt);
-                  } catch (e) {
-                    debugPrint("Error formatting date: $e");
-                    timeString = data['time'] ?? "Soon";
-                  }
+                  DateTime dt = (data['postedDate'] as Timestamp).toDate();
+                  timeStr = DateFormat('MMM d, h:mm a').format(dt);
                 }
 
                 return _buildEventCard(
-                  icon: icon,
-                  iconColor: iconColor,
-                  bgColor: bgColor,
-                  title: data['title'] ?? 'No Title',
-                  subtitle: "${data['content']} • $timeString",
+                  icon: itemIcon,
+                  iconColor: itemColor,
+                  bgColor: itemColor.withOpacity(0.1),
+                  title: title,
+                  subtitle: "$content • $timeStr",
                 );
               },
             );
@@ -425,7 +328,6 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
             style: TextStyle(color: Colors.grey[600], fontSize: 12),
           ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
       ),
     );
   }
@@ -433,18 +335,34 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
   // --- 4. Grid Menu with Navigation ---
   Widget _buildGridMenu(BuildContext context) {
     final List<Map<String, dynamic>> menuItems = [
-      {'icon': Icons.calendar_today, 'label': 'Attendance', 'color': Colors.blue},
+      {
+        'icon': Icons.calendar_today,
+        'label': 'Attendance',
+        'color': Colors.blue,
+      },
       {'icon': Icons.school, 'label': 'Results', 'color': Colors.indigo},
+      {'icon': Icons.edit_document, 'label': 'Exams', 'color': Colors.red},
       {'icon': Icons.folder, 'label': 'Materials', 'color': Colors.orange},
       {'icon': Icons.payments, 'label': 'Fees', 'color': Colors.teal},
-      {'icon': Icons.money_off, 'label': 'Over Dues', 'color': Colors.redAccent},
-      {'icon': Icons.sports_soccer, 'label': 'Activities', 'color': Colors.orangeAccent},
-      {'icon': Icons.event, 'label': 'Calendar', 'color': Colors.blueAccent}, // Links to Timetable
-      {'icon': Icons.assignment, 'label': 'Assignments', 'color': Colors.deepPurple},
-      {'icon': Icons.quiz, 'label': 'Q-Bank', 'color': Colors.tealAccent.shade700},
+      {
+        'icon': Icons.event,
+        'label': 'Calendar',
+        'color': Colors.blueAccent,
+      }, // Links to Timetable
+      {
+        'icon': Icons.assignment,
+        'label': 'Assignments',
+        'color': Colors.deepPurple,
+      },
+      {
+        'icon': Icons.quiz,
+        'label': 'Q-Bank',
+        'color': Colors.tealAccent.shade700,
+      },
       {'icon': Icons.book, 'label': 'Syllabus', 'color': Colors.cyan},
       {'icon': Icons.work, 'label': 'Placement', 'color': Colors.purple},
       {'icon': Icons.newspaper, 'label': 'News', 'color': Colors.red},
+      {'icon': Icons.poll, 'label': 'Survey', 'color': Colors.amber},
     ];
 
     return GridView.builder(
@@ -464,26 +382,65 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
             // Navigation Logic
             if (item['label'] == 'Calendar') {
               Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (context) => const TimetableScreen())
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TimetableScreen(),
+                ),
               );
             } else if (item['label'] == 'Attendance') {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AttendanceScreen())
+                MaterialPageRoute(
+                  builder: (context) => AttendanceScreen(
+                    overallAttendance: widget.attendancePercentage,
+                  ),
+                ),
               );
             } else if (item['label'] == 'Results') {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ResultsScreen()),
               );
+            } else if (item['label'] == 'Exams') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      ExamsScreen(studentId: widget.studentId),
+                ),
+              );
+            } else if (item['label'] == 'Fees') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FeesScreen(studentId: widget.studentId),
+                ),
+              );
             } else if (item['label'] == 'Assignments') {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AssignmentsScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const AssignmentsScreen(),
+                ),
+              );
+            } else if (item['label'] == 'Syllabus') {
+              // Placeholder for Syllabus
+            } else if (item['label'] == 'Materials') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MaterialsScreen(),
+                ),
+              );
+            } else if (item['label'] == 'Survey') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      SurveyScreen(studentId: widget.studentId ?? ''),
+                ),
               );
             }
-            // Add other navigation logic here (e.g., Fees, Materials)
           },
           child: Column(
             children: [
@@ -507,7 +464,7 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-              )
+              ),
             ],
           ),
         );

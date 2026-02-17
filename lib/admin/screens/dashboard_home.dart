@@ -261,11 +261,11 @@ class AiToolsSection extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.white.withOpacity(0.03)
-                    : Colors.white.withOpacity(0.6),
+                    ? Colors.white.withValues(alpha: 0.03)
+                    : Colors.white.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: Colors.white.withOpacity(isDark ? 0.08 : 0.6),
+                  color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.6),
                   width: 1,
                 ),
               ),
@@ -283,7 +283,7 @@ class AiToolsSection extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    gradientColors.first.withOpacity(0.3),
+                    gradientColors.first.withValues(alpha: 0.3),
                     Colors.transparent,
                   ],
                 ),
@@ -304,7 +304,7 @@ class AiToolsSection extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: gradientColors.first.withOpacity(0.1),
+                        color: gradientColors.first.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(icon, size: 28, color: gradientColors.first),
@@ -349,8 +349,8 @@ class AiToolsSection extends StatelessWidget {
             child: InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(24),
-              splashColor: gradientColors.last.withOpacity(0.1),
-              highlightColor: gradientColors.first.withOpacity(0.05),
+              splashColor: gradientColors.last.withValues(alpha: 0.1),
+              highlightColor: gradientColors.first.withValues(alpha: 0.05),
             ),
           ),
         ],

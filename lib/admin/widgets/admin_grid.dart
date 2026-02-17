@@ -15,6 +15,8 @@ import '../screens/fees/fees_dashboard.dart';
 import '../screens/surveys_screen.dart';
 import '../screens/alerts_screen.dart';
 import '../screens/sms_screen.dart';
+import '../screens/library_screen.dart';
+import '../screens/transport_screen.dart';
 
 class AdminWorkspaceGrid extends StatelessWidget {
   const AdminWorkspaceGrid({super.key});
@@ -98,7 +100,7 @@ class AdminWorkspaceGrid extends StatelessWidget {
         'icon': Icons.local_library,
         'label': 'Library',
         'color': Colors.tealAccent,
-        'route': const GenericPage(title: 'Library'),
+        'route': const LibraryScreen(),
       },
       {
         'icon': Icons.sms_rounded,
@@ -109,8 +111,8 @@ class AdminWorkspaceGrid extends StatelessWidget {
       {
         'icon': Icons.bus_alert,
         'label': 'Transport',
-        'color': Colors.yellow,
-        'route': const GenericPage(title: 'Transport'),
+        'color': Colors.lightBlue,
+        'route': const TransportScreen(),
       },
       {
         'icon': Icons.notifications_active_rounded,
@@ -154,7 +156,7 @@ class AdminWorkspaceGrid extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -167,7 +169,7 @@ class AdminWorkspaceGrid extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (item['color'] as Color).withOpacity(0.1),
+                  color: (item['color'] as Color).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(item['icon'], color: item['color'], size: 36),

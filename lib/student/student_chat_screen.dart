@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/edlab_ai_service.dart';
 import '../services/voice_service.dart';
 
 class StudentChatScreen extends StatefulWidget {
-  const StudentChatScreen({super.key});
+  final Map<String, dynamic> studentData;
+  final VoidCallback? onBack;
+  const StudentChatScreen({super.key, required this.studentData, this.onBack});
 
   @override
   State<StudentChatScreen> createState() => _StudentChatScreenState();
 }
 
 class _StudentChatScreenState extends State<StudentChatScreen> {
+  // ... existing state variables ...
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final EdLabAIService _aiService = EdLabAIService();
   final VoiceService _voiceService = VoiceService();
 
-  // Local message list (Empty initial state)
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'isUser': false,
-      'text': "Hi! I'm edbot. 👋 How can I help with your schedule or academics today?",
-      'time': DateTime.now(),
-    }
-  ];
+  final List<Map<String, dynamic>> _messages = [];
 
   bool _isTyping = false;
   bool _isListening = false;
@@ -31,6 +29,12 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
   @override
   void initState() {
     super.initState();
+    _messages.add({
+      'role': 'bot',
+      'text':
+          "Hi ${widget.studentData['firstName']}! I'm EdLab. 👋 \nI can help with your marks, assignments, attendance, or anything else about your studies. What's on your mind?",
+      'time': DateTime.now(),
+    });
     _initializeVoice();
   }
 
@@ -43,19 +47,16 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
         });
       }
 
-      if (!initialized) {
-        // Voice not available on this platform
-        return;
-      }
+      if (!initialized) return;
 
-      // Set up voice callbacks
       _voiceService.onSpeechResult = (result) {
         if (mounted) {
           _textController.text = result;
-          // Auto-send when voice input is complete
           if (result.trim().isNotEmpty) {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted && _textController.text.trim().isNotEmpty) {
+            Future.delayed(const Duration(milliseconds: 1500), () {
+              if (mounted &&
+                  _textController.text.trim().isNotEmpty &&
+                  !_isListening) {
                 _handleSend(_textController.text);
               }
             });
@@ -68,14 +69,8 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
           setState(() {
             _isListening = isListening;
           });
-          
-          // When listening stops, auto-send if there's text
           if (!isListening && _textController.text.trim().isNotEmpty) {
-            Future.delayed(const Duration(milliseconds: 800), () {
-              if (mounted && _textController.text.trim().isNotEmpty && !_isListening) {
-                _handleSend(_textController.text);
-              }
-            });
+            _handleSend(_textController.text);
           }
         }
       };
@@ -86,18 +81,12 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
             SnackBar(
               content: Text('Voice error: $error'),
               backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
             ),
           );
         }
       };
     } catch (e) {
-      // Voice service not available on this platform (e.g., web)
-      if (mounted) {
-        setState(() {
-          _isVoiceInitialized = false;
-        });
-      }
+      if (mounted) setState(() => _isVoiceInitialized = false);
     }
   }
 
@@ -106,7 +95,7 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
     try {
       _voiceService.dispose();
     } catch (e) {
-      // Voice service dispose failed - safe to ignore on web
+      // Ignore
     }
     _textController.dispose();
     _scrollController.dispose();
@@ -116,109 +105,325 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF0F2F5), // Softer background
+      extendBodyBehindAppBar: true,
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          // 1. Chat Messages Area
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(20),
-              itemCount: _messages.length + (_isTyping ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (_isTyping && index == _messages.length) {
-                  return _buildTypingIndicator();
-                }
-                return _buildMessageBubble(_messages[index]);
-              },
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: const NetworkImage(
+              'https://www.transparenttextures.com/patterns/cubes.png',
+            ),
+            opacity: 0.05,
+            colorFilter: ColorFilter.mode(
+              Colors.blue.withOpacity(0.05),
+              BlendMode.srcATop,
             ),
           ),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  MediaQuery.of(context).padding.top + 70,
+                  16,
+                  20,
+                ),
+                itemCount: _messages.length + (_isTyping ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == _messages.length) return _buildTypingIndicator();
+                  return _buildMessageBubble(_messages[index]);
+                },
+              ),
+            ),
 
-          // 2. Suggestion Chips (From your screenshot)
-          _buildSuggestionChips(),
+            // Chips
+            SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_messages.length < 5) _buildSuggestionChips(),
+                  _buildInputBar(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // 3. Floating Input Bar
-          _buildInputBar(),
+  PreferredSizeWidget _buildAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(65),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 18,
+                    color: Colors.black87,
+                  ),
+                  onPressed: widget.onBack ?? () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 4),
+                _buildAvatar('bot', size: 40),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "EdLab AI",
+                        style: GoogleFonts.poppins(
+                          color: Colors.black87,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Always Active",
+                            style: GoogleFonts.inter(
+                              color: Colors.green.shade700,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.history_rounded,
+                    color: Colors.grey.shade700,
+                    size: 22,
+                  ),
+                  tooltip: "Clear History",
+                  onPressed: _showClearConfirm,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showClearConfirm() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          "Clear Chat?",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "This will delete all current messages in this session.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade50,
+              foregroundColor: Colors.red,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              setState(() {
+                _messages.clear();
+                _messages.add({
+                  'role': 'bot',
+                  'text': "Chat reset! How can I assist you now?",
+                  'time': DateTime.now(),
+                });
+              });
+              Navigator.pop(context);
+            },
+            child: const Text("Clear All"),
+          ),
         ],
       ),
     );
   }
 
-  // --- UI Components ---
+  Widget _buildAvatar(String role, {double size = 32}) {
+    bool isBot = role == 'bot';
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.black54),
-        onPressed: () => Navigator.pop(context),
-      ),
-      centerTitle: false,
-      title: Row(
-        children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.blue.shade50,
-                radius: 18,
-                child: const Icon(Icons.auto_awesome, color: Color(0xFF3D6AF2), size: 18),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: Colors.lightGreenAccent.shade400,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-            ],
+    if (isBot) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF3D6AF2), Color(0xFF6B92F2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("edbot", style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-              Text("Online", style: TextStyle(color: Colors.blue.shade400, fontSize: 12)),
-            ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(Icons.auto_awesome, color: Colors.white, size: size * 0.6),
+      );
+    }
+
+    // Student Avatar logic
+    String? profileUrl = widget.studentData['profileImage'];
+    String regNo = (widget.studentData['registrationNumber'] ?? 'default')
+        .toString();
+
+    // If no explicit profile image, use the same pravatar service as dashboard
+    final String imageUrl = (profileUrl != null && profileUrl.isNotEmpty)
+        ? profileUrl
+        : 'https://i.pravatar.cc/150?u=$regNo';
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.grey.shade200,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      actions: [
-        IconButton(icon: const Icon(Icons.more_horiz, color: Colors.black54), onPressed: () {}),
-      ],
+      child: ClipOval(
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // Fallback to initial like Dashboard
+            String firstName = (widget.studentData['firstName'] ?? 'S')
+                .toString()
+                .trim();
+            String initials = firstName.isNotEmpty
+                ? firstName[0].toUpperCase()
+                : 'S';
+
+            return Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  initials,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: size * 0.45,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
   Widget _buildSuggestionChips() {
     final List<Map<String, dynamic>> suggestions = [
-      {'label': 'My Schedule', 'icon': Icons.calendar_today},
-      {'label': 'Exam Dates', 'icon': Icons.star_border},
-      {'label': 'Library', 'icon': Icons.book_outlined},
+      {'label': 'My Attendance', 'icon': Icons.calendar_month},
+      {'label': 'Exam Results', 'icon': Icons.grade},
+      {'label': 'Pending Assignments', 'icon': Icons.assignment},
+      {'label': 'Class Schedule', 'icon': Icons.schedule},
     ];
 
     return Container(
-      height: 50,
-      margin: const EdgeInsets.only(bottom: 10),
+      height: 44,
+      margin: const EdgeInsets.only(bottom: 12),
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
         itemCount: suggestions.length,
-        separatorBuilder: (ctx, i) => const SizedBox(width: 10),
+        separatorBuilder: (ctx, i) => const SizedBox(width: 8),
         itemBuilder: (ctx, i) {
-          return ActionChip(
-            backgroundColor: Colors.white,
-            side: BorderSide(color: Colors.grey.shade200),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            avatar: Icon(suggestions[i]['icon'] as IconData, size: 16, color: const Color(0xFF3D6AF2)),
-            label: Text(suggestions[i]['label'] as String, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-            onPressed: () => _handleSend(suggestions[i]['label'] as String),
+          return InkWell(
+            onTap: () => _handleSend(suggestions[i]['label']),
+            borderRadius: BorderRadius.circular(15),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: Colors.blue.shade100),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.shade50,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    suggestions[i]['icon'],
+                    size: 14,
+                    color: const Color(0xFF3D6AF2),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    suggestions[i]['label'],
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),
@@ -227,70 +432,81 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
 
   Widget _buildInputBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, -5))
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, -5),
+          ),
         ],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-            child: const Icon(Icons.add, color: Colors.grey),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.grey.shade200),
+                color: const Color(0xFFF1F4F9),
+                borderRadius: BorderRadius.circular(25),
               ),
-              child: TextField(
-                controller: _textController,
-                decoration: InputDecoration(
-                  hintText: _isListening ? "Listening..." : "Ask about your schedule...",
-                  border: InputBorder.none,
-                  hintStyle: TextStyle(
-                    color: _isListening ? const Color(0xFF3D6AF2) : Colors.grey,
-                    fontWeight: _isListening ? FontWeight.w500 : FontWeight.normal,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _textController,
+                      style: GoogleFonts.inter(fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: _isListening
+                            ? "Listening..."
+                            : "Ask me anything...",
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(
+                          color: _isListening
+                              ? const Color(0xFF3D6AF2)
+                              : Colors.grey.shade500,
+                          fontWeight: _isListening
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      onSubmitted: _handleSend,
+                    ),
                   ),
-                ),
-                onSubmitted: _handleSend,
+                  GestureDetector(
+                    onTap: _toggleVoiceListening,
+                    child: Icon(
+                      _isListening ? Icons.mic : Icons.mic_none,
+                      color: _isListening ? Colors.red : Colors.grey.shade600,
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: _toggleVoiceListening,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: _isListening ? Colors.red.shade50 : Colors.grey.shade100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _isListening ? Icons.mic : Icons.mic_none,
-                color: _isListening ? Colors.red : Colors.grey,
-                size: 24,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           GestureDetector(
             onTap: () => _handleSend(_textController.text),
             child: Container(
-              padding: const EdgeInsets.all(12),
+              height: 48,
+              width: 48,
               decoration: const BoxDecoration(
-                color: Color(0xFF3D6AF2),
+                gradient: LinearGradient(
+                  colors: [Color(0xFF3D6AF2), Color(0xFF5C81F2)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.send_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ],
@@ -299,56 +515,137 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
   }
 
   Widget _buildMessageBubble(Map<String, dynamic> msg) {
-    bool isUser = msg['isUser'];
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        decoration: BoxDecoration(
-          color: isUser ? const Color(0xFF3D6AF2) : const Color(0xFFF3F7FF),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: Radius.circular(isUser ? 20 : 4),
-            bottomRight: Radius.circular(isUser ? 4 : 20),
+    bool isUser = msg['role'] == 'user' || msg['isUser'] == true;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isUser) ...[_buildAvatar('bot'), const SizedBox(width: 8)],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isUser ? const Color(0xFF3D6AF2) : Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 5,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isUser ? 20 : 5),
+                  bottomRight: Radius.circular(isUser ? 5 : 20),
+                ),
+                gradient: isUser
+                    ? const LinearGradient(
+                        colors: [Color(0xFF3D6AF2), Color(0xFF5C81F2)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+              ),
+              child: isUser
+                  ? Text(
+                      msg['text'],
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
+                    )
+                  : MarkdownBody(
+                      data: msg['text'],
+                      styleSheet: MarkdownStyleSheet(
+                        p: GoogleFonts.inter(
+                          color: Colors.black87,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                        strong: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                        listBullet: GoogleFonts.inter(color: Colors.black87),
+                      ),
+                    ),
+            ),
           ),
-        ),
-        child: Text(
-          msg['text'],
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.black87,
-            height: 1.4,
-            fontSize: 15,
-          ),
-        ),
+          if (isUser) ...[const SizedBox(width: 8), _buildAvatar('user')],
+        ],
       ),
     );
   }
 
   Widget _buildTypingIndicator() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)),
-        child: const Text("edbot is thinking...", style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic)),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _buildAvatar('bot'),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 5,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _dot(0),
+                const SizedBox(width: 4),
+                _dot(1),
+                const SizedBox(width: 4),
+                _dot(2),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // --- Logic ---
+  Widget _dot(int index) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeInOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: (value + (index * 0.3)) % 1.0,
+          child: Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Color(0xFF3D6AF2),
+              shape: BoxShape.circle,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // --- Actions ---
 
   Future<void> _toggleVoiceListening() async {
     if (!_isVoiceInitialized) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Voice service not available'),
-          backgroundColor: Colors.orange,
-          behavior: SnackBarBehavior.floating,
-        ),
+        const SnackBar(content: Text('Voice not available on this device')),
       );
       return;
     }
@@ -357,53 +654,56 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
       await _voiceService.stopListening();
     } else {
       await _voiceService.startListening();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.mic, color: Colors.white),
-                SizedBox(width: 12),
-                Expanded(child: Text('Listening... Message will send automatically')),
-              ],
-            ),
-            backgroundColor: Color(0xFF3D6AF2),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      if (mounted) setState(() => _isListening = true);
     }
   }
 
   void _handleSend(String text) async {
     if (text.trim().isEmpty) return;
 
-    setState(() {
-      _messages.add({'isUser': true, 'text': text, 'time': DateTime.now()});
-      _isTyping = true;
-    });
+    if (mounted) {
+      setState(() {
+        _messages.add({'role': 'user', 'text': text, 'time': DateTime.now()});
+        _isTyping = true;
+      });
+    }
     _textController.clear();
     _scrollToBottom();
 
-    // CALL YOUR SERVICE
     try {
-      String response = await _aiService.sendMessage('student_user', text); // Using sendMessage
+      String response = await _aiService.sendStudentMessage(
+        widget.studentData['registrationNumber'] ?? 'unknown',
+        text,
+        widget.studentData,
+      );
 
       if (mounted) {
         setState(() {
           _isTyping = false;
-          _messages.add({'isUser': false, 'text': response, 'time': DateTime.now()});
+          _messages.add({
+            'role': 'bot',
+            'text': response,
+            'time': DateTime.now(),
+          });
         });
         _scrollToBottom();
       }
     } catch (e) {
-      if (mounted) setState(() => _isTyping = false);
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+          _messages.add({
+            'role': 'bot',
+            'text': "I'm having trouble connecting. Please check your network.",
+            'time': DateTime.now(),
+          });
+        });
+      }
     }
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,

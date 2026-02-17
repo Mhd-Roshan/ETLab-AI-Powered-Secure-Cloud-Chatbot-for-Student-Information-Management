@@ -1,13 +1,23 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../services/student_service.dart';
+import '../services/edlab_ai_service.dart';
 import 'widgets/student_sidebar.dart';
 import 'student_profile_page.dart';
 import 'timetable_screen.dart';
 import 'academics_screen.dart';
 import 'attendance_screen.dart';
 import 'results_screen.dart';
-import 'student_chat_screen.dart';
+import 'package:edlab/student/student_chat_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'fees_screen.dart';
+import 'survey_screen.dart';
+import 'notifications_screen.dart';
+import 'exams_screen.dart';
+import 'assignments_screen.dart';
+import '../login.dart';
 
 class StudentDashboard extends StatefulWidget {
   final String studentRegNo;
@@ -19,17 +29,41 @@ class StudentDashboard extends StatefulWidget {
 
 class _StudentDashboardState extends State<StudentDashboard> {
   final StudentService _studentService = StudentService();
+
+  // Use lazy initialization for AI service to handle hot reload state updates safer
+  EdLabAIService? _aiServiceInstance;
+  EdLabAIService get _aiService => _aiServiceInstance ??= EdLabAIService();
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Cache the insight future - now a list of insights
+  Future<List<Map<String, String>>>? _insightListFuture;
+
+  // Timer for cycling insights
+  Timer? _insightTimer;
+  int _currentInsightIndex = 0;
+  List<Map<String, String>> _insights = [];
 
   // 0 = Home, 1 = Academics, 2 = Chat, 3 = Profile
   int _currentIndex = 0;
-  
+
+  // FAB Position
+  Offset? _fabOffset;
+
   // Cache the future to prevent rebuilds - initialized on first access
   Future<DocumentSnapshot?>? _userDataFuture;
 
   Future<DocumentSnapshot?> _getUserData() {
-    _userDataFuture ??= _studentService.getUserByIdentifier(widget.studentRegNo);
+    _userDataFuture ??= _studentService.getUserByIdentifier(
+      widget.studentRegNo,
+    );
     return _userDataFuture!;
+  }
+
+  @override
+  void dispose() {
+    _insightTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -54,14 +88,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   const SizedBox(height: 16),
                   const Text('Error loading student data'),
                   const SizedBox(height: 8),
-                  Text('${futureSnapshot.error}', style: const TextStyle(fontSize: 12)),
+                  Text(
+                    '${futureSnapshot.error}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 ],
               ),
             ),
           );
         }
 
-        if (!futureSnapshot.hasData || futureSnapshot.data == null || !futureSnapshot.data!.exists) {
+        if (!futureSnapshot.hasData ||
+            futureSnapshot.data == null ||
+            !futureSnapshot.data!.exists) {
           return Scaffold(
             body: Center(
               child: Column(
@@ -71,11 +110,21 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   const SizedBox(height: 16),
                   const Text('Student not found'),
                   const SizedBox(height: 8),
-                  Text('ID: ${widget.studentRegNo}', style: const TextStyle(fontSize: 12)),
+                  Text(
+                    'ID: ${widget.studentRegNo}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Go Back'),
+                    onPressed: () {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                    child: const Text('Go Back to Login'),
                   ),
                 ],
               ),
@@ -85,12 +134,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
         // Extract data from users collection
         final doc = futureSnapshot.data!;
-        final Map<String, dynamic> userData = doc.data() as Map<String, dynamic>? ?? {};
-        
+        final Map<String, dynamic> userData =
+            doc.data() as Map<String, dynamic>? ?? {};
+
         // Map users collection fields to student fields
         final Map<String, dynamic> studentData = {
           'registrationNumber': userData['username'] ?? widget.studentRegNo,
-          'firstName': userData['firstname'] ?? userData['firstName'] ?? 'Student',
+          'firstName':
+              userData['firstname'] ?? userData['firstName'] ?? 'Student',
           'lastName': userData['lastname'] ?? userData['lastName'] ?? '',
           'email': userData['email'] ?? '',
           'phone': userData['phone'] ?? '',
@@ -103,7 +154,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           'isActive': userData['isActive'] ?? true,
           'role': userData['role'] ?? 'student',
         };
-        
+
         debugPrint("=== STUDENT DATA LOADED ===");
         debugPrint("User Data: $userData");
         debugPrint("Mapped Student Data: $studentData");
@@ -112,81 +163,170 @@ class _StudentDashboardState extends State<StudentDashboard> {
         return StreamBuilder<QuerySnapshot>(
           stream: _studentService.getAttendance(widget.studentRegNo),
           builder: (context, attendanceSnap) {
-            String attendancePercentage = "81.8%";
-            if (attendanceSnap.hasData && attendanceSnap.data!.docs.isNotEmpty) {
-              double val = attendanceSnap.data!.docs.where((d) => d['status'] == 'present').length /
+            // Use the attendance from user data directly, or fallback to calculation if available
+            String attendancePercentage =
+                (userData['attendancePercentage']?.toString() ?? "75") + "%";
+
+            if (attendanceSnap.hasData &&
+                attendanceSnap.data!.docs.isNotEmpty) {
+              double val =
+                  attendanceSnap.data!.docs
+                      .where((d) => d['status'] == 'present')
+                      .length /
                   attendanceSnap.data!.docs.length;
               attendancePercentage = "${(val * 100).toInt()}%";
             }
 
-            // Define Pages - Each screen is now separate
+            // Define Pages - Each screen is now separate with stable keys
             final List<Widget> pages = [
-              _buildHomeScreen(studentData),     // Index 0 - Home
-              const AcademicsScreen(),            // Index 1 - Academics  
-              const StudentChatScreen(),          // Index 2 - Chat
+              _buildHomeScreen(
+                studentData,
+                attendancePercentage,
+                key: const ValueKey('home_screen'),
+              ), // Index 0 - Home
+              AcademicsScreen(
+                key: const ValueKey('academics_screen'),
+                attendancePercentage: attendancePercentage,
+                studentId: widget.studentRegNo,
+              ), // Index 1 - Academics
+              StudentChatScreen(
+                key: const ValueKey('chat_screen'),
+                studentData: studentData,
+                onBack: () => setState(() => _currentIndex = 0),
+              ), // Index 2 - Chat
               StudentProfilePage(
+                key: const ValueKey('profile_screen'),
                 userData: studentData,
                 attendancePercentage: attendancePercentage,
-              ),      // Index 3 - Profile
+                studentId: doc.id,
+              ), // Index 3 - Profile
             ];
 
-            return Scaffold(
-              key: _scaffoldKey,
-              backgroundColor: const Color(0xFFF8F9FE),
-              
-              // Sidebar (only show on home screen)
-              drawer: _currentIndex == 0 
-                ? StudentSidebar(
-                    name: "${studentData['firstName'] ?? 'Student'} ${studentData['lastName'] ?? ''}",
-                    email: studentData['email'] ?? '',
-                    profileUrl: 'https://i.pravatar.cc/150?u=${studentData['registrationNumber'] ?? 'default'}',
-                  )
-                : null,
+            // Initialize FAB position only once
+            if (_fabOffset == null) {
+              final size = MediaQuery.of(context).size;
+              _fabOffset = Offset(size.width - 70, size.height - 160);
+            }
 
-              // AppBar: Show only on Home (Index 0)
-              appBar: _currentIndex == 0
-              ? AppBar(
-                  backgroundColor: Colors.white,
-                  elevation: 0,
-                  scrolledUnderElevation: 0,
-                  toolbarHeight: 60,
-                  leading: IconButton(
-                    icon: const Icon(Icons.menu, color: Colors.black, size: 28),
-                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                  ),
-                  title: const Text(
-                    'Dashboard',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
+            return Stack(
+              children: [
+                Scaffold(
+                  key: _scaffoldKey,
+                  backgroundColor: const Color(0xFFF8F9FE),
+
+                  // Sidebar (only show on home screen)
+                  drawer: _currentIndex == 0
+                      ? StudentSidebar(
+                          name:
+                              "${studentData['firstName'] ?? 'Student'} ${studentData['lastName'] ?? ''}",
+                          email: studentData['email'] ?? '',
+                          regNo: widget.studentRegNo,
+                          profileUrl:
+                              'https://i.pravatar.cc/150?u=${studentData['registrationNumber'] ?? 'default'}',
+                        )
+                      : null,
+
+                  // AppBar: Show only on Home (Index 0)
+                  appBar: _currentIndex == 0
+                      ? AppBar(
+                          backgroundColor: Colors.white,
+                          elevation: 0,
+                          scrolledUnderElevation: 0,
+                          toolbarHeight: 60,
+                          leadingWidth: 80,
+                          leading: Container(
+                            margin: const EdgeInsets.only(left: 16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  height: 8,
+                                  width: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  "LIVE",
+                                  style: GoogleFonts.pressStart2p(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize:
+                                        10, // Pixel fonts are often large, so reducing size
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          title: Image.asset('assets/edlab.png', height: 40),
+                          centerTitle: true,
+                          actions: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const NotificationsScreen(),
+                                  ),
+                                );
+                              },
+                              child: Stack(
+                                children: [
+                                  const Icon(
+                                    Icons.notifications_outlined,
+                                    size: 28,
+                                  ),
+                                  Positioned(
+                                    right: 2,
+                                    top: 2,
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                          ],
+                        )
+                      : null, // Hide AppBar on other pages if they have their own
+                  // Body Content - Switch based on current index using IndexedStack
+                  body: IndexedStack(index: _currentIndex, children: pages),
+
+                  // Bottom Navigation Bar - THE ONE AND ONLY
+                  bottomNavigationBar: _buildBottomNavBar(),
+                ),
+
+                // DRAGGABLE FLOATING ACTION BUTTON
+                if (_currentIndex == 0 && _fabOffset != null)
+                  Positioned(
+                    left: _fabOffset!.dx,
+                    top: _fabOffset!.dy,
+                    child: GestureDetector(
+                      onPanUpdate: (details) {
+                        setState(() {
+                          _fabOffset = Offset(
+                            _fabOffset!.dx + details.delta.dx,
+                            _fabOffset!.dy + details.delta.dy,
+                          );
+                        });
+                      },
+                      child: _buildFloatingActionButton(),
                     ),
                   ),
-                  centerTitle: true,
-                  actions: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.notifications_none_rounded,
-                        color: Colors.black,
-                        size: 28,
-                      ),
-                      onPressed: () {},
-                    ),
-                    const SizedBox(width: 10),
-                  ],
-                )
-              : null, // Hide AppBar on other pages if they have their own
-
-          // Body Content - Switch based on current index
-          body: pages[_currentIndex],
-
-          // Bottom Navigation Bar - THE ONE AND ONLY
-          bottomNavigationBar: _buildBottomNavBar(),
-
-          // Floating Action Button (Only on Home)
-          floatingActionButton: _currentIndex == 0
-              ? _buildFloatingActionButton()
-              : null,
-        );
+              ],
+            );
           },
         );
       },
@@ -194,21 +334,26 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   // ================= HOME SCREEN BUILDER =================
-  Widget _buildHomeScreen(Map<String, dynamic> studentData) {
+  Widget _buildHomeScreen(
+    Map<String, dynamic> studentData,
+    String attendance, {
+    Key? key,
+  }) {
     return SingleChildScrollView(
+      key: key,
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 10),
-          _buildHeader(studentData),
+          _buildHeader(studentData, attendance),
           const SizedBox(height: 20),
-          _buildAIInsightCard(),
+          _buildAIInsightCard(studentData, attendance),
           const SizedBox(height: 25),
 
           _buildScheduleSection(
-            studentData['department'] ?? 'CSE', 
-            studentData['semester'] ?? 4
+            studentData['department'] ?? 'CSE',
+            studentData['semester'] ?? 4,
           ),
           const SizedBox(height: 25),
 
@@ -226,7 +371,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   // ================= WIDGETS =================
 
-  Widget _buildHeader(Map<String, dynamic> studentData) {
+  Widget _buildHeader(Map<String, dynamic> studentData, String attendance) {
     return Row(
       children: [
         Stack(
@@ -245,9 +390,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       // Fallback to initials if image fails - with safety checks
-                      String firstName = (studentData['firstName'] ?? 'S').toString().trim();
-                      String lastName = (studentData['lastName'] ?? '').toString().trim();
-                      
+                      String firstName = (studentData['firstName'] ?? 'S')
+                          .toString()
+                          .trim();
+                      String lastName = (studentData['lastName'] ?? '')
+                          .toString()
+                          .trim();
+
                       String initials = 'S';
                       if (firstName.isNotEmpty) {
                         initials = firstName[0];
@@ -255,7 +404,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           initials += lastName[0];
                         }
                       }
-                      
+
                       return Container(
                         width: 72,
                         height: 72,
@@ -283,7 +432,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         child: CircularProgressIndicator(
                           value: loadingProgress.expectedTotalBytes != null
                               ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
+                                    loadingProgress.expectedTotalBytes!
                               : null,
                           strokeWidth: 2,
                         ),
@@ -300,7 +449,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 // CLICKING THE PENCIL NAVIGATES TO PROFILE TAB (Index 3)
                 onTap: () {
                   setState(() {
-                    _currentIndex = 3; 
+                    _currentIndex = 3;
                   });
                 },
                 child: Container(
@@ -320,35 +469,97 @@ class _StudentDashboardState extends State<StudentDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Welcome back,",
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
               Text(
-                "${studentData['firstName'] ?? 'Student'} ${studentData['lastName'] ?? 'User'}",
-                style: const TextStyle(
+                studentData['department']?.toString().toUpperCase() == 'MCA'
+                    ? "Master Of Computer Application"
+                    : (studentData['department'] ??
+                          "Master Of Computer Application"),
+                style: GoogleFonts.poppins(
+                  color: Colors.grey,
+                  fontSize: 12, // Slightly smaller to help it fit
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                "${studentData['firstName'] ?? 'ROSHAN'}".toUpperCase(),
+                style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                "${studentData['department'] ?? 'Dept'} | Sem ${studentData['semester'] ?? 'N/A'}",
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                "Semester ${studentData['semester'] ?? '1'}",
+                style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12),
                 overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
         ),
-        _buildCircularAttendance(),
+        _buildCircularAttendance(attendance),
       ],
     );
   }
 
   Widget _buildScheduleSection(String dept, int sem) {
-    // Get today's classes from timetable
-    final todayClasses = _getTodayClasses();
-    
+    // 1. Get ALL classes for today
+    final allClasses = _getAllClassesForDay();
+    final now = DateTime.now();
+    final dateFormat = DateFormat("hh:mm a");
+
+    // 2. Filter relevant classes (Ongoing or Future)
+    List<Map<String, dynamic>> relevantClasses = [];
+
+    for (var cls in allClasses) {
+      try {
+        // Parse class time
+        final timeStr = cls['time'] as String;
+        final parsedTime = dateFormat.parse(timeStr);
+        final startTime = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          parsedTime.hour,
+          parsedTime.minute,
+        );
+        // Assume 1 hour duration if not specified
+        final endTime = startTime.add(const Duration(hours: 1));
+
+        // Logic:
+        // - ongoing: start <= now < end
+        // - future: now < start
+        // - past: end <= now
+
+        if (now.isBefore(endTime)) {
+          // It's either ongoing or future -> keep it
+          // Check if it is "Now"
+          bool isNow =
+              now.isAfter(startTime) || now.isAtSameMomentAs(startTime);
+
+          relevantClasses.add({
+            ...cls,
+            'startTime': startTime,
+            'endTime': endTime,
+            'isNow': isNow,
+          });
+        }
+      } catch (e) {
+        debugPrint("Error parsing time for ${cls['subject']}: $e");
+      }
+    }
+
+    // Sort by time just in case
+    relevantClasses.sort(
+      (a, b) =>
+          (a['startTime'] as DateTime).compareTo(b['startTime'] as DateTime),
+    );
+
+    // Take top 3
+    final displayClasses = relevantClasses.take(3).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -361,7 +572,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
             TextButton(
               onPressed: () {
-                // Navigate to full timetable screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -381,10 +591,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ],
         ),
         const SizedBox(height: 10),
-        
-        if (todayClasses.isEmpty)
+
+        if (displayClasses.isEmpty)
           Container(
             padding: const EdgeInsets.all(20),
+            width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -396,27 +607,40 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 ),
               ],
             ),
-            child: const Center(
-              child: Text(
-                "No classes today! 🎉",
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 40,
+                  color: Colors.green.withOpacity(0.5),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "All classes completed! 🎉",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           )
         else
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: todayClasses.length > 3 ? 3 : todayClasses.length, // Show max 3
+            itemCount: displayClasses.length,
             itemBuilder: (context, index) {
-              var classData = todayClasses[index];
-              final isNow = index == 0; // First class is "now"
-              final isLast = index == (todayClasses.length > 3 ? 2 : todayClasses.length - 1);
-              
+              final classData = displayClasses[index];
+              final isLast = index == displayClasses.length - 1;
+              final isNow = classData['isNow'] as bool;
+
               return _scheduleTimelineItem(
                 classData['subject'],
                 classData['time'],
-                isNow ? "Now" : "Room ${classData['room'] ?? 'S4'}",
+                isNow ? "Ongoing Class" : "Room ${classData['room'] ?? 'S4'}",
                 index == 0,
                 isLast,
                 isNow,
@@ -429,64 +653,64 @@ class _StudentDashboardState extends State<StudentDashboard> {
       ],
     );
   }
-  
-  // Get today's classes based on day of week
-  List<Map<String, dynamic>> _getTodayClasses() {
+
+  // Get raw list of all classes for the day
+  List<Map<String, dynamic>> _getAllClassesForDay() {
     final now = DateTime.now();
     final weekday = now.weekday;
-    
+
     // Weekend check
     if (weekday == DateTime.saturday || weekday == DateTime.sunday) {
       return [];
     }
-    
-    // Return classes based on odd/even days (matching timetable logic)
+
+    // Mock data based on odd/even days
     if (now.day % 2 == 0) {
       return [
         {
           'time': '09:00 AM',
-          'subject': 'Mathematics',
+          'subject': 'ADVANCED DATA STRUCTURES',
           'color': Colors.orange,
-          'room': 'A101'
+          'room': 'A101',
         },
         {
           'time': '11:00 AM',
-          'subject': 'Computer Lab',
+          'subject': 'PROGRAMMING LAB',
           'color': Colors.purple,
-          'room': 'Lab 2'
+          'room': 'Lab 2',
         },
         {
           'time': '02:00 PM',
-          'subject': 'Data Structure',
-          'color': const Color(0xFF5C51E1),
-          'room': 'B203'
+          'subject': 'MATHEMATICAL FOUNDATIONS FOR COMPUTING',
+          'color': Colors.blue,
+          'room': 'B203',
         },
       ];
     } else {
       return [
         {
           'time': '08:30 AM',
-          'subject': 'Python',
+          'subject': 'ADVANCED SOFTWARE ENGINEERING',
           'color': Colors.green,
-          'room': 'Lab 1'
+          'room': 'Room 302',
         },
         {
           'time': '10:30 AM',
-          'subject': 'English Literature',
+          'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
           'color': Colors.red,
-          'room': 'C105'
+          'room': 'C105',
         },
         {
           'time': '01:00 PM',
-          'subject': 'Android',
+          'subject': 'WEB PROGRAMMING LAB',
           'color': Colors.teal,
-          'room': 'Lab 3'
+          'room': 'Web Lab',
         },
         {
           'time': '03:00 PM',
-          'subject': 'Digital Fundamental',
+          'subject': 'DATA STRUCTURES LAB',
           'color': Colors.orange,
-          'room': 'A202'
+          'room': 'Lab 1',
         },
       ];
     }
@@ -577,31 +801,73 @@ class _StudentDashboardState extends State<StudentDashboard> {
       mainAxisSpacing: 15,
       crossAxisSpacing: 15,
       children: [
-        _actionCard(Icons.calendar_month_rounded, "Attendance", Colors.blue, () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AttendanceScreen(studentRegNo: widget.studentRegNo),
-            ),
-          );
-        }),
+        _actionCard(
+          Icons.calendar_month_rounded,
+          "Attendance",
+          Colors.blue,
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    AttendanceScreen(studentRegNo: widget.studentRegNo),
+              ),
+            );
+          },
+        ),
         _actionCard(Icons.bar_chart_rounded, "Results", Colors.purple, () {
           Navigator.push(
             context,
+            MaterialPageRoute(builder: (context) => const ResultsScreen()),
+          );
+        }),
+        _actionCard(Icons.school_rounded, "Assignments", Colors.green, () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AssignmentsScreen()),
+          );
+        }),
+        _actionCard(
+          Icons.account_balance_wallet_rounded,
+          "Fees",
+          Colors.teal,
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    FeesScreen(studentId: widget.studentRegNo),
+              ),
+            );
+          },
+        ),
+        _actionCard(Icons.poll_rounded, "Survey", Colors.pink, () {
+          Navigator.push(
+            context,
             MaterialPageRoute(
-              builder: (context) => const ResultsScreen(),
+              builder: (context) =>
+                  SurveyScreen(studentId: widget.studentRegNo),
             ),
           );
         }),
-        _actionCard(Icons.assignment_turned_in_rounded, "Tasks", Colors.green, null),
-        _actionCard(Icons.account_balance_wallet_rounded, "Fees", Colors.teal, null),
-        _actionCard(Icons.poll_rounded, "Survey", Colors.pink, null),
-        _actionCard(Icons.event_note_rounded, "Exams", Colors.red, null),
+        _actionCard(Icons.event_note_rounded, "Exams", Colors.red, () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ExamsScreen(studentId: widget.studentRegNo),
+            ),
+          );
+        }),
       ],
     );
   }
 
-  Widget _actionCard(IconData icon, String label, Color color, VoidCallback? onTap) {
+  Widget _actionCard(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback? onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -638,41 +904,120 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  Widget _buildCircularAttendance() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _studentService.getAttendance(widget.studentRegNo),
-      builder: (context, snap) {
-        double val = 0.0;
-        if (snap.hasData && snap.data!.docs.isNotEmpty) {
-          val =
-              snap.data!.docs.where((d) => d['status'] == 'present').length /
-              snap.data!.docs.length;
-        }
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 55,
-              height: 55,
-              child: CircularProgressIndicator(
-                value: val,
-                strokeWidth: 5,
-                backgroundColor: Colors.grey.shade200,
-                valueColor: const AlwaysStoppedAnimation(Color(0xFF8DC63F)),
-              ),
-            ),
-            Text(
-              "${(val * 100).toInt()}%",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-          ],
-        );
-      },
+  Widget _buildCircularAttendance(String attendanceStr) {
+    // Parse percentage string "75%" -> 0.75
+    double val = 0.75; // Default fallback
+    try {
+      final clean = attendanceStr.replaceAll('%', '').trim();
+      val = double.parse(clean) / 100.0;
+    } catch (e) {
+      val = 0.75;
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 55,
+          height: 55,
+          child: CircularProgressIndicator(
+            value: val,
+            strokeWidth: 5,
+            backgroundColor: Colors.grey.shade200,
+            valueColor: const AlwaysStoppedAnimation(Color(0xFF8DC63F)),
+          ),
+        ),
+        Text(
+          "${(val * 100).toInt()}%",
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        ),
+      ],
     );
   }
 
-  Widget _buildAIInsightCard() {
-    return Container(
+  Widget _buildAIInsightCard(
+    Map<String, dynamic> studentData,
+    String attendance,
+  ) {
+    // Safety check for insights list
+    // ignore: unnecessary_null_comparison
+    if (_insights == null) {
+      _insights = [];
+    }
+
+    // Fetch insights if not already loaded
+    if (_insights.isEmpty && _insightListFuture == null) {
+      final academicData = {
+        'gpa': studentData['gpa'] ?? 0.0,
+        'semester': studentData['semester'] ?? 1,
+      };
+      final aiContext = <String, dynamic>{
+        'firstName': studentData['firstName'],
+        'department': studentData['department'],
+        'attendance': attendance.replaceAll('%', ''),
+      };
+
+      _insightListFuture = _aiService.getStudentInsights(
+        aiContext,
+        academicData,
+      );
+
+      _insightListFuture!
+          .then((data) {
+            if (mounted) {
+              setState(() {
+                _insights = data;
+                _currentInsightIndex = 0;
+              });
+
+              _insightTimer?.cancel();
+              if (_insights.isNotEmpty) {
+                _insightTimer = Timer.periodic(const Duration(seconds: 10), (
+                  timer,
+                ) {
+                  if (mounted && _insights.isNotEmpty) {
+                    setState(() {
+                      _currentInsightIndex =
+                          (_currentInsightIndex + 1) % _insights.length;
+                    });
+                  }
+                });
+              }
+            }
+          })
+          .catchError((e) {
+            debugPrint("Insight error: $e");
+            if (mounted) {
+              setState(() {
+                _insights = [
+                  {
+                    'title': 'Welcome Back',
+                    'message': 'Check your schedule for today.',
+                  },
+                ];
+              });
+            }
+          });
+    }
+
+    // Determine what to display
+    String title = "AI INSIGHT";
+    String message = "Analyzing your performance...";
+    bool isLoading = _insights.isEmpty;
+
+    if (_insights.isNotEmpty) {
+      int index = _currentInsightIndex;
+      if (index < 0 || index >= _insights.length) {
+        index = 0;
+        _currentInsightIndex = 0;
+      }
+      final item = _insights[index];
+      title = item['title'] ?? "Insight";
+      message = item['message'] ?? "Keep pushing forward.";
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -681,13 +1026,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5C51E1).withValues(alpha: 0.3),
+            color: const Color(0xFF5C51E1).withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         children: [
           Expanded(
             child: Column(
@@ -695,9 +1040,23 @@ class _StudentDashboardState extends State<StudentDashboard> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.auto_awesome, color: Colors.white, size: 16),
-                    SizedBox(width: 5),
-                    Text(
+                    if (isLoading)
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white70,
+                        ),
+                      )
+                    else
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    const SizedBox(width: 5),
+                    const Text(
                       "AI INSIGHT",
                       style: TextStyle(
                         color: Colors.white70,
@@ -707,23 +1066,39 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
-                Text(
-                  "Attendance Alert",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 8),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                  child: Column(
+                    key: ValueKey<int>(_currentInsightIndex),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        message,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Text(
-                  "Reach 75% in Data Structures soon.",
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
           ),
-          Icon(Icons.auto_awesome, color: Colors.white, size: 30),
+          const Icon(Icons.auto_awesome, color: Colors.white, size: 30),
         ],
       ),
     );
@@ -768,9 +1143,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Widget _buildFloatingActionButton() {
     return Container(
-      height: 60,
-      width: 60,
+      height: 48,
+      width: 48,
       decoration: BoxDecoration(
+        color: const Color(0xFF5C51E1),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
@@ -785,7 +1161,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
         backgroundColor: const Color(0xFF5C51E1),
         elevation: 0,
         shape: const CircleBorder(),
-        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 28),
+        mini: true,
+        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
       ),
     );
   }
