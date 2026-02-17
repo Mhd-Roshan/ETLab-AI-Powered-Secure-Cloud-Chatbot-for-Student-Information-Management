@@ -105,9 +105,9 @@ class _FeesScreenState extends State<FeesScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF5C51E1),
+          labelColor: const Color(0xFF001FF4),
           unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF5C51E1),
+          indicatorColor: const Color(0xFF001FF4),
           indicatorWeight: 3,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
@@ -303,7 +303,7 @@ class _FeesScreenState extends State<FeesScreen>
                         _processPayment((isRealData ? fee : fee), docId);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF5C51E1),
+                        backgroundColor: const Color(0xFF001FF4),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

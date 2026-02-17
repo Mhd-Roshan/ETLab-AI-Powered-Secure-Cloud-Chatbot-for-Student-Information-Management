@@ -20,7 +20,7 @@ class StudentSidebar extends StatelessWidget {
       child: Column(
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFF5C51E1)),
+            decoration: const BoxDecoration(color: Color(0xFF001FF4)),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
               child: ClipOval(
@@ -107,7 +107,7 @@ class StudentSidebar extends StatelessWidget {
 
   Widget _drawerItem(IconData icon, String title, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF5C51E1)),
+      leading: Icon(icon, color: const Color(0xFF001FF4)),
       title: Text(title, style: const TextStyle(fontSize: 16)),
       onTap: onTap,
     );

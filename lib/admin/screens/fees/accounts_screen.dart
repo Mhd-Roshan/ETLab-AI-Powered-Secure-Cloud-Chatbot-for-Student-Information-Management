@@ -39,75 +39,115 @@ class _AccountsScreenState extends State<AccountsScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text("Create Ledger Account", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Text(
+              "Create Ledger Account",
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: "Account Name", hintText: "e.g., Tuition Fee Ledger", border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: "Account Name",
+                      hintText: "e.g., Tuition Fee Ledger",
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     initialValue: accountType,
-                    decoration: const InputDecoration(labelText: "Account Type", border: OutlineInputBorder()),
-                    items: ['Asset', 'Income', 'Expense'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                    decoration: const InputDecoration(
+                      labelText: "Account Type",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: ['Asset', 'Income', 'Expense']
+                        .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                        .toList(),
                     onChanged: (v) => setDialogState(() => accountType = v!),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: balanceCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: "Opening Balance (₹)", border: OutlineInputBorder(), prefixText: "₹ "),
+                    decoration: const InputDecoration(
+                      labelText: "Opening Balance (₹)",
+                      border: OutlineInputBorder(),
+                      prefixText: "₹ ",
+                    ),
                   ),
                 ],
               ),
             ),
             actions: [
-              TextButton(onPressed: _isProcessing ? null : () => Navigator.pop(context), child: const Text("Cancel")),
+              TextButton(
+                onPressed: _isProcessing ? null : () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
               ElevatedButton(
-                onPressed: _isProcessing ? null : () async {
-                  String name = nameCtrl.text.trim();
-                  if (name.isEmpty) {
-                    _showMsg("Account name is required", isError: true);
-                    return;
-                  }
+                onPressed: _isProcessing
+                    ? null
+                    : () async {
+                        String name = nameCtrl.text.trim();
+                        if (name.isEmpty) {
+                          _showMsg("Account name is required", isError: true);
+                          return;
+                        }
 
-                  setDialogState(() => _isProcessing = true);
-                  final db = FirebaseFirestore.instance.collection('accounts');
+                        setDialogState(() => _isProcessing = true);
+                        final db = FirebaseFirestore.instance.collection(
+                          'accounts',
+                        );
 
-                  try {
-                    // --- DUPLICATION CHECK ---
-                    final duplicate = await db.where('name', isEqualTo: name).get();
-                    if (duplicate.docs.isNotEmpty) {
-                      _showMsg("Account '$name' already exists!", isError: true);
-                      setDialogState(() => _isProcessing = false);
-                      return;
-                    }
+                        try {
+                          // --- DUPLICATION CHECK ---
+                          final duplicate = await db
+                              .where('name', isEqualTo: name)
+                              .get();
+                          if (duplicate.docs.isNotEmpty) {
+                            _showMsg(
+                              "Account '$name' already exists!",
+                              isError: true,
+                            );
+                            setDialogState(() => _isProcessing = false);
+                            return;
+                          }
 
-                    // --- SAVE TO FIREBASE ---
-                    await db.add({
-                      'name': name,
-                      'type': accountType,
-                      'balance': double.tryParse(balanceCtrl.text) ?? 0.0,
-                      'createdAt': FieldValue.serverTimestamp(),
-                      'status': 'Active',
-                    });
+                          // --- SAVE TO FIREBASE ---
+                          await db.add({
+                            'name': name,
+                            'type': accountType,
+                            'balance': double.tryParse(balanceCtrl.text) ?? 0.0,
+                            'createdAt': FieldValue.serverTimestamp(),
+                            'status': 'Active',
+                          });
 
-                    if (mounted) Navigator.pop(context);
-                    _showMsg("Ledger account created successfully");
-                  } catch (e) {
-                    _showMsg("Database Error: $e", isError: true);
-                  } finally {
-                    setDialogState(() => _isProcessing = false);
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF5C51E1), foregroundColor: Colors.white),
-                child: _isProcessing 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text("Create Account"),
+                          if (mounted) Navigator.pop(context);
+                          _showMsg("Ledger account created successfully");
+                        } catch (e) {
+                          _showMsg("Database Error: $e", isError: true);
+                        } finally {
+                          setDialogState(() => _isProcessing = false);
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF001FF4),
+                  foregroundColor: Colors.white,
+                ),
+                child: _isProcessing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text("Create Account"),
               ),
             ],
           );
@@ -141,16 +181,33 @@ class _AccountsScreenState extends State<AccountsScreen> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-                        style: IconButton.styleFrom(backgroundColor: Colors.white),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 18,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Accounts & Ledgers",
-                              style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
-                          Text("Spring 2026 • Institutional Funds", style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
+                          Text(
+                            "Accounts & Ledgers",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            "Spring 2026 • Institutional Funds",
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ],
                       ),
                       const Spacer(),
@@ -159,10 +216,15 @@ class _AccountsScreenState extends State<AccountsScreen> {
                         icon: const Icon(Icons.add, size: 18),
                         label: const Text("Add Ledger"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF5C51E1),
+                          backgroundColor: const Color(0xFF001FF4),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 18,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ],
@@ -173,7 +235,13 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   _buildLiveStatsRow(),
                   const SizedBox(height: 40),
 
-                  Text("Active Ledger Accounts", style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    "Active Ledger Accounts",
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 16),
 
                   // Ledgers Grid
@@ -201,11 +269,26 @@ class _AccountsScreenState extends State<AccountsScreen> {
         }
         return Row(
           children: [
-            _statCard("Total Assets", "₹${NumberFormat('#,##,###').format(total)}", Colors.green, Icons.account_balance_wallet),
+            _statCard(
+              "Total Assets",
+              "₹${NumberFormat('#,##,###').format(total)}",
+              Colors.green,
+              Icons.account_balance_wallet,
+            ),
             const SizedBox(width: 24),
-            _statCard("Active Ledgers", "$activeCount Accounts", Colors.blue, Icons.list_alt_rounded),
+            _statCard(
+              "Active Ledgers",
+              "$activeCount Accounts",
+              Colors.blue,
+              Icons.list_alt_rounded,
+            ),
             const SizedBox(width: 24),
-            _statCard("Audit Status", "Cleared", Colors.orange, Icons.fact_check_outlined),
+            _statCard(
+              "Audit Status",
+              "Cleared",
+              Colors.orange,
+              Icons.fact_check_outlined,
+            ),
           ],
         );
       },
@@ -214,9 +297,13 @@ class _AccountsScreenState extends State<AccountsScreen> {
 
   Widget _buildLedgerGrid() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('accounts').orderBy('createdAt', descending: true).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('accounts')
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        if (snapshot.connectionState == ConnectionState.waiting)
+          return const Center(child: CircularProgressIndicator());
         var docs = snapshot.data?.docs ?? [];
         if (docs.isEmpty) return _buildEmptyState();
 
@@ -247,7 +334,13 @@ class _AccountsScreenState extends State<AccountsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 20, offset: const Offset(0, 8))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,15 +349,43 @@ class _AccountsScreenState extends State<AccountsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: typeColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text(data['type'] ?? "Asset", style: TextStyle(color: typeColor, fontWeight: FontWeight.bold, fontSize: 10)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: typeColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  data['type'] ?? "Asset",
+                  style: TextStyle(
+                    color: typeColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
               ),
-              IconButton(onPressed: () => _confirmDelete(id, data['name']), icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20)),
+              IconButton(
+                onPressed: () => _confirmDelete(id, data['name']),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.red,
+                  size: 20,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(data['name'] ?? "Untitled Ledger", style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            data['name'] ?? "Untitled Ledger",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -272,8 +393,18 @@ class _AccountsScreenState extends State<AccountsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Balance", style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
-                  Text("₹${NumberFormat('#,##,###').format(data['balance'])}", style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                  Text(
+                    "Balance",
+                    style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
+                  ),
+                  Text(
+                    "₹${NumberFormat('#,##,###').format(data['balance'])}",
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
                 ],
               ),
               const Icon(Icons.chevron_right_rounded, color: Colors.grey),
@@ -289,14 +420,25 @@ class _AccountsScreenState extends State<AccountsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Delete Ledger?"),
-        content: Text("Warning: Deleting '$name' will remove all financial references to this account."),
+        content: Text(
+          "Warning: Deleting '$name' will remove all financial references to this account.",
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-          TextButton(onPressed: () {
-            FirebaseFirestore.instance.collection('accounts').doc(id).delete();
-            Navigator.pop(context);
-            _showMsg("Account deleted", isError: true);
-          }, child: const Text("Delete", style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              FirebaseFirestore.instance
+                  .collection('accounts')
+                  .doc(id)
+                  .delete();
+              Navigator.pop(context);
+              _showMsg("Account deleted", isError: true);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -306,16 +448,39 @@ class _AccountsScreenState extends State<AccountsScreen> {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9))),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+        ),
         child: Row(
           children: [
-            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: color, size: 24)),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
             const SizedBox(width: 20),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500)),
-                Text(val, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                Text(
+                  val,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ],
@@ -330,9 +495,16 @@ class _AccountsScreenState extends State<AccountsScreen> {
       padding: const EdgeInsets.all(80),
       child: Column(
         children: [
-          Icon(Icons.account_balance_rounded, size: 60, color: Colors.grey.shade200),
+          Icon(
+            Icons.account_balance_rounded,
+            size: 60,
+            color: Colors.grey.shade200,
+          ),
           const SizedBox(height: 20),
-          const Text("No Ledger Accounts Found", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          const Text(
+            "No Ledger Accounts Found",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+          ),
         ],
       ),
     );

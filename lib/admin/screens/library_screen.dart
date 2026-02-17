@@ -11,7 +11,8 @@ class LibraryScreen extends StatefulWidget {
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProviderStateMixin {
+class _LibraryScreenState extends State<LibraryScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -98,10 +99,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
           icon: const Icon(Icons.add, size: 18),
           label: Text(
             'Add Book',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2563EB),
@@ -119,24 +117,29 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
 
   Widget _buildStatsRow() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('library_books').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('library_books')
+          .snapshots(),
       builder: (context, bookSnapshot) {
         return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('library_transactions').where('status', isEqualTo: 'borrowed').snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('library_transactions')
+              .where('status', isEqualTo: 'borrowed')
+              .snapshots(),
           builder: (context, transactionSnapshot) {
             final totalBooks = bookSnapshot.data?.docs.length ?? 0;
             final borrowedCount = transactionSnapshot.data?.docs.length ?? 0;
-            
+
             int overdueCount = 0;
             int availableCount = 0;
-            
+
             if (bookSnapshot.hasData) {
               for (var doc in bookSnapshot.data!.docs) {
                 final data = doc.data() as Map<String, dynamic>;
                 availableCount += (data['copiesAvailable'] ?? 0) as int;
               }
             }
-            
+
             if (transactionSnapshot.hasData) {
               final now = DateTime.now();
               for (var doc in transactionSnapshot.data!.docs) {
@@ -147,16 +150,48 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                 }
               }
             }
-            
+
             return Row(
               children: [
-                Expanded(child: _buildStatCard('Total Books', totalBooks.toString(), Icons.library_books, const Color(0xFF2563EB), '+12%')),
+                Expanded(
+                  child: _buildStatCard(
+                    'Total Books',
+                    totalBooks.toString(),
+                    Icons.library_books,
+                    const Color(0xFF2563EB),
+                    '+12%',
+                  ),
+                ),
                 const SizedBox(width: 16),
-                Expanded(child: _buildStatCard('Available', availableCount.toString(), Icons.check_circle, const Color(0xFF10B981), '+8%')),
+                Expanded(
+                  child: _buildStatCard(
+                    'Available',
+                    availableCount.toString(),
+                    Icons.check_circle,
+                    const Color(0xFF10B981),
+                    '+8%',
+                  ),
+                ),
                 const SizedBox(width: 16),
-                Expanded(child: _buildStatCard('Borrowed', borrowedCount.toString(), Icons.book, const Color(0xFFF59E0B), '+5%')),
+                Expanded(
+                  child: _buildStatCard(
+                    'Borrowed',
+                    borrowedCount.toString(),
+                    Icons.book,
+                    const Color(0xFFF59E0B),
+                    '+5%',
+                  ),
+                ),
                 const SizedBox(width: 16),
-                Expanded(child: _buildStatCard('Overdue', overdueCount.toString(), Icons.warning, const Color(0xFFEF4444), overdueCount > 0 ? '+$overdueCount' : '0')),
+                Expanded(
+                  child: _buildStatCard(
+                    'Overdue',
+                    overdueCount.toString(),
+                    Icons.warning,
+                    const Color(0xFFEF4444),
+                    overdueCount > 0 ? '+$overdueCount' : '0',
+                  ),
+                ),
               ],
             );
           },
@@ -165,7 +200,13 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, String change) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    String change,
+  ) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -243,7 +284,8 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
           Expanded(
             child: TextField(
               controller: _searchController,
-              onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+              onChanged: (value) =>
+                  setState(() => _searchQuery = value.toLowerCase()),
               decoration: InputDecoration(
                 hintText: 'Search books by title, author, ISBN or category...',
                 hintStyle: GoogleFonts.inter(
@@ -254,7 +296,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),
-              style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF1A1A1A)),
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: const Color(0xFF1A1A1A),
+              ),
             ),
           ),
           if (_searchQuery.isNotEmpty)
@@ -287,8 +332,14 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             unselectedLabelColor: const Color(0xFF6B7280),
             indicatorColor: const Color(0xFF2563EB),
             indicatorWeight: 3,
-            labelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
-            unselectedLabelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+            labelStyle: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
             tabs: const [
               Tab(text: 'All Books'),
               Tab(text: 'Borrowed'),
@@ -314,10 +365,14 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
 
   Widget _buildBooksTab() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('library_books').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('library_books')
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)));
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _buildEmptyState(
@@ -326,7 +381,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             'Start building your library by adding books',
           );
         }
-        
+
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -335,19 +390,26 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
           ),
           child: Column(
             children: [
-              _buildTableHeader(['Book Details', 'Category', 'Copies', 'Status', 'Action']),
+              _buildTableHeader([
+                'Book Details',
+                'Category',
+                'Copies',
+                'Status',
+                'Action',
+              ]),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
               Expanded(
                 child: ListView.separated(
                   padding: EdgeInsets.zero,
                   itemCount: snapshot.data!.docs.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1, color: Color(0xFFE5E7EB)),
                   itemBuilder: (context, index) {
                     var doc = snapshot.data!.docs[index];
                     var book = doc.data() as Map<String, dynamic>;
                     final bookId = doc.id;
                     final isAvailable = (book['copiesAvailable'] ?? 0) > 0;
-                    
+
                     return _buildBookRow(bookId, book, isAvailable);
                   },
                 ),
@@ -439,7 +501,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildBookRow(String bookId, Map<String, dynamic> book, bool isAvailable) {
+  Widget _buildBookRow(
+    String bookId,
+    Map<String, dynamic> book,
+    bool isAvailable,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
@@ -510,7 +576,9 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isAvailable ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
+                  color: isAvailable
+                      ? const Color(0xFFD1FAE5)
+                      : const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -518,7 +586,9 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: isAvailable ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                    color: isAvailable
+                        ? const Color(0xFF059669)
+                        : const Color(0xFFDC2626),
                   ),
                 ),
               ),
@@ -532,8 +602,13 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                 onPressed: isAvailable ? () => _borrowBook(bookId, book) : null,
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFF2563EB),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
                 child: Text(
                   'Borrow',
@@ -575,10 +650,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -587,7 +659,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
 
   Widget _buildBorrowedTab() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('library_transactions').where('status', isEqualTo: 'borrowed').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('library_transactions')
+          .where('status', isEqualTo: 'borrowed')
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -599,7 +674,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             'All books are currently available in the library',
           );
         }
-        
+
         return ListView.builder(
           padding: const EdgeInsets.all(8),
           itemCount: snapshot.data!.docs.length,
@@ -610,7 +685,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             final dueDate = (transaction['dueDate'] as Timestamp?)?.toDate();
             final now = DateTime.now();
             final isOverdue = dueDate != null && dueDate.isBefore(now);
-            
+
             return Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
@@ -638,7 +713,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                         gradient: LinearGradient(
                           colors: isOverdue
                               ? [Colors.red.shade400, Colors.red.shade600]
-                              : [const Color(0xFFF59E0B), const Color(0xFFFBBF24)],
+                              : [
+                                  const Color(0xFFF59E0B),
+                                  const Color(0xFFFBBF24),
+                                ],
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -664,7 +742,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              Icon(Icons.person_outline, size: 16, color: Colors.grey.shade600),
+                              Icon(
+                                Icons.person_outline,
+                                size: 16,
+                                color: Colors.grey.shade600,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 transaction['borrowerName'] ?? 'Unknown',
@@ -674,7 +756,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Icon(Icons.badge_outlined, size: 16, color: Colors.grey.shade600),
+                              Icon(
+                                Icons.badge_outlined,
+                                size: 16,
+                                color: Colors.grey.shade600,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 transaction['borrowerRegNo'] ?? 'N/A',
@@ -687,9 +773,14 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              color: isOverdue ? Colors.red.shade50 : const Color(0xFFFEF3C7),
+                              color: isOverdue
+                                  ? Colors.red.shade50
+                                  : const Color(0xFFFEF3C7),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -698,7 +789,9 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                                 Icon(
                                   Icons.calendar_today,
                                   size: 14,
-                                  color: isOverdue ? Colors.red : const Color(0xFFF59E0B),
+                                  color: isOverdue
+                                      ? Colors.red
+                                      : const Color(0xFFF59E0B),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
@@ -706,7 +799,9 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: isOverdue ? Colors.red : const Color(0xFFF59E0B),
+                                    color: isOverdue
+                                        ? Colors.red
+                                        : const Color(0xFFF59E0B),
                                   ),
                                 ),
                               ],
@@ -717,14 +812,26 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton.icon(
-                      onPressed: () => _returnBook(transactionId, transaction['bookId']),
+                      onPressed: () =>
+                          _returnBook(transactionId, transaction['bookId']),
                       icon: const Icon(Icons.check_circle_outline, size: 18),
-                      label: Text('Return', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                      label: Text(
+                        'Return',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF10B981),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                     ),
@@ -740,12 +847,15 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
 
   Widget _buildOverdueTab() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('library_transactions').where('status', isEqualTo: 'borrowed').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('library_transactions')
+          .where('status', isEqualTo: 'borrowed')
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        
+
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _buildEmptyState(
             Icons.check_circle_outline,
@@ -753,14 +863,14 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             'All borrowed books are within their due date',
           );
         }
-        
+
         final now = DateTime.now();
         final overdueDocs = snapshot.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final dueDate = (data['dueDate'] as Timestamp?)?.toDate();
           return dueDate != null && dueDate.isBefore(now);
         }).toList();
-        
+
         if (overdueDocs.isEmpty) {
           return _buildEmptyState(
             Icons.check_circle_outline,
@@ -768,7 +878,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             'All borrowed books are within their due date',
           );
         }
-        
+
         return ListView.builder(
           padding: const EdgeInsets.all(8),
           itemCount: overdueDocs.length,
@@ -777,8 +887,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             var transaction = doc.data() as Map<String, dynamic>;
             final transactionId = doc.id;
             final dueDate = (transaction['dueDate'] as Timestamp?)?.toDate();
-            final daysOverdue = dueDate != null ? now.difference(dueDate).inDays : 0;
-            
+            final daysOverdue = dueDate != null
+                ? now.difference(dueDate).inDays
+                : 0;
+
             return Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
@@ -814,7 +926,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.warning_rounded, color: Colors.white, size: 32),
+                      child: const Icon(
+                        Icons.warning_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                     const SizedBox(width: 20),
                     Expanded(
@@ -834,7 +950,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.red,
                                   borderRadius: BorderRadius.circular(20),
@@ -853,7 +972,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              Icon(Icons.person_outline, size: 16, color: Colors.grey.shade700),
+                              Icon(
+                                Icons.person_outline,
+                                size: 16,
+                                color: Colors.grey.shade700,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 transaction['borrowerName'] ?? 'Unknown',
@@ -863,7 +986,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Icon(Icons.badge_outlined, size: 16, color: Colors.grey.shade700),
+                              Icon(
+                                Icons.badge_outlined,
+                                size: 16,
+                                color: Colors.grey.shade700,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 transaction['borrowerRegNo'] ?? 'N/A',
@@ -876,7 +1003,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
@@ -884,7 +1014,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.calendar_today, size: 14, color: Colors.red),
+                                const Icon(
+                                  Icons.calendar_today,
+                                  size: 14,
+                                  color: Colors.red,
+                                ),
                                 const SizedBox(width: 6),
                                 Text(
                                   'Was due: ${dueDate != null ? "${dueDate.day}/${dueDate.month}/${dueDate.year}" : "N/A"}',
@@ -902,14 +1036,29 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton.icon(
-                      onPressed: () => _returnBook(transactionId, transaction['bookId']),
-                      icon: const Icon(Icons.assignment_return_outlined, size: 18),
-                      label: Text('Return Now', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                      onPressed: () =>
+                          _returnBook(transactionId, transaction['bookId']),
+                      icon: const Icon(
+                        Icons.assignment_return_outlined,
+                        size: 18,
+                      ),
+                      label: Text(
+                        'Return Now',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                     ),
@@ -933,7 +1082,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     final yearController = TextEditingController();
     final copiesController = TextEditingController();
     final descriptionController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -949,7 +1098,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF5C51E1), Color(0xFF7C3AED)],
+                    colors: [Color(0xFF001FF4), Color(0xFF7C3AED)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -966,7 +1115,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.add_circle_outline, color: Colors.white, size: 28),
+                      child: const Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -1064,7 +1217,8 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                           required: true,
                           validator: (value) {
                             if (value?.isEmpty ?? true) return 'Required';
-                            if (int.tryParse(value!) == null) return 'Must be a number';
+                            if (int.tryParse(value!) == null)
+                              return 'Must be a number';
                             return null;
                           },
                         ),
@@ -1096,7 +1250,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
                       ),
                       child: Text(
                         'Cancel',
@@ -1124,12 +1281,23 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                         }
                       },
                       icon: const Icon(Icons.check_circle_outline, size: 20),
-                      label: Text('Add Book', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
+                      label: Text(
+                        'Add Book',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF5C51E1),
+                        backgroundColor: const Color(0xFF001FF4),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                     ),
@@ -1166,7 +1334,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
         ),
         hintText: hint,
         hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400),
-        prefixIcon: Icon(icon, color: const Color(0xFF5C51E1), size: 22),
+        prefixIcon: Icon(icon, color: const Color(0xFF001FF4), size: 22),
         filled: true,
         fillColor: const Color(0xFFF8F9FE),
         border: OutlineInputBorder(
@@ -1179,7 +1347,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF5C51E1), width: 2),
+          borderSide: const BorderSide(color: Color(0xFF001FF4), width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1189,9 +1357,16 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
-      validator: validator ?? (required ? (value) => value?.isEmpty ?? true ? 'Required' : null : null),
+      validator:
+          validator ??
+          (required
+              ? (value) => value?.isEmpty ?? true ? 'Required' : null
+              : null),
     );
   }
 
@@ -1208,7 +1383,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     try {
       final totalCopies = int.parse(copies);
       final publicationYear = year.isNotEmpty ? int.tryParse(year) : null;
-      
+
       await FirebaseFirestore.instance.collection('library_books').add({
         'title': title,
         'author': author,
@@ -1222,7 +1397,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
         'description': description.isNotEmpty ? description : 'No description',
         'addedDate': FieldValue.serverTimestamp(),
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1240,7 +1415,9 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             ),
             backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -1253,12 +1430,19 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
               children: [
                 const Icon(Icons.error_outline, color: Colors.white),
                 const SizedBox(width: 12),
-                Expanded(child: Text('Error adding book: $e', style: GoogleFonts.inter())),
+                Expanded(
+                  child: Text(
+                    'Error adding book: $e',
+                    style: GoogleFonts.inter(),
+                  ),
+                ),
               ],
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -1270,7 +1454,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
     final regNoController = TextEditingController();
-    
+
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => Dialog(
@@ -1302,7 +1486,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.book_outlined, color: Colors.white, size: 28),
+                      child: const Icon(
+                        Icons.book_outlined,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -1362,7 +1550,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.info_outline, color: Color(0xFFF59E0B), size: 20),
+                            const Icon(
+                              Icons.info_outline,
+                              color: Color(0xFFF59E0B),
+                              size: 20,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
@@ -1397,7 +1589,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
                       ),
                       child: Text(
                         'Cancel',
@@ -1415,12 +1610,23 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                         }
                       },
                       icon: const Icon(Icons.check_circle_outline, size: 20),
-                      label: Text('Confirm Borrow', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
+                      label: Text(
+                        'Confirm Borrow',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFF59E0B),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                     ),
@@ -1432,30 +1638,33 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
         ),
       ),
     );
-    
+
     if (result == true) {
       try {
         final now = DateTime.now();
         final dueDate = now.add(const Duration(days: 14));
-        
-        await FirebaseFirestore.instance.collection('library_transactions').add({
-          'bookId': bookId,
-          'bookTitle': book['title'],
-          'bookAuthor': book['author'],
-          'bookIsbn': book['isbn'],
-          'borrowerName': nameController.text,
-          'borrowerRegNo': regNoController.text,
-          'borrowDate': Timestamp.fromDate(now),
-          'dueDate': Timestamp.fromDate(dueDate),
-          'status': 'borrowed',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-        
+
+        await FirebaseFirestore.instance
+            .collection('library_transactions')
+            .add({
+              'bookId': bookId,
+              'bookTitle': book['title'],
+              'bookAuthor': book['author'],
+              'bookIsbn': book['isbn'],
+              'borrowerName': nameController.text,
+              'borrowerRegNo': regNoController.text,
+              'borrowDate': Timestamp.fromDate(now),
+              'dueDate': Timestamp.fromDate(dueDate),
+              'status': 'borrowed',
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+
         final currentAvailable = book['copiesAvailable'] ?? 0;
-        await FirebaseFirestore.instance.collection('library_books').doc(bookId).update({
-          'copiesAvailable': currentAvailable - 1,
-        });
-        
+        await FirebaseFirestore.instance
+            .collection('library_books')
+            .doc(bookId)
+            .update({'copiesAvailable': currentAvailable - 1});
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1473,7 +1682,9 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
               ),
               backgroundColor: const Color(0xFF10B981),
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               margin: const EdgeInsets.all(16),
             ),
           );
@@ -1486,12 +1697,16 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                 children: [
                   const Icon(Icons.error_outline, color: Colors.white),
                   const SizedBox(width: 12),
-                  Expanded(child: Text('Error: $e', style: GoogleFonts.inter())),
+                  Expanded(
+                    child: Text('Error: $e', style: GoogleFonts.inter()),
+                  ),
                 ],
               ),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               margin: const EdgeInsets.all(16),
             ),
           );
@@ -1502,20 +1717,27 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
 
   Future<void> _returnBook(String transactionId, String bookId) async {
     try {
-      await FirebaseFirestore.instance.collection('library_transactions').doc(transactionId).update({
-        'status': 'returned',
-        'returnDate': FieldValue.serverTimestamp(),
-      });
-      
-      final bookDoc = await FirebaseFirestore.instance.collection('library_books').doc(bookId).get();
+      await FirebaseFirestore.instance
+          .collection('library_transactions')
+          .doc(transactionId)
+          .update({
+            'status': 'returned',
+            'returnDate': FieldValue.serverTimestamp(),
+          });
+
+      final bookDoc = await FirebaseFirestore.instance
+          .collection('library_books')
+          .doc(bookId)
+          .get();
       if (bookDoc.exists) {
         final bookData = bookDoc.data() as Map<String, dynamic>;
         final currentAvailable = bookData['copiesAvailable'] ?? 0;
-        await FirebaseFirestore.instance.collection('library_books').doc(bookId).update({
-          'copiesAvailable': currentAvailable + 1,
-        });
+        await FirebaseFirestore.instance
+            .collection('library_books')
+            .doc(bookId)
+            .update({'copiesAvailable': currentAvailable + 1});
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1531,7 +1753,9 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             ),
             backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -1549,7 +1773,9 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );

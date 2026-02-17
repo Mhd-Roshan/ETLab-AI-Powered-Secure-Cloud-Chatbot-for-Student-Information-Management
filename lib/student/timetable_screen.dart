@@ -123,7 +123,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
               child: const Text(
                 "Today",
                 style: TextStyle(
-                  color: Color(0xFF5C51E1),
+                  color: Color(0xFF001FF4),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -152,7 +152,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     Text(
                       headerLabel,
                       style: const TextStyle(
-                        color: Color(0xFF5C51E1),
+                        color: Color(0xFF001FF4),
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.5,
@@ -209,7 +209,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   width: 65,
                   height: 75,
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF5C51E1) : Colors.white,
+                    color: isSelected ? const Color(0xFF001FF4) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       if (!isSelected)
@@ -363,7 +363,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
             day,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF5C51E1),
+              color: Color(0xFF001FF4),
             ),
           ),
           const SizedBox(height: 4),

@@ -93,15 +93,15 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF5C51E1) : Colors.white,
+          color: isSelected ? const Color(0xFF001FF4) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF5C51E1) : Colors.grey.shade200,
+            color: isSelected ? const Color(0xFF001FF4) : Colors.grey.shade200,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF5C51E1).withOpacity(0.3),
+                    color: const Color(0xFF001FF4).withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),

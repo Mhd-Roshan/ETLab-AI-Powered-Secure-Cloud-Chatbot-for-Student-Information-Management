@@ -153,9 +153,9 @@ class _SurveyScreenState extends State<SurveyScreen>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          labelColor: const Color(0xFF5C51E1),
+          labelColor: const Color(0xFF001FF4),
           unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF5C51E1),
+          indicatorColor: const Color(0xFF001FF4),
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold),
           tabs: _subjects.map((subject) => Tab(text: subject)).toList(),
@@ -365,7 +365,7 @@ class _SurveyScreenState extends State<SurveyScreen>
                         _showSurveyDialog(survey);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF5C51E1),
+                        backgroundColor: const Color(0xFF001FF4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

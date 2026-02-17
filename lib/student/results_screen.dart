@@ -26,7 +26,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         'maxMarks': 40,
         'grade': 'A+',
         'gradePoint': 10,
-        'color': const Color(0xFF5C51E1),
+        'color': const Color(0xFF001FF4),
       },
       {
         'subject': 'ADVANCED SOFTWARE ENGINEERING',
@@ -91,7 +91,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         'maxMarks': 40,
         'grade': 'A+',
         'gradePoint': 10,
-        'color': const Color(0xFF5C51E1),
+        'color': const Color(0xFF001FF4),
       },
       {
         'subject': 'ADVANCED SOFTWARE ENGINEERING',
@@ -156,7 +156,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         'maxMarks': 10,
         'grade': 'A+',
         'gradePoint': 10,
-        'color': const Color(0xFF5C51E1),
+        'color': const Color(0xFF001FF4),
       },
       {
         'subject': 'ADVANCED SOFTWARE ENGINEERING',
@@ -194,7 +194,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         'maxMarks': 10,
         'grade': 'O',
         'gradePoint': 10,
-        'color': const Color(0xFF5C51E1),
+        'color': const Color(0xFF001FF4),
       },
       {
         'subject': 'ADVANCED SOFTWARE ENGINEERING',
@@ -308,11 +308,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF5C51E1),
+        color: const Color(0xFF001FF4),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5C51E1).withOpacity(0.3),
+            color: const Color(0xFF001FF4).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -421,7 +421,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF5C51E1).withValues(alpha: 0.1),
+              color: const Color(0xFF001FF4).withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -436,7 +436,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF5C51E1),
+                      color: Color(0xFF001FF4),
                     ),
                   ),
                 ),
@@ -470,7 +470,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF5C51E1),
+          color: Color(0xFF001FF4),
         ),
       ),
     );

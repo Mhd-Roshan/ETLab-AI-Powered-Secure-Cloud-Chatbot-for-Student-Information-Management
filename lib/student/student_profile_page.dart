@@ -495,7 +495,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   @override
   Widget build(BuildContext context) {
     // Primary Theme Color
-    const Color primaryColor = Color(0xFF5C51E1);
+    const Color primaryColor = Color(0xFF001FF4);
 
     // Handle empty data case
     if (widget.userData.isEmpty) {
@@ -826,7 +826,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
               color: const Color(0xFFF0EFFF),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: const Color(0xFF5C51E1), size: 20),
+            child: Icon(icon, color: const Color(0xFF001FF4), size: 20),
           ),
           const SizedBox(width: 15),
           Expanded(

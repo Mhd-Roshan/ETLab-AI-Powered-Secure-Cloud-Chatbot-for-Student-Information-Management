@@ -52,7 +52,9 @@ class FeesDashboard extends StatelessWidget {
                           ),
                           Text(
                             "Overview of institutional revenue and ledger accounts",
-                            style: GoogleFonts.inter(color: Colors.grey.shade600),
+                            style: GoogleFonts.inter(
+                              color: Colors.grey.shade600,
+                            ),
                           ),
                         ],
                       ),
@@ -139,7 +141,9 @@ class FeesDashboard extends StatelessWidget {
   // --- HELPER: REAL-TIME SUMMARY ---
   Widget _buildFinancialSummary() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('fee_collections').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('fee_collections')
+          .snapshots(),
       builder: (context, snapshot) {
         double totalRevenue = 0;
         int transactionCount = 0;
@@ -188,23 +192,43 @@ class FeesDashboard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: const Color(0xFFF1F5F9)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.01),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(width: 20),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500)),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                Text(
+                  value,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
               ],
             ),
           ],
@@ -224,7 +248,10 @@ class FeesDashboard extends StatelessWidget {
     return InkWell(
       onTap: () {
         if (page is! SizedBox) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => page));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => page),
+          );
         }
       },
       borderRadius: BorderRadius.circular(24),
@@ -236,7 +263,11 @@ class FeesDashboard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
           ],
         ),
         child: Column(
@@ -244,7 +275,10 @@ class FeesDashboard extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Icon(icon, size: 28, color: color),
             ),
             const SizedBox(height: 20),
@@ -267,11 +301,22 @@ class FeesDashboard extends StatelessWidget {
             const SizedBox(height: 20),
             const Row(
               children: [
-                Text("Manage", style: TextStyle(color: Color(0xFF5C51E1), fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(
+                  "Manage",
+                  style: TextStyle(
+                    color: Color(0xFF001FF4),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
                 SizedBox(width: 4),
-                Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF5C51E1)),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 14,
+                  color: Color(0xFF001FF4),
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),

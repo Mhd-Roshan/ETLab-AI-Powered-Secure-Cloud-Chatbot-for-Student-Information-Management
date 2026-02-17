@@ -357,9 +357,26 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           const SizedBox(height: 25),
 
-          const Text(
-            "Quick Actions",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Quick Actions",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _currentIndex = 1;
+                  });
+                },
+                icon: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: Color(0xFF001FF4),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 15),
           _buildActionGrid(),
@@ -378,7 +395,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           children: [
             CircleAvatar(
               radius: 38,
-              backgroundColor: const Color(0xFF5C51E1),
+              backgroundColor: const Color(0xFF001FF4),
               child: CircleAvatar(
                 radius: 36,
                 backgroundColor: Colors.grey.shade200,
@@ -455,7 +472,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
-                    color: Color(0xFF5C51E1),
+                    color: Color(0xFF001FF4),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.edit, color: Colors.white, size: 12),
@@ -582,7 +599,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               child: const Text(
                 "See All",
                 style: TextStyle(
-                  color: Color(0xFF5C51E1),
+                  color: Color(0xFF001FF4),
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -782,7 +799,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               child: const Text(
                 "Now",
                 style: TextStyle(
-                  color: Color(0xFF5C51E1),
+                  color: Color(0xFF001FF4),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -871,17 +888,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        decoration: const BoxDecoration(color: Colors.transparent),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1021,12 +1028,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF5C51E1), Color(0xFF8C82FF)],
+          colors: [Color(0xFF001FF4), Color(0xFF8C82FF)],
         ),
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5C51E1).withOpacity(0.3),
+            color: const Color(0xFF001FF4).withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -1106,37 +1113,68 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Widget _buildBottomNavBar() {
     return Container(
+      height: 70,
       decoration: BoxDecoration(
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
-      child: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF5C51E1),
-        unselectedItemColor: Colors.grey.shade400,
-        iconSize: 26,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school_outlined),
-            label: 'Academics',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline_rounded),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            label: 'Profile',
-          ),
-        ],
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildNavItem(0, Icons.home_outlined, "Home"),
+            _buildNavItem(1, Icons.business_center_outlined, "Acads"),
+            _buildNavItem(2, Icons.chat_bubble_outline_rounded, "Chat"),
+            _buildNavItem(3, Icons.person_outline_rounded, "Profile"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    bool isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 18 : 12,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF001FF4) : Colors.transparent,
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.grey.shade400,
+              size: 22,
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -1146,11 +1184,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
       height: 48,
       width: 48,
       decoration: BoxDecoration(
-        color: const Color(0xFF5C51E1),
+        color: const Color(0xFF001FF4),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5C51E1).withValues(alpha: 0.3),
+            color: const Color(0xFF001FF4).withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -1158,7 +1196,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       ),
       child: FloatingActionButton(
         onPressed: () => setState(() => _currentIndex = 2),
-        backgroundColor: const Color(0xFF5C51E1),
+        backgroundColor: const Color(0xFF001FF4),
         elevation: 0,
         shape: const CircleBorder(),
         mini: true,
