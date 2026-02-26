@@ -674,7 +674,7 @@ class _TransportScreenState extends State<TransportScreen> with SingleTickerProv
                     builder: (context, snapshot) {
                       final routes = snapshot.data?.docs ?? [];
                       return DropdownButtonFormField<String>(
-                        value: selectedRoute,
+                        initialValue: selectedRoute,
                         decoration: InputDecoration(
                           labelText: 'Route',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -695,7 +695,7 @@ class _TransportScreenState extends State<TransportScreen> with SingleTickerProv
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: selectedStatus,
+                    initialValue: selectedStatus,
                     decoration: InputDecoration(
                       labelText: 'Status *',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

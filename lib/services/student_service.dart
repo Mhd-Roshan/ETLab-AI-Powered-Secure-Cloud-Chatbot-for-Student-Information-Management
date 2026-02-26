@@ -1,8 +1,62 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cloudinary/cloudinary.dart';
+import '../config/api_config.dart';
 
 class StudentService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  // Cloudinary Instance
+  late final Cloudinary _cloudinary;
+
+  StudentService() {
+    _cloudinary = Cloudinary.signedConfig(
+      apiKey: ApiConfig.cloudinaryApiKey,
+      apiSecret: ApiConfig.cloudinaryApiSecret,
+      cloudName: ApiConfig.cloudinaryCloudName,
+    );
+  }
+
+  // --- UPLOAD (Using Cloudinary) ---
+  Future<String> uploadFile(String path, String fileName) async {
+    try {
+      final response = await _cloudinary.upload(
+        file: path,
+        resourceType: CloudinaryResourceType.auto,
+        folder: 'edlab_assignments',
+        fileName: fileName,
+      );
+
+      if (response.isSuccessful && response.secureUrl != null) {
+        return response.secureUrl!;
+      } else {
+        throw Exception("Cloudinary Upload failed: ${response.error}");
+      }
+    } catch (e) {
+      debugPrint("Cloudinary Error uploading file: $e");
+      rethrow;
+    }
+  }
+
+  Future<String> uploadBytes(Uint8List bytes, String fileName) async {
+    try {
+      final response = await _cloudinary.upload(
+        fileBytes: bytes,
+        resourceType: CloudinaryResourceType.auto,
+        folder: 'edlab_assignments',
+        fileName: fileName,
+      );
+
+      if (response.isSuccessful && response.secureUrl != null) {
+        return response.secureUrl!;
+      } else {
+        throw Exception("Cloudinary Upload failed: ${response.error}");
+      }
+    } catch (e) {
+      debugPrint("Cloudinary Error uploading bytes: $e");
+      rethrow;
+    }
+  }
 
   // 1. Get Profile - Check both students and users collections
   Stream<DocumentSnapshot> getStudentProfile(String regNo) {
@@ -94,43 +148,8 @@ class StudentService {
 
     try {
       final batch = _db.batch();
-      final List<Map<String, dynamic>> subjects = [
-        {
-          'subjectName': 'Applied Mathematics-I',
-          'subjectCode': 'AM101',
-          'present': 28,
-          'total': 35,
-          'semester': 'Semester 1',
-        },
-        {
-          'subjectName': 'Applied Physics-I',
-          'subjectCode': 'AP102',
-          'present': 30,
-          'total': 38,
-          'semester': 'Semester 1',
-        },
-        {
-          'subjectName': 'Applied Chemistry',
-          'subjectCode': 'AC103',
-          'present': 32,
-          'total': 36,
-          'semester': 'Semester 1',
-        },
-        {
-          'subjectName': 'Computer Fundamentals',
-          'subjectCode': 'CF104',
-          'present': 25,
-          'total': 35,
-          'semester': 'Semester 1',
-        },
-        {
-          'subjectName': 'Communication Skills',
-          'subjectCode': 'CS105',
-          'present': 33,
-          'total': 37,
-          'semester': 'Semester 1',
-        },
-      ];
+      final List<Map<String, dynamic>> subjects =
+          []; // Should be fetched from subject master
 
       for (var subject in subjects) {
         final docRef = _db.collection('attendance').doc();
@@ -162,42 +181,7 @@ class StudentService {
   // 11. Seed Materials
   Future<void> seedMaterials() async {
     final batch = _db.batch();
-    final materials = [
-      // MCA Semester 1
-      {
-        'department': 'MCA',
-        'semester': 'Semester 1',
-        'subject': 'Data Structures',
-        'title': 'Linked List Notes',
-        'url': 'https://example.com/linked_list.pdf',
-        'type': 'PDF',
-      },
-      {
-        'department': 'MCA',
-        'semester': 'Semester 1',
-        'subject': 'Data Structures',
-        'title': 'Stack & Queue PPT',
-        'url': 'https://example.com/stack_queue.pptx',
-        'type': 'PPT',
-      },
-      {
-        'department': 'MCA',
-        'semester': 'Semester 1',
-        'subject': 'Python Programming',
-        'title': 'Python Basics',
-        'url': 'https://example.com/python_basics.pdf',
-        'type': 'PDF',
-      },
-      // MCA Semester 2
-      {
-        'department': 'MCA',
-        'semester': 'Semester 2',
-        'subject': 'Database Management',
-        'title': 'SQL normalization',
-        'url': 'https://example.com/sql_norm.pdf',
-        'type': 'PDF',
-      },
-    ];
+    final materials = []; // Seed from external source if needed
 
     for (var material in materials) {
       final docRef = _db.collection('materials').doc();
@@ -219,81 +203,85 @@ class StudentService {
         .snapshots();
   }
 
-  // 13. Get Results (Mock for now, to match ResultsScreen)
+  // 13. Get Results from Firestore
   Future<Map<String, List<Map<String, dynamic>>>> getResults(
     String studentId,
   ) async {
-    // Simulating API delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    return {
-      "Series Exam 1": [
-        {
-          'subject': 'Data Structures',
-          'code': 'CS401',
-          'marks': 35,
-          'maxMarks': 40,
-          'grade': 'A+',
-        },
-        {
-          'subject': 'Mathematics',
-          'code': 'MA402',
-          'marks': 32,
-          'maxMarks': 40,
-          'grade': 'A',
-        },
-        {
-          'subject': 'Python Programming',
-          'code': 'CS403',
-          'marks': 38,
-          'maxMarks': 40,
-          'grade': 'A+',
-        },
-        {
-          'subject': 'Digital Fundamentals',
-          'code': 'EC404',
-          'marks': 28,
-          'maxMarks': 40,
-          'grade': 'B+',
-        },
-        {
-          'subject': 'English Literature',
-          'code': 'EN405',
-          'marks': 33,
-          'maxMarks': 40,
-          'grade': 'A',
-        },
-        {
-          'subject': 'Computer Lab',
-          'code': 'CS406',
-          'marks': 37,
-          'maxMarks': 40,
-          'grade': 'A+',
-        },
-      ],
-      "Series Exam 2": [
-        {
-          'subject': 'Data Structures',
-          'code': 'CS401',
-          'marks': 36,
-          'maxMarks': 40,
-          'grade': 'A+',
-        },
-        {
-          'subject': 'Mathematics',
-          'code': 'MA402',
-          'marks': 30,
-          'maxMarks': 40,
-          'grade': 'B+',
-        },
-        {
-          'subject': 'Python Programming',
-          'code': 'CS403',
-          'marks': 39,
-          'maxMarks': 40,
-          'grade': 'O',
-        },
-      ],
-    };
+    try {
+      QuerySnapshot? snapshot;
+
+      // Try multiple identifier fields
+      for (final field in ['studentId', 'regNo', 'email', 'username']) {
+        final result = await _db
+            .collection('results')
+            .where(field, isEqualTo: studentId)
+            .get();
+        if (result.docs.isNotEmpty) {
+          snapshot = result;
+          debugPrint(
+            '[getResults] Found ${result.docs.length} results by $field=$studentId',
+          );
+          break;
+        }
+      }
+
+      // Case-insensitive fallback
+      if (snapshot == null || snapshot.docs.isEmpty) {
+        final lowerCaseId = studentId.toLowerCase();
+        final allResults = await _db.collection('results').get();
+        final matched = allResults.docs.where((doc) {
+          final data = doc.data();
+          return (data['studentId']?.toString().toLowerCase() == lowerCaseId) ||
+              (data['regNo']?.toString().toLowerCase() == lowerCaseId) ||
+              (data['email']?.toString().toLowerCase() == lowerCaseId) ||
+              (data['username']?.toString().toLowerCase() == lowerCaseId);
+        }).toList();
+
+        if (matched.isEmpty) return {};
+
+        // Process matched docs
+        Map<String, List<Map<String, dynamic>>> groupedResults = {};
+        for (var doc in matched) {
+          final data = doc.data();
+          final String examName = data['examName'] ?? 'General';
+          if (!groupedResults.containsKey(examName)) {
+            groupedResults[examName] = [];
+          }
+          groupedResults[examName]!.add({
+            'subject': data['subject'] ?? 'Unknown',
+            'code': data['subjectCode'] ?? 'N/A',
+            'marks': data['marks'] ?? 0,
+            'maxMarks': data['maxMarks'] ?? 40,
+            'grade': data['grade'] ?? 'N/A',
+          });
+        }
+        return groupedResults;
+      }
+
+      Map<String, List<Map<String, dynamic>>> groupedResults = {};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final String examName = data['examName'] ?? 'General';
+
+        if (!groupedResults.containsKey(examName)) {
+          groupedResults[examName] = [];
+        }
+
+        groupedResults[examName]!.add({
+          'subject': data['subject'] ?? 'Unknown',
+          'code': data['subjectCode'] ?? 'N/A',
+          'marks': data['marks'] ?? 0,
+          'maxMarks': data['maxMarks'] ?? 40,
+          'grade': data['grade'] ?? 'N/A',
+        });
+      }
+
+      return groupedResults;
+    } catch (e) {
+      debugPrint("Error fetching results: $e");
+      return {};
+    }
   }
 
   // 14. Get Assignments (Real-time Stream)
@@ -304,81 +292,311 @@ class StudentService {
         .snapshots();
   }
 
-  // 14b. Get Assignments (Future for AI)
-  Future<List<Map<String, dynamic>>> getAssignments(String studentId) async {
-    // Simulating API delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    final now = DateTime.now();
-    return [
-      {
-        'subject': 'Review',
-        'type': 1,
-        'status': 'submitted',
-        'issueDate': now.subtract(const Duration(days: 10)),
-        'dueDate': now.subtract(const Duration(days: 2)),
-        'submittedDate': now.subtract(const Duration(days: 3)),
-        'description': "Chapter 1-3 Review Questions",
-      },
-      {
-        'subject': 'Physics',
-        'type': 1,
-        'status': 'submitted',
-        'issueDate': now.subtract(const Duration(days: 12)),
-        'dueDate': now.subtract(const Duration(days: 5)),
-        'submittedDate': now.subtract(const Duration(days: 6)),
-        'description': "Lab Report: Ohms Law",
-      },
-      {
-        'subject': 'Chemistry',
-        'type': 2,
-        'status': 'pending',
-        'issueDate': now.subtract(const Duration(days: 2)),
-        'dueDate': now.add(const Duration(days: 5)),
-        'description': "Periodic Table Analysis",
-      },
-      {
-        'subject': 'Mathematics',
-        'type': 1,
-        'status': 'pending',
-        'issueDate': now.subtract(const Duration(days: 1)),
-        'dueDate': now.add(const Duration(days: 6)),
-        'description': "Calculus Problem Set 4",
-      },
-      {
-        'subject': 'Data Structures',
-        'type': 1,
-        'status': 'pending',
-        'issueDate': now.subtract(const Duration(days: 4)),
-        'dueDate': now.add(const Duration(days: 3)),
-        'description': "Implement Doubly Linked List",
-      },
-    ];
+  Stream<List<DocumentSnapshot<Map<String, dynamic>>>> getAssignmentsByClass(
+    String dept,
+    String sem, {
+    String? collegeCode,
+  }) {
+    // Fetch all and filter in memory to be robust against naming discrepancies and index issues
+    return _db.collection('assignments_master').snapshots().map((snapshot) {
+      debugPrint(
+        '[getAssignmentsByClass] Total docs in assignments_master: ${snapshot.docs.length}',
+      );
+      debugPrint(
+        '[getAssignmentsByClass] Looking for dept=$dept, sem=$sem, college=$collegeCode',
+      );
+
+      final assignments = snapshot.docs.where((doc) {
+        final data = doc.data();
+
+        // 1. Semester matching (Robust)
+        final String sSem = sem.toString().trim();
+        final String dSem = (data['semester']?.toString() ?? '').trim();
+
+        // If semester is 'ALL' or empty, or matches student semester
+        bool semMatch = (dSem == sSem || dSem == 'ALL' || dSem.isEmpty);
+
+        // 2. Department & Subject Matching (Lenient)
+        final String sDept = dept.trim().toUpperCase();
+        final String dDept = (data['department']?.toString() ?? '')
+            .trim()
+            .toUpperCase();
+
+        // Match if:
+        // - Departments match exactly or partially
+        // - Assignment is for "ALL" departments
+        // - Assignment department field is empty
+        // - OR if the subject name contains "DIGITAL FUNDAMENTALS" (the forced subject)
+        bool deptMatch =
+            dDept == sDept ||
+            dDept == 'ALL' ||
+            dDept.isEmpty ||
+            dDept.contains(sDept) ||
+            sDept.contains(dDept);
+
+        // 3. College Code check (Only filter if BOTH have values and THEY DISAGREE)
+        bool collegeMatch = true;
+        if (collegeCode != null && collegeCode.trim().isNotEmpty) {
+          final String sCollege = collegeCode.trim().toUpperCase();
+          final String dCollege = (data['collegeCode']?.toString() ?? '')
+              .trim()
+              .toUpperCase();
+          if (dCollege.isNotEmpty &&
+              dCollege != sCollege &&
+              dCollege != 'ALL') {
+            collegeMatch = false;
+          }
+        }
+
+        if (!semMatch || !deptMatch || !collegeMatch) {
+          debugPrint(
+            '[getAssignmentsByClass] SKIPPED: ${data['title']} (semMatch=$semMatch [doc=$dSem vs student=$sSem], deptMatch=$deptMatch [doc=$dDept vs student=$sDept], collegeMatch=$collegeMatch)',
+          );
+        }
+
+        return semMatch && deptMatch && collegeMatch;
+      }).toList();
+
+      debugPrint(
+        '[getAssignmentsByClass] Matched assignments: ${assignments.length}',
+      );
+
+      // Sort by timestamp (newest first)
+      assignments.sort((a, b) {
+        final aTime = a.data()['timestamp'];
+        final bTime = b.data()['timestamp'];
+
+        if (aTime is! Timestamp && bTime is! Timestamp) return 0;
+        if (aTime is! Timestamp) return -1;
+        if (bTime is! Timestamp) return 1;
+
+        return bTime.compareTo(aTime);
+      });
+
+      return assignments;
+    });
   }
 
-  // 15. Get Attendance (Future for AI)
+  // 14b. Get Submission for a specific assignment and student
+  Stream<QuerySnapshot> getStudentSubmission(
+    String studentId,
+    String assignmentId,
+  ) {
+    return _db
+        .collection('submissions')
+        .where('studentId', isEqualTo: studentId)
+        .where('assignmentId', isEqualTo: assignmentId)
+        .snapshots();
+  }
+
+  // 14c. Submit Assignment
+  Future<void> submitAssignment(Map<String, dynamic> submissionData) async {
+    // 1. Add the submission
+    await _db.collection('submissions').add({
+      ...submissionData,
+      'submittedAt': FieldValue.serverTimestamp(),
+      'status': 'submitted',
+    });
+
+    // 2. Add an alert for the staff member
+    if (submissionData['staffId'] != null) {
+      await _db.collection('alerts').add({
+        'title': 'New Submission: ${submissionData['subject']}',
+        'message':
+            '${submissionData['studentName']} (Sem ${submissionData['semester']}) has submitted the assignment. File: ${submissionData['fileName']}',
+        'priority': 'Normal',
+        'target': 'Staff',
+        'targetStaffId': submissionData['staffId'],
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'type': 'submission_update',
+        'fileUrl':
+            submissionData['fileUrl'], // Directly allow viewing from notification
+      });
+    }
+  }
+
+  // 14b. Get Assignments for AI (fetches real data from Firestore)
+  Future<List<Map<String, dynamic>>> getAssignments(String studentId) async {
+    try {
+      // First, resolve the student's department and semester
+      String dept = 'MCA';
+      String sem = '1';
+
+      // Try students collection
+      final studentDoc = await _db.collection('students').doc(studentId).get();
+      if (studentDoc.exists) {
+        final data = studentDoc.data()!;
+        dept = data['department'] ?? 'MCA';
+        sem = (data['semester'] ?? '1').toString();
+      } else {
+        // Try users collection by username or email
+        final userDoc = await getUserByIdentifier(studentId);
+        if (userDoc != null && userDoc.exists) {
+          final data = userDoc.data() as Map<String, dynamic>;
+          dept = data['department'] ?? 'MCA';
+          sem = (data['semester'] ?? '1').toString();
+        }
+      }
+
+      // Fetch assignments from assignments_master
+      final assignmentsSnap = await _db.collection('assignments_master').get();
+      final List<Map<String, dynamic>> result = [];
+
+      for (var doc in assignmentsSnap.docs) {
+        final data = doc.data();
+        final String aDept = (data['department']?.toString() ?? '')
+            .trim()
+            .toUpperCase();
+        final String aSem = (data['semester']?.toString() ?? '').trim();
+
+        // Lenient matching
+        bool match =
+            (aDept.isEmpty ||
+                aDept == 'ALL' ||
+                aDept == dept.trim().toUpperCase()) &&
+            (aSem.isEmpty || aSem == 'ALL' || aSem == sem);
+        if (!match) continue;
+
+        // Check if student has submitted this assignment
+        String status = 'PENDING';
+        final subSnap = await _db
+            .collection('submissions')
+            .where('assignmentId', isEqualTo: doc.id)
+            .where('studentId', isEqualTo: studentId)
+            .limit(1)
+            .get();
+        if (subSnap.docs.isNotEmpty) {
+          status = (subSnap.docs.first.data()['status'] ?? 'submitted')
+              .toString()
+              .toUpperCase();
+        }
+
+        result.add({
+          'id': doc.id,
+          'title': data['title'] ?? 'Untitled',
+          'subject': data['subject'] ?? 'N/A',
+          'description': data['description'] ?? '',
+          'status': status,
+          'dueDate': data['dueDate'],
+          'type': data['type'],
+        });
+      }
+
+      return result;
+    } catch (e) {
+      debugPrint('Error fetching assignments for AI: $e');
+      return [];
+    }
+  }
+
+  // 15. Get Attendance (Future for AI) - aggregated by subject
   Future<List<Map<String, dynamic>>> getDetailedAttendance(
     String studentId,
   ) async {
     try {
-      final snapshot = await _db
-          .collection('attendance')
-          .where('studentId', isEqualTo: studentId)
-          .get();
+      List<QueryDocumentSnapshot<Map<String, dynamic>>> docs = [];
 
-      if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.map((d) => d.data()).toList();
+      // Try multiple identifier fields to find attendance records
+      for (final field in ['studentId', 'regNo', 'email', 'username']) {
+        final snapshot = await _db
+            .collection('attendance')
+            .where(field, isEqualTo: studentId)
+            .get();
+
+        if (snapshot.docs.isNotEmpty) {
+          debugPrint(
+            '[getDetailedAttendance] Found ${snapshot.docs.length} records by $field=$studentId',
+          );
+          docs = snapshot.docs;
+          break;
+        }
       }
 
-      // Fallback Mock Data (if DB empty)
-      return [
-        {'subjectName': 'Applied Mathematics-I', 'present': 28, 'total': 35},
-        {'subjectName': 'Applied Physics-I', 'present': 30, 'total': 38},
-        {'subjectName': 'Applied Chemistry', 'present': 32, 'total': 36},
-        {'subjectName': 'Computer Fundamentals', 'present': 25, 'total': 35},
-        {'subjectName': 'Communication Skills', 'present': 33, 'total': 37},
-      ];
-    } catch (e) {
+      // Also try case-insensitive match if nothing found
+      if (docs.isEmpty) {
+        final lowerCaseId = studentId.toLowerCase();
+        final allAttendance = await _db.collection('attendance').get();
+        docs = allAttendance.docs.where((doc) {
+          final data = doc.data();
+          return (data['studentId']?.toString().toLowerCase() == lowerCaseId) ||
+              (data['regNo']?.toString().toLowerCase() == lowerCaseId) ||
+              (data['email']?.toString().toLowerCase() == lowerCaseId) ||
+              (data['username']?.toString().toLowerCase() == lowerCaseId);
+        }).toList();
+
+        if (docs.isNotEmpty) {
+          debugPrint(
+            '[getDetailedAttendance] Found ${docs.length} records by case-insensitive match',
+          );
+        }
+      }
+
+      if (docs.isEmpty) {
+        debugPrint(
+          '[getDetailedAttendance] No attendance records found for $studentId',
+        );
+        return [];
+      }
+
+      // Aggregate records by subject (same logic as attendance_screen.dart)
+      // Records may be either:
+      //   a) individual records with 'isPresent' boolean (per-class)
+      //   b) summary records with 'present' and 'total' integers
+      final Map<String, Map<String, dynamic>> aggregated = {};
+      final bool hasRealRecords = docs.any(
+        (doc) => doc.data().containsKey('isPresent'),
+      );
+
+      for (var doc in docs) {
+        final data = doc.data();
+        final subjectName = data['subjectName'] ?? data['subject'] ?? 'Unknown';
+        final isRealRecord = data.containsKey('isPresent');
+
+        // If we have individual isPresent records, skip summary records
+        if (hasRealRecords && !isRealRecord) continue;
+
+        if (isRealRecord) {
+          if (!aggregated.containsKey(subjectName)) {
+            aggregated[subjectName] = {
+              'subjectName': subjectName,
+              'code': data['subjectCode'] ?? data['code'] ?? '-',
+              'present': 0,
+              'total': 0,
+            };
+          }
+          aggregated[subjectName]!['total'] =
+              (aggregated[subjectName]!['total'] as num).toInt() + 1;
+          if (data['isPresent'] == true) {
+            aggregated[subjectName]!['present'] =
+                (aggregated[subjectName]!['present'] as num).toInt() + 1;
+          }
+        } else if (data.containsKey('present') && data.containsKey('total')) {
+          final int p = (data['present'] as num?)?.toInt() ?? 0;
+          final int t = (data['total'] as num?)?.toInt() ?? 0;
+          if (!aggregated.containsKey(subjectName)) {
+            aggregated[subjectName] = {
+              'subjectName': subjectName,
+              'code': data['subjectCode'] ?? data['code'] ?? '-',
+              'present': p,
+              'total': t,
+            };
+          } else {
+            aggregated[subjectName]!['present'] =
+                (aggregated[subjectName]!['present'] as num).toInt() + p;
+            aggregated[subjectName]!['total'] =
+                (aggregated[subjectName]!['total'] as num).toInt() + t;
+          }
+        }
+      }
+
+      debugPrint(
+        '[getDetailedAttendance] Aggregated ${aggregated.length} subjects',
+      );
+      return aggregated.values.toList();
+    } catch (e, stackTrace) {
       debugPrint("Attendance fetch error: $e");
+      debugPrint("Stack trace: $stackTrace");
       return [];
     }
   }
@@ -399,24 +617,7 @@ class StudentService {
         return snapshot.docs.map((d) => d.data()).toList();
       }
 
-      // Fallback Mock Data
-      return [
-        {
-          'subject': 'ADVANCED DATA STRUCTURES',
-          'title': 'Linked List Notes',
-          'type': 'PDF',
-        },
-        {
-          'subject': 'ADVANCED SOFTWARE ENGINEERING',
-          'title': 'Agile Methodology',
-          'type': 'PPT',
-        },
-        {
-          'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
-          'title': 'Logic Gates Guide',
-          'type': 'DOC',
-        },
-      ];
+      return [];
     } catch (e) {
       debugPrint("Materials fetch error: $e");
       return [];
@@ -433,124 +634,6 @@ class StudentService {
 
   // 18. Seed All Academics Data (Dev Tool)
   Future<void> seedDevData(String regNo) async {
-    final batch = _db.batch();
-    final now = DateTime.now();
-
-    // 1. Seed Announcements (The Upcoming Feed)
-    final announcements = [
-      {
-        'title': 'Mid-Term Exam Schedule',
-        'content': 'Check the portal for your upcoming mid-term dates.',
-        'type': 'exam',
-        'postedDate': now,
-        'isActive': true,
-        'priority': 'high',
-      },
-      {
-        'title': 'Onam Festival Holiday',
-        'content': 'College will remain closed for Onam celebrations.',
-        'type': 'holiday',
-        'postedDate': now.add(const Duration(hours: 1)),
-        'isActive': true,
-        'priority': 'medium',
-      },
-      {
-        'title': 'New Python Assignment',
-        'content': 'Implement a Flask API for student management.',
-        'type': 'assignment',
-        'postedDate': now.add(const Duration(hours: 2)),
-        'isActive': true,
-        'priority': 'normal',
-      },
-    ];
-
-    for (var a in announcements) {
-      final ref = _db.collection('announcements').doc();
-      batch.set(ref, a);
-    }
-
-    // 2. Seed Holidays Specifically
-    final holidays = [
-      {
-        'name': 'National Youth Day',
-        'date': now.add(const Duration(days: 10)),
-        'type': 'Public',
-      },
-      {
-        'name': 'Republic Day',
-        'date': DateTime(2026, 1, 26),
-        'type': 'National',
-      },
-      {
-        'name': 'College Tech Fest',
-        'date': now.add(const Duration(days: 20)),
-        'type': 'Event',
-      },
-    ];
-
-    for (var h in holidays) {
-      final ref = _db.collection('holidays').doc();
-      batch.set(ref, h);
-    }
-
-    // 3. Seed Exams
-    final exams = [
-      {
-        'subject': 'ADVANCED DATA STRUCTURES',
-        'title': 'Series Exam 1',
-        'date': now.add(const Duration(days: 5)),
-        'time': '10:00 AM',
-        'venue': 'Room 101',
-        'department': 'MCA',
-        'semester': 'Semester 1',
-        'type': 'Series',
-        'status': 'Scheduled',
-      },
-      {
-        'subject': 'ADVANCED SOFTWARE ENGINEERING',
-        'title': 'Series Exam 1',
-        'date': now.add(const Duration(days: 7)),
-        'time': '02:00 PM',
-        'venue': 'Lab 2',
-        'department': 'MCA',
-        'semester': 'Semester 1',
-        'type': 'Series',
-        'status': 'Scheduled',
-      },
-    ];
-
-    for (var e in exams) {
-      final ref = _db.collection('exams').doc();
-      batch.set(ref, e);
-    }
-
-    // 4. Seed Assignments
-    final assignments = [
-      {
-        'subject': 'ADVANCED DATA STRUCTURES',
-        'title': 'Tree Implementation',
-        'dueDate': now.add(const Duration(days: 4)),
-        'status': 'pending',
-        'type': 2, // Online
-        'studentId': regNo,
-        'description': 'Implement a Red-Black Tree in Java.',
-      },
-      {
-        'subject': 'WEB PROGRAMMING LAB',
-        'title': 'Personal Portfolio',
-        'dueDate': now.add(const Duration(days: 8)),
-        'status': 'pending',
-        'type': 1, // Offline
-        'studentId': regNo,
-        'description': 'Design a responsive portfolio using HTML/CSS.',
-      },
-    ];
-
-    for (var asm in assignments) {
-      final ref = _db.collection('assignments').doc();
-      batch.set(ref, asm);
-    }
-
-    await batch.commit();
+    // Methods for seeding data should pull from a configuration or be removed in production
   }
 }

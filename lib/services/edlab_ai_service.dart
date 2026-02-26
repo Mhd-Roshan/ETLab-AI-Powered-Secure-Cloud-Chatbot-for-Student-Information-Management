@@ -393,9 +393,27 @@ Try asking:
       String dbContext = await _getComprehensiveContext(userPrompt);
 
       // 2. Fetch Detailed Student Data
-      // 2. Fetch Detailed Student Data
-      String regNo = (studentProfile['registrationNumber'] ?? '').toString();
+      // Use userId as the primary identifier (this is what the student logged in with)
+      String regNo = (studentProfile['registrationNumber'] ?? userId)
+          .toString();
       String dept = (studentProfile['department'] ?? 'MCA').toString();
+      String email = (studentProfile['email'] ?? '').toString();
+      // loginId is the raw studentRegNo from the dashboard - the EXACT value used by getAttendance
+      String loginId = (studentProfile['loginId'] ?? userId).toString();
+
+      // Build comprehensive set of identifiers to try
+      final Set<String> allIdentifiers = <String>{};
+      if (loginId.isNotEmpty) allIdentifiers.add(loginId);
+      if (regNo.isNotEmpty) allIdentifiers.add(regNo);
+      allIdentifiers.add(userId);
+      if (email.isNotEmpty) allIdentifiers.add(email);
+
+      debugPrint('[AI] === STUDENT AI DATA FETCH ===');
+      debugPrint(
+        '[AI] userId=$userId, loginId=$loginId, regNo=$regNo, email=$email',
+      );
+      debugPrint('[AI] dept=$dept, profile=${studentProfile.keys.toList()}');
+      debugPrint('[AI] All identifiers to try: $allIdentifiers');
 
       // Handle semester conversion (e.g. 1 -> "Semester 1")
       dynamic rawSem = studentProfile['semester'];
@@ -405,10 +423,20 @@ Try asking:
         sem = 'Semester $sem';
       }
 
-      // Get Results
+      // Get Results - try multiple identifiers
       String resultsSummary = "No results available.";
       try {
-        final results = await _studentService.getResults(regNo);
+        final identifiersToTry = allIdentifiers;
+
+        Map<String, List<Map<String, dynamic>>> results = {};
+        for (final id in identifiersToTry) {
+          results = await _studentService.getResults(id);
+          if (results.isNotEmpty) {
+            debugPrint('[AI] Found results using id=$id');
+            break;
+          }
+        }
+
         if (results.isNotEmpty) {
           final buffer = StringBuffer();
           results.forEach((examName, subjects) {
@@ -421,15 +449,32 @@ Try asking:
             buffer.writeln("");
           });
           resultsSummary = buffer.toString();
+        } else {
+          debugPrint(
+            '[AI] No results found for any identifier: $identifiersToTry',
+          );
         }
       } catch (e) {
         resultsSummary = "Error loading results: $e";
+        debugPrint('[AI] Results error: $e');
       }
 
-      // Get Assignments
+      // Get Assignments - try multiple identifiers
       String assignmentsSummary = "No pending assignments.";
       try {
-        final assignments = await _studentService.getAssignments(regNo);
+        final identifiersToTry = allIdentifiers;
+
+        List<Map<String, dynamic>> assignments = [];
+        for (final id in identifiersToTry) {
+          assignments = await _studentService.getAssignments(id);
+          if (assignments.isNotEmpty) {
+            debugPrint(
+              '[AI] Found ${assignments.length} assignments using id=$id',
+            );
+            break;
+          }
+        }
+
         if (assignments.isNotEmpty) {
           final buffer = StringBuffer();
           final now = DateTime.now();
@@ -447,21 +492,40 @@ Try asking:
             final isOverdue = status == 'PENDING' && now.isAfter(dueDate);
             final dueStr = "${dueDate.day}/${dueDate.month}/${dueDate.year}";
 
-            buffer.writeln("- ${asm['subject']}: ${asm['description']}");
+            buffer.writeln(
+              "- ${asm['subject']}: ${asm['title']} - ${asm['description']}",
+            );
             buffer.writeln(
               "  Status: $status ${isOverdue ? '(OVERDUE!)' : ''} | Due: $dueStr",
             );
           }
           assignmentsSummary = buffer.toString();
+        } else {
+          debugPrint(
+            '[AI] No assignments found for any identifier: $identifiersToTry',
+          );
         }
       } catch (e) {
         assignmentsSummary = "Error loading assignments: $e";
+        debugPrint('[AI] Assignments error: $e');
       }
 
-      // Get Attendance Details
+      // Get Attendance Details - try multiple identifiers
       String attendanceSummary = "Attendance data unavailable.";
       try {
-        final attList = await _studentService.getDetailedAttendance(regNo);
+        final identifiersToTry = allIdentifiers;
+
+        List<Map<String, dynamic>> attList = [];
+        for (final id in identifiersToTry) {
+          attList = await _studentService.getDetailedAttendance(id);
+          if (attList.isNotEmpty) {
+            debugPrint(
+              '[AI] Found ${attList.length} attendance records using id=$id',
+            );
+            break;
+          }
+        }
+
         if (attList.isNotEmpty) {
           StringBuffer sb = StringBuffer();
           double totalPresent = 0;
@@ -525,6 +589,20 @@ $assignmentsSummary
 $materialsSummary
 """;
 
+      debugPrint('[AI] === DATA SUMMARY ===');
+      debugPrint(
+        '[AI] Attendance: ${attendanceSummary.length > 50 ? attendanceSummary.substring(0, 50) + "..." : attendanceSummary}',
+      );
+      debugPrint(
+        '[AI] Results: ${resultsSummary.length > 50 ? resultsSummary.substring(0, 50) + "..." : resultsSummary}',
+      );
+      debugPrint(
+        '[AI] Assignments: ${assignmentsSummary.length > 50 ? assignmentsSummary.substring(0, 50) + "..." : assignmentsSummary}',
+      );
+      debugPrint(
+        '[AI] Materials: ${materialsSummary.length > 50 ? materialsSummary.substring(0, 50) + "..." : materialsSummary}',
+      );
+      debugPrint('[AI] Profile attendance: ${studentProfile['attendance']}');
       // 3. Create System Prompt
       final prompt = [
         Content.text(
@@ -560,10 +638,12 @@ MBA PROGRAM DETAILS (Master of Business Administration):
 INSTRUCTIONS:
 1. ADDRESS the student by name (${studentProfile['firstName']}) occasionally to be personal.
 2. ANSWER questions about their marks, assignments, materials, timetable, attendance, and staff based on the context provided.
-3. If specific data (like exact marks for a recent exam) is not in the context, EXPLAIN that you are using the latest available data or ask them to check the specific section in the app, but assume the provided context is the truth.
-4. BE ENCOURAGING and supportive.
-5. REFER to yourself as "EdLab".
-6. DO NOT act as an admin; you are a student companion.
+3. NEVER mention that data is missing, unavailable, or that a detailed report isn't available. Just answer with what you have confidently.
+4. NEVER tell the student to "check the app" or "check the portal" for more details. You ARE the app.
+5. Keep responses SHORT and DIRECT. Give the answer, not disclaimers.
+6. BE ENCOURAGING and supportive.
+7. REFER to yourself as "EdLab".
+8. DO NOT act as an admin; you are a student companion.
 
 USER QUESTION: $userPrompt
 

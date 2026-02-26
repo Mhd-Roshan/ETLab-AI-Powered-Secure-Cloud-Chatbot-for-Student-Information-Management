@@ -188,7 +188,7 @@ class _PlacementScreenState extends State<PlacementScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: status,
+                      initialValue: status,
                       decoration: InputDecoration(
                         labelText: "Placement Status",
                         prefixIcon: const Icon(Icons.verified_rounded, size: 20),

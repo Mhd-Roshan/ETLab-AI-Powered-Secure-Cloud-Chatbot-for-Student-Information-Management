@@ -6,8 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edlab/admin/admin_dashboard.dart';
 import 'package:edlab/hod/hod_dashboard.dart';
 import 'package:edlab/staff/staff_dashboard.dart';
-import 'package:edlab/staff_advisor/staff_advisor_dashboard.dart';
 import 'package:edlab/student/student_dashboard.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -95,22 +95,22 @@ class _LoginPageState extends State<LoginPage>
       // Check Firebase for user
       final username = _usernameController.text.trim();
       final password = _passwordController.text.trim();
-      
+
       debugPrint("=== LOGIN DEBUG ===");
       debugPrint("Attempting login with username: $username");
-      
+
       // Try multiple search strategies
       QuerySnapshot querySnapshot;
-      
+
       // Strategy 1: Search by username field (case-insensitive)
       querySnapshot = await FirebaseFirestore.instance
           .collection('users')
           .where('username', isEqualTo: username)
           .limit(1)
           .get();
-      
+
       debugPrint("Search by username: ${querySnapshot.docs.length} results");
-      
+
       // Strategy 2: If not found, try email field
       if (querySnapshot.docs.isEmpty) {
         querySnapshot = await FirebaseFirestore.instance
@@ -120,26 +120,26 @@ class _LoginPageState extends State<LoginPage>
             .get();
         debugPrint("Search by email: ${querySnapshot.docs.length} results");
       }
-      
+
       // Strategy 3: If still not found, get all users and search manually
       if (querySnapshot.docs.isEmpty) {
         debugPrint("Trying manual search...");
         final allUsers = await FirebaseFirestore.instance
             .collection('users')
             .get();
-        
+
         debugPrint("Total users in collection: ${allUsers.docs.length}");
-        
+
         for (var doc in allUsers.docs) {
           final data = doc.data();
           debugPrint("User doc ID: ${doc.id}");
           debugPrint("Username: ${data['username']}");
           debugPrint("Email: ${data['email']}");
-          
+
           final docUsername = (data['username'] ?? '').toString().toLowerCase();
           final docEmail = (data['email'] ?? '').toString().toLowerCase();
           final searchTerm = username.toLowerCase();
-          
+
           if (docUsername == searchTerm || docEmail == searchTerm) {
             querySnapshot = await FirebaseFirestore.instance
                 .collection('users')
@@ -150,7 +150,7 @@ class _LoginPageState extends State<LoginPage>
           }
         }
       }
-      
+
       if (querySnapshot.docs.isEmpty) {
         setState(() {
           _isLoading = false;
@@ -172,17 +172,18 @@ class _LoginPageState extends State<LoginPage>
         }
         return;
       }
-      
+
       final userData = querySnapshot.docs.first.data() as Map<String, dynamic>;
       final storedPassword = userData['password'] ?? '';
       final role = userData['role'] ?? 'staff';
       final isActive = userData['isActive'] ?? true;
-      final actualUsername = userData['username'] ?? userData['email'] ?? username;
-      
+      final actualUsername =
+          userData['username'] ?? userData['email'] ?? username;
+
       debugPrint("Found user with role: $role");
       debugPrint("Stored password: $storedPassword");
       debugPrint("Input password: $password");
-      
+
       // Check if user is active
       if (!isActive) {
         setState(() {
@@ -205,7 +206,7 @@ class _LoginPageState extends State<LoginPage>
         }
         return;
       }
-      
+
       // Verify password (in production, use proper hashing!)
       if (storedPassword != password) {
         setState(() {
@@ -228,15 +229,23 @@ class _LoginPageState extends State<LoginPage>
         }
         return;
       }
-      
+
       debugPrint("Login successful!");
-      
+
       setState(() {
         _isLoading = false;
       });
 
       if (mounted) {
-        _navigateToDashboard(context, role, actualUsername);
+        // Save session
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('username', actualUsername);
+        await prefs.setString('role', role);
+        await prefs.setBool('isLoggedIn', true);
+
+        if (mounted) {
+          _navigateToDashboard(context, role, actualUsername);
+        }
       }
     } catch (e) {
       debugPrint("Login error: $e");
@@ -261,7 +270,11 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
-  void _navigateToDashboard(BuildContext context, String role, String username) {
+  void _navigateToDashboard(
+    BuildContext context,
+    String role,
+    String username,
+  ) {
     Widget dashboard;
 
     // Explicitly assigning the widget based on role
@@ -272,15 +285,13 @@ class _LoginPageState extends State<LoginPage>
       case 'hod':
         dashboard = const HodDashboard();
         break;
-      case 'staff_advisor':
-        dashboard = const StaffAdvisorDashboard();
-        break;
       case 'student':
         dashboard = StudentDashboard(studentRegNo: username);
         break;
       case 'staff':
+      case 'staff_advisor':
       default:
-        dashboard = const StaffDashboard();
+        dashboard = StaffDashboard(user: username);
         break;
     }
 

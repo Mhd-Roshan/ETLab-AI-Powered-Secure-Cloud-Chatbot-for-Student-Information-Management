@@ -327,8 +327,9 @@ class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
             .orderBy('date', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
           var docs = snapshot.data?.docs ?? [];
           if (docs.isEmpty) return _buildEmptyState();
 

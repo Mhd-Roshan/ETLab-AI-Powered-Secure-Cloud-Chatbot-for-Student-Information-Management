@@ -1,5 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class SurveyScreen extends StatefulWidget {
   final String studentId;
@@ -9,446 +11,403 @@ class SurveyScreen extends StatefulWidget {
   State<SurveyScreen> createState() => _SurveyScreenState();
 }
 
-class _SurveyScreenState extends State<SurveyScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final List<String> _subjects = [
-    "All",
-    "General",
-    "ADVANCED DATA STRUCTURES",
-    "ADVANCED SOFTWARE ENGINEERING",
-    "DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE",
-    "MATHEMATICAL FOUNDATIONS FOR COMPUTING",
-    "DATA STRUCTURES LAB",
-    "PROGRAMMING LAB",
-    "WEB PROGRAMMING LAB",
-  ];
+class _SurveyScreenState extends State<SurveyScreen> {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  bool _isSubmitting = false;
 
-  // Track submitted surveys
+  // Cache of already-submitted survey IDs for this student session
   final Set<String> _submittedSurveyIds = {};
-  bool _isLoading = true;
-
-  // Mock Data for Surveys - Updated to match correct MCA subjects
-  final List<Map<String, dynamic>> _surveys = [
-    {
-      'id': 's1',
-      'title': 'Course Feedback - Semester 1',
-      'description':
-          'Please provide your honest feedback on the courses taught in Semester 1.',
-      'deadline': 'Feb 20, 2026',
-      'isActive': true,
-      'readTime': '5 min',
-      'subject': 'General',
-    },
-    {
-      'id': 's2',
-      'title': 'Advanced Data Structures Review',
-      'description':
-          'Feedback on Algorithm complexity and tree implementations.',
-      'deadline': 'Feb 28, 2026',
-      'isActive': true,
-      'readTime': '4 min',
-      'subject': 'ADVANCED DATA STRUCTURES',
-    },
-    {
-      'id': 's3',
-      'title': 'Software Engineering Project Management',
-      'description': 'Assessment of Agile methodology knowledge gained.',
-      'deadline': 'Mar 5, 2026',
-      'isActive': true,
-      'readTime': '3 min',
-      'subject': 'ADVANCED SOFTWARE ENGINEERING',
-    },
-    {
-      'id': 's4',
-      'title': 'Architecture Lab Experience',
-      'description': 'How was the session on instruction sets and logic gates?',
-      'deadline': 'Feb 15, 2026',
-      'isActive': false, // Expired
-      'readTime': '2 min',
-      'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
-    },
-    {
-      'id': 's5',
-      'title': 'Campus Facilities Survey',
-      'description':
-          'Help us improve the campus facilities by rating your experience.',
-      'deadline': 'Feb 25, 2026',
-      'isActive': true,
-      'readTime': '3 min',
-      'subject': 'General',
-    },
-    {
-      'id': 's6',
-      'title': 'Web Lab Project Status',
-      'description': 'Assessment of HTML/CSS/JS final project progress.',
-      'deadline': 'Feb 22, 2026',
-      'isActive': true,
-      'readTime': '2 min',
-      'subject': 'WEB PROGRAMMING LAB',
-    },
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _subjects.length, vsync: this);
-    _fetchSubmissions();
-  }
-
-  Future<void> _fetchSubmissions() async {
-    if (widget.studentId.isEmpty) {
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.studentId)
-          .collection('survey_submissions')
-          .get();
-
-      if (mounted) {
-        setState(() {
-          _submittedSurveyIds.clear();
-          for (var doc in snapshot.docs) {
-            _submittedSurveyIds.add(doc.id);
-          }
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error fetching survey submissions: $e");
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text(
-          "Surveys",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-        ),
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
           icon: const Icon(
             Icons.arrow_back_ios_new,
             size: 20,
-            color: Colors.black,
+            color: Color(0xFF0F172A),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          "Student Surveys",
+          style: GoogleFonts.plusJakartaSans(
+            color: const Color(0xFF0F172A),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: const Color(0xFF001FF4),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF001FF4),
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          tabs: _subjects.map((subject) => Tab(text: subject)).toList(),
-        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: _subjects.map((subject) {
-                return _buildSurveyList(subject);
-              }).toList(),
-            ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          Expanded(child: _buildSurveyList()),
+        ],
+      ),
     );
   }
 
-  Widget _buildSurveyList(String subject) {
-    // Filter surveys based on subject
-    final filteredSurveys = subject == "All"
-        ? _surveys
-        : _surveys.where((s) => s['subject'] == subject).toList();
-
-    if (filteredSurveys.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.assignment_turned_in_outlined,
-              size: 60,
-              color: Colors.grey[300],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "No surveys available for $subject",
-              style: TextStyle(color: Colors.grey[500], fontSize: 16),
-            ),
-          ],
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
         ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: filteredSurveys.length,
-      itemBuilder: (context, index) {
-        final survey = filteredSurveys[index];
-        final bool isActive = survey['isActive'];
-        final bool isSubmitted = _submittedSurveyIds.contains(survey['id']);
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Available Surveys",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0F172A),
+              letterSpacing: -0.5,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with Subject Tag and Status
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        survey['subject'].toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.blue,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSubmitted
-                          ? Colors.blue.withOpacity(0.1) // Submitted
-                          : isActive
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.grey.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      isSubmitted
-                          ? "SUBMITTED"
-                          : isActive
-                          ? "ACTIVE"
-                          : "EXPIRED",
-                      style: TextStyle(
-                        color: isSubmitted
-                            ? Colors.blue
-                            : isActive
-                            ? Colors.green
-                            : Colors.grey,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Title & Description
-              Text(
-                survey['title'],
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                survey['description'],
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Footer (Deadline & Button)
-              Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "DEADLINE",
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        survey['deadline'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  if (isSubmitted)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(
-                            Icons.check_circle,
-                            size: 16,
-                            color: Colors.blue,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            "Done",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (isActive)
-                    ElevatedButton(
-                      onPressed: () {
-                        _showSurveyDialog(survey);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF001FF4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        "Start",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        "Closed",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
+          const SizedBox(height: 8),
+          Text(
+            "Your feedback helps us improve your learning experience.",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              color: const Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSurveyList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _db
+          .collection('surveys')
+          .where('status', isEqualTo: 'Active')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        final surveys = snapshot.data!.docs;
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+          itemCount: surveys.length,
+          itemBuilder: (context, index) {
+            final data = surveys[index].data() as Map<String, dynamic>;
+            final docId = surveys[index].id;
+            return _buildSurveyCardWithSubmissionCheck(docId, data);
+          },
         );
       },
     );
   }
 
-  void _showSurveyDialog(Map<String, dynamic> survey) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(survey['title'] ?? 'Survey'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+  /// Wraps each card with a FutureBuilder that checks if this student
+  /// has already submitted a response to this survey.
+  Widget _buildSurveyCardWithSubmissionCheck(
+    String docId,
+    Map<String, dynamic> data,
+  ) {
+    // If we already know it was submitted in this session, skip the Firestore check
+    if (_submittedSurveyIds.contains(docId)) {
+      return _buildSurveyCard(docId, data, alreadySubmitted: true);
+    }
+
+    return FutureBuilder<DocumentSnapshot>(
+      future: _db
+          .collection('surveys')
+          .doc(docId)
+          .collection('responses')
+          .doc(widget.studentId)
+          .get(),
+      builder: (context, snapshot) {
+        final alreadySubmitted = snapshot.hasData && snapshot.data!.exists;
+
+        if (alreadySubmitted) {
+          // Cache it so we don't re-query on rebuild
+          _submittedSurveyIds.add(docId);
+        }
+
+        return _buildSurveyCard(
+          docId,
+          data,
+          alreadySubmitted: alreadySubmitted,
+        );
+      },
+    );
+  }
+
+  Widget _buildSurveyCard(
+    String docId,
+    Map<String, dynamic> data, {
+    bool alreadySubmitted = false,
+  }) {
+    final String title = data['name'] ?? 'Untitled Survey';
+    final String subject = data['subject'] ?? 'General';
+    final String type = data['type'] ?? 'Standard';
+    final Timestamp? createdAt = data['createdAt'] as Timestamp?;
+    final String dateStr = createdAt != null
+        ? DateFormat('MMM dd, yyyy').format(createdAt.toDate())
+        : '--';
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: alreadySubmitted
+            ? Border.all(
+                color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                width: 1.5,
+              )
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: alreadySubmitted
+                ? const Color(0xFF10B981).withValues(alpha: 0.08)
+                : const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          // Block tap if already submitted
+          onTap: alreadySubmitted
+              ? () => _showAlreadySubmittedMessage()
+              : () => _showSurveyOptions(docId, title, subject),
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: alreadySubmitted
+                        ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                        : const Color(0xFF001FF4).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    alreadySubmitted
+                        ? Icons.check_circle_rounded
+                        : Icons.poll_rounded,
+                    color: alreadySubmitted
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFF001FF4),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                // Title + subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: alreadySubmitted
+                              ? const Color(0xFF64748B)
+                              : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "$subject • $type",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: const Color(0xFF94A3B8),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Right section
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (alreadySubmitted)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF10B981,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          "Submitted ✓",
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF10B981),
+                          ),
+                        ),
+                      )
+                    else
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    const SizedBox(height: 8),
+                    Text(
+                      dateStr,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        color: const Color(0xFF94A3B8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAlreadySubmittedMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
           children: [
-            const Text(
-              "How would you rate your experience?",
-              style: TextStyle(color: Colors.grey, fontSize: 13),
+            const Icon(Icons.info_outline_rounded, color: Colors.white),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text("You have already submitted this survey."),
             ),
-            const SizedBox(height: 15),
-            _buildRatingOption(
-              survey,
-              "Excellent",
-              Colors.green,
-              Icons.sentiment_very_satisfied,
+          ],
+        ),
+        backgroundColor: const Color(0xFF64748B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  void _showSurveyOptions(String docId, String title, String subject) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(32),
+            topRight: Radius.circular(32),
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 48,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
-            _buildRatingOption(
-              survey,
-              "Good",
-              Colors.lightGreen,
-              Icons.sentiment_satisfied,
+            const SizedBox(height: 24),
+            Text(
+              "Rate your experience",
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
             ),
-            _buildRatingOption(
-              survey,
-              "Average",
-              Colors.amber,
-              Icons.sentiment_neutral,
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            _buildRatingOption(
-              survey,
-              "Poor",
-              Colors.red,
-              Icons.sentiment_dissatisfied,
+            if (subject != 'General') ...[
+              const SizedBox(height: 2),
+              Text(
+                subject,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  color: const Color(0xFF94A3B8),
+                ),
+              ),
+            ],
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildOptionItem(
+                  context,
+                  docId,
+                  "Excellent",
+                  "🤩",
+                  const Color(0xFF10B981),
+                ),
+                _buildOptionItem(
+                  context,
+                  docId,
+                  "Good",
+                  "😊",
+                  const Color(0xFF001FF4),
+                ),
+                _buildOptionItem(context, docId, "Bad", "☹️", Colors.redAccent),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                "You can only submit once — choose carefully.",
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  color: const Color(0xFF94A3B8),
+                ),
+              ),
             ),
           ],
         ),
@@ -456,95 +415,116 @@ class _SurveyScreenState extends State<SurveyScreen>
     );
   }
 
-  Widget _buildRatingOption(
-    Map<String, dynamic> survey,
+  Widget _buildOptionItem(
+    BuildContext context,
+    String docId,
     String label,
+    String emoji,
     Color color,
-    IconData icon,
   ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: InkWell(
-        onTap: () => _submitSurvey(survey, label, color),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: color),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
+    return Column(
+      children: [
+        InkWell(
+          onTap: _isSubmitting
+              ? null
+              : () => _submitFeedback(context, docId, label),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 86,
+            height: 86,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withValues(alpha: 0.25)),
+            ),
+            child: Center(
+              child: Text(emoji, style: const TextStyle(fontSize: 36)),
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 
-  Future<void> _submitSurvey(
-    Map<String, dynamic> survey,
+  Future<void> _submitFeedback(
+    BuildContext context,
+    String docId,
     String rating,
-    Color color,
   ) async {
-    final surveyId = survey['id'];
-    if (widget.studentId.isEmpty || surveyId == null) return;
-
-    // Close Dialog
-    Navigator.pop(context);
-
-    // Show submitting indicator
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Submitting feedback..."),
-        duration: Duration(seconds: 1),
-      ),
-    );
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    Navigator.pop(context); // Close bottom sheet
 
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.studentId)
-          .collection('survey_submissions')
-          .doc(surveyId)
-          .set({
-            'surveyTitle': survey['title'],
-            'subject': survey['subject'],
-            'rating': rating,
-            'submittedAt': FieldValue.serverTimestamp(),
-          });
+      final responseDocRef = _db
+          .collection('surveys')
+          .doc(docId)
+          .collection('responses')
+          .doc(
+            widget.studentId,
+          ); // Use studentId as doc ID → enforces uniqueness
 
+      // --- Duplicate check before writing ---
+      final existingResponse = await responseDocRef.get();
+      if (existingResponse.exists) {
+        if (mounted) {
+          _submittedSurveyIds.add(docId);
+          setState(() {});
+          _showAlreadySubmittedMessage();
+        }
+        return;
+      }
+
+      // Use a batch to atomically write the response + update survey counters
+      final surveyDocRef = _db.collection('surveys').doc(docId);
+      final batch = _db.batch();
+
+      // 1. Record the individual response (studentId as doc ID = no duplicates)
+      batch.set(responseDocRef, {
+        'studentId': widget.studentId,
+        'rating': rating,
+        'submittedAt': FieldValue.serverTimestamp(),
+      });
+
+      // 2. Increment the survey counters
+      batch.update(surveyDocRef, {
+        'ratings.$rating': FieldValue.increment(1),
+        'responseCount': FieldValue.increment(1),
+      });
+
+      await batch.commit();
+
+      // Mark as submitted in local cache + rebuild
       if (mounted) {
-        setState(() {
-          _submittedSurveyIds.add(surveyId);
-        });
+        _submittedSurveyIds.add(docId);
+        setState(() {});
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 10),
-                Text("Submitted: $rating"),
+                const Icon(Icons.check_circle_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text("Thank you! Your '$rating' feedback was saved."),
+                ),
               ],
             ),
-            backgroundColor: color,
+            backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
             ),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -552,11 +532,54 @@ class _SurveyScreenState extends State<SurveyScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Failed to submit: $e"),
-            backgroundColor: Colors.red,
+            content: Text("Error submitting feedback: $e"),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.poll_outlined,
+              size: 48,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "No active surveys",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Check back later for new feedback forms.",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

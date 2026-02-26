@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:ui';
 
 import '../../services/student_service.dart';
 
@@ -16,8 +16,105 @@ class AssignmentsScreen extends StatefulWidget {
 
 class _AssignmentsScreenState extends State<AssignmentsScreen> {
   final StudentService _studentService = StudentService();
-  final Set<String> _uploadedAssignments = {};
   int _selectedFilterIndex = 0; // 0: All, 1: Pending, 2: Submitted
+
+  String? _studentDept;
+  String? _studentSem;
+  String? _studentName;
+  String? _studentEmail;
+  String? _studentCollegeCode;
+  String? _profileRegNo; // Prefer this over widget.studentId if available
+  bool _isLoadingProfile = true;
+
+  String get _effectiveStudentId => (widget.studentId ?? 'unknown').trim();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStudentProfile();
+  }
+
+  void _loadStudentProfile() {
+    if (widget.studentId != null) {
+      debugPrint('[Assignments] Loading profile for: ${widget.studentId}');
+      _studentService.getStudentProfile(widget.studentId!).listen((doc) async {
+        if (doc.exists && mounted) {
+          debugPrint('[Assignments] Found in students collection');
+          final data = doc.data() as Map<String, dynamic>;
+          _applyStudentData(data);
+        } else if (mounted) {
+          debugPrint(
+            '[Assignments] Not in students, trying users collection...',
+          );
+          // Fallback 1: Check users collection by username/email
+          final userDoc = await _studentService.getUserByIdentifier(
+            widget.studentId!,
+          );
+          if (userDoc != null && userDoc.exists && mounted) {
+            debugPrint('[Assignments] Found in users by identifier');
+            final data = userDoc.data() as Map<String, dynamic>;
+            _applyStudentData(data);
+          } else if (mounted) {
+            debugPrint(
+              '[Assignments] Not found by identifier, trying direct doc ID...',
+            );
+            // Fallback 2: Try users collection by doc ID directly
+            try {
+              final directDoc = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(widget.studentId!)
+                  .get();
+              if (directDoc.exists && mounted) {
+                debugPrint('[Assignments] Found in users by doc ID');
+                final data = directDoc.data() as Map<String, dynamic>;
+                _applyStudentData(data);
+                return;
+              }
+            } catch (e) {
+              debugPrint('[Assignments] Error fetching by doc ID: $e');
+            }
+
+            // Last resort: Set defaults so assignments still load
+            debugPrint('[Assignments] No profile found. Using defaults.');
+            if (mounted) {
+              setState(() {
+                _studentDept = 'MCA';
+                _studentSem = '1';
+                _studentName = widget.studentId;
+                _profileRegNo = widget.studentId;
+                _isLoadingProfile = false;
+              });
+            }
+          }
+        }
+      });
+    } else {
+      setState(() {
+        _studentDept = 'MCA';
+        _studentSem = '1';
+        _profileRegNo = widget.studentId;
+        _isLoadingProfile = false;
+      });
+    }
+  }
+
+  void _applyStudentData(Map<String, dynamic> data) {
+    setState(() {
+      _studentDept = data['department'] ?? 'MCA';
+      _studentSem = (data['semester'] ?? '1').toString();
+      _studentCollegeCode = data['collegeCode'];
+      _studentName =
+          "${data['firstName'] ?? data['firstname'] ?? ''} ${data['lastName'] ?? data['lastname'] ?? ''}"
+              .trim();
+      _studentEmail = data['email'];
+      _profileRegNo =
+          data['regNo'] ??
+          data['studentId'] ??
+          data['username'] ??
+          widget.studentId;
+      _isLoadingProfile = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +198,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF001FF4).withOpacity(0.3),
+                    color: const Color(0xFF001FF4).withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -121,40 +218,29 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
   }
 
   Widget _buildAssignmentList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _studentService.getAssignmentsStream(
-        widget.studentId ?? 'default',
+    if (_isLoadingProfile) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return StreamBuilder<List<DocumentSnapshot<Map<String, dynamic>>>>(
+      stream: _studentService.getAssignmentsByClass(
+        _studentDept!,
+        _studentSem!,
+        collegeCode: _studentCollegeCode,
       ),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text("Error: ${snapshot.error}"));
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        List<dynamic> items;
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          // If no data in Firestore, use high-quality mock data so the screen isn't empty
-          items = _getMockData();
-        } else {
-          items = snapshot.data!.docs;
-        }
-
-        var filtered = items.where((d) {
-          final data = d is QueryDocumentSnapshot
-              ? d.data() as Map<String, dynamic>
-              : d as Map<String, dynamic>;
-
-          String id = '${data['subject']}_${data['type']}';
-          bool isSubmitted =
-              data['status'] == 'submitted' ||
-              _uploadedAssignments.contains(id);
-
-          if (_selectedFilterIndex == 1) return !isSubmitted; // Pending
-          if (_selectedFilterIndex == 2) return isSubmitted; // Submitted
-          return true; // All
-        }).toList();
-
-        if (filtered.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          debugPrint(
+            "No assignments found for Dept: $_studentDept, Sem: $_studentSem, College: $_studentCollegeCode",
+          );
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -166,31 +252,65 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  "No assignments found",
+                  "No assignments for $_studentDept Sem $_studentSem",
                   style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Check if your profile matches the assignment's target department and semester.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
                 ),
               ],
             ),
           );
         }
 
+        final items = snapshot.data!;
+
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: filtered.length,
+          itemCount: items.length,
           itemBuilder: (context, index) {
-            final item = filtered[index];
-            final data = item is QueryDocumentSnapshot
-                ? item.data() as Map<String, dynamic>
-                : item as Map<String, dynamic>;
+            final doc = items[index];
+            final assignmentData = doc.data() as Map<String, dynamic>;
+            final assignmentId = doc.id;
 
-            String id = '${data['subject']}_${data['type']}';
-            bool isSubmitted =
-                data['status'] == 'submitted' ||
-                _uploadedAssignments.contains(id);
+            return StreamBuilder<QuerySnapshot>(
+              stream: _studentService.getStudentSubmission(
+                _effectiveStudentId,
+                assignmentId,
+              ),
+              builder: (context, subSnapshot) {
+                // If the stream is active, check the docs
+                bool isSubmitted = false;
+                Map<String, dynamic>? submissionData;
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildSimpleAssignmentCard(data, !isSubmitted),
+                if (subSnapshot.hasData && subSnapshot.data!.docs.isNotEmpty) {
+                  isSubmitted = true;
+                  submissionData =
+                      subSnapshot.data!.docs.first.data()
+                          as Map<String, dynamic>;
+                }
+
+                // Filter logic
+                if (_selectedFilterIndex == 1 && isSubmitted) {
+                  return const SizedBox.shrink();
+                }
+                if (_selectedFilterIndex == 2 && !isSubmitted) {
+                  return const SizedBox.shrink();
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildSimpleAssignmentCard(
+                    assignmentId,
+                    assignmentData,
+                    !isSubmitted,
+                    submissionData: submissionData,
+                  ),
+                );
+              },
             );
           },
         );
@@ -213,7 +333,12 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
   // I'll use `_buildModernAssignmentCard` name for now in the call, and in the next step I'll replace the method body but keep the name to avoid ripple effects, OR I'll rename validly.
   // I'll stick to `_buildModernAssignmentCard` name in the call.
 
-  Widget _buildSimpleAssignmentCard(dynamic data, bool isPending) {
+  Widget _buildSimpleAssignmentCard(
+    String assignmentId,
+    Map<String, dynamic> data,
+    bool isPending, {
+    Map<String, dynamic>? submissionData,
+  }) {
     final DateFormat formatter = DateFormat('dd MMM yy');
     DateTime? safeDate(dynamic val) {
       if (val is Timestamp) return val.toDate();
@@ -231,21 +356,21 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
           : "N/A";
     } else {
       dateLabel = "Submitted";
-      String id = '${data['subject']}_${data['type']}';
-      dateStr = _uploadedAssignments.contains(id)
-          ? formatter.format(DateTime.now())
-          : (safeDate(data['submittedDate']) != null
-                ? formatter.format(safeDate(data['submittedDate'])!)
-                : "N/A");
+      dateStr = safeDate(submissionData?['submittedAt']) != null
+          ? formatter.format(safeDate(submissionData!['submittedAt'])!)
+          : "N/A";
     }
 
-    bool isOverdue = isPending && data['status'] == 'overdue';
-    String assignmentId = '${data['subject']}_${data['type']}';
+    bool isOverdue =
+        isPending &&
+        safeDate(data['dueDate']) != null &&
+        safeDate(data['dueDate'])!.isBefore(DateTime.now());
+    // Use the document ID from Firestore instead of the synthesized one
 
     return GestureDetector(
       onTap: () {
         if (!isPending) {
-          _showFeedbackDialog(data);
+          _showFeedbackDialog(data, submissionData);
         }
       },
       child: Container(
@@ -275,7 +400,9 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: (data['type'] == 1)
+                        ? Colors.orange.shade50
+                        : Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -283,7 +410,9 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade700,
+                      color: (data['type'] == 1)
+                          ? Colors.orange.shade700
+                          : Colors.blue.shade700,
                     ),
                   ),
                 ),
@@ -347,13 +476,13 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
               ],
             ),
             // Staff/Feedback Prompt
-            if (!isPending && data['feedback'] != null) ...[
+            if (!isPending && submissionData?['feedback'] != null) ...[
               const SizedBox(height: 8),
               Text(
                 "Tap to view feedback",
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.blue.shade600,
+                  color: const Color(0xFF001FF4),
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -361,15 +490,49 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
             // Upload Button for Pending
             if (isPending) ...[
               const SizedBox(height: 16),
+              if (data['type'] == 1)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: Colors.orange.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Physical submission required. You can also upload a digital copy here.",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.orange.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () =>
-                      _handleUpload(context, assignmentId, data['subject']),
+                  onPressed: () => _handleUpload(
+                    context,
+                    assignmentId,
+                    data['subject'],
+                    data['staffId'],
+                  ),
                   icon: const Icon(Icons.upload_file_outlined, size: 18),
-                  label: const Text("Upload Submission"),
+                  label: Text(
+                    data['type'] == 1
+                        ? "Upload Digital Copy"
+                        : "Upload Submission",
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                    backgroundColor: data['type'] == 1
+                        ? Colors.orange.shade700
+                        : Colors.black,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -390,6 +553,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
     BuildContext context,
     String assignmentId,
     String subject,
+    String? staffId,
   ) async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -416,7 +580,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
                   const Text(
-                    "Uploading...",
+                    "Uploading to Cloudinary...",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -425,10 +589,56 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
           ),
         );
 
-        await Future.delayed(const Duration(seconds: 2));
+        if (!context.mounted) return;
+        final platformFile = result.files.single;
+        final String fileName =
+            "${DateTime.now().millisecondsSinceEpoch}_${platformFile.name}";
+        String downloadUrl = '';
 
-        setState(() {
-          _uploadedAssignments.add(assignmentId);
+        try {
+          if (kIsWeb) {
+            if (platformFile.bytes != null) {
+              downloadUrl = await _studentService.uploadBytes(
+                platformFile.bytes!,
+                fileName,
+              );
+            }
+          } else {
+            if (platformFile.path != null) {
+              downloadUrl = await _studentService.uploadFile(
+                platformFile.path!,
+                fileName,
+              );
+            } else if (platformFile.bytes != null) {
+              downloadUrl = await _studentService.uploadBytes(
+                platformFile.bytes!,
+                fileName,
+              );
+            }
+          }
+        } catch (e) {
+          debugPrint("Upload process failed: $e");
+          if (context.mounted) Navigator.pop(context);
+          throw Exception("Cloudinary Upload Error");
+        }
+
+        if (downloadUrl.isEmpty) {
+          if (context.mounted) Navigator.pop(context);
+          throw Exception("Could not generate Cloudinary URL");
+        }
+
+        await _studentService.submitAssignment({
+          'assignmentId': assignmentId,
+          'staffId': staffId,
+          'studentId': _effectiveStudentId,
+          'email': _studentEmail ?? _effectiveStudentId,
+          'studentName': _studentName ?? 'Student',
+          'semester': _studentSem ?? '1',
+          'regNo': _profileRegNo ?? widget.studentId,
+          'subject': subject,
+          'fileName': platformFile.name,
+          'fileUrl': downloadUrl,
+          'status': 'submitted',
         });
 
         if (!context.mounted) return;
@@ -440,7 +650,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 12),
-                Expanded(child: Text("$subject uploaded successfully!")),
+                Expanded(child: Text("$subject uploaded to Cloudinary!")),
               ],
             ),
             backgroundColor: const Color(0xFF51CF66),
@@ -468,7 +678,10 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
     }
   }
 
-  void _showFeedbackDialog(dynamic data) {
+  void _showFeedbackDialog(
+    Map<String, dynamic> assignment,
+    Map<String, dynamic>? submission,
+  ) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -509,7 +722,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF667EEA).withOpacity(0.1),
+                      color: const Color(0xFF667EEA).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -523,7 +736,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        data['staffName'] ?? "Prof. Smith",
+                        assignment['staffName'] ?? "Staff",
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -558,7 +771,8 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      data['feedback'] ?? "Great work! Keep it up.",
+                      submission?['feedback'] ??
+                          "Your submission is under review.",
                       style: TextStyle(
                         color: Colors.grey[800],
                         fontSize: 14,
@@ -569,7 +783,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              if (data['grade'] != null)
+              if (submission?['grade'] != null)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -586,12 +800,12 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF51CF66).withOpacity(0.1),
+                        color: const Color(0xFF51CF66).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFF51CF66)),
                       ),
                       child: Text(
-                        data['grade'],
+                        submission!['grade'],
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF51CF66),
@@ -605,83 +819,5 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
         ),
       ),
     );
-  }
-
-  List<dynamic> _getMockData() {
-    final now = DateTime.now();
-    final past = now.subtract(const Duration(days: 5));
-    final future = now.add(const Duration(days: 5));
-
-    return [
-      {
-        'subject': 'ADVANCED DATA STRUCTURES',
-        'type': 1,
-        'status': 'overdue',
-        'issueDate': past,
-        'dueDate': past,
-        'semester': 1,
-        'staffName': 'Prof. Raghav',
-        'feedback': 'Please submit asap.',
-        'grade': null,
-      },
-      {
-        'subject': 'ADVANCED SOFTWARE ENGINEERING',
-        'type': 2,
-        'status': 'pending',
-        'issueDate': now,
-        'dueDate': future,
-        'semester': 1,
-        'staffName': 'Dr. Priya',
-        'feedback': null,
-        'grade': null,
-      },
-      {
-        'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
-        'type': 1,
-        'status': 'submitted',
-        'issueDate': past,
-        'dueDate': past,
-        'submittedDate': past,
-        'semester': 1,
-        'staffName': 'Prof. Arun',
-        'feedback':
-            'Excellent understanding of CPU architecture. Clear logic diagrams.',
-        'grade': 'A',
-      },
-      {
-        'subject': 'MATHEMATICAL FOUNDATIONS FOR COMPUTING',
-        'type': 1,
-        'status': 'submitted',
-        'issueDate': past,
-        'dueDate': past,
-        'submittedDate': past,
-        'semester': 1,
-        'staffName': 'Dr. Suresh',
-        'feedback': 'Good attempt at linear algebra problems.',
-        'grade': 'B+',
-      },
-      {
-        'subject': 'PROGRAMMING LAB',
-        'type': 2,
-        'status': 'pending',
-        'issueDate': now,
-        'dueDate': future,
-        'semester': 1,
-        'staffName': 'Prof. Meera',
-        'feedback': null,
-        'grade': null,
-      },
-      {
-        'subject': 'WEB PROGRAMMING LAB',
-        'type': 2,
-        'status': 'pending',
-        'issueDate': now,
-        'dueDate': future,
-        'semester': 1,
-        'staffName': 'Mr. Karthik',
-        'feedback': null,
-        'grade': null,
-      },
-    ];
   }
 }

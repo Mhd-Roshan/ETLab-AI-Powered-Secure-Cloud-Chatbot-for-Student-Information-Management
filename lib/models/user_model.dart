@@ -38,12 +38,7 @@ class User {
     String first = username.substring(0, 1).toUpperCase();
     if (first == 'A') return 'admin';
     if (first == 'H') return 'hod';
-    
-    if (username.length >= 2) {
-      String firstTwo = username.substring(0, 2).toUpperCase();
-      if (firstTwo == 'SA') return 'staff_advisor';
-    }
-    
+
     if (first == 'S') return 'staff';
     return 'staff'; // Default
   }
@@ -136,5 +131,6 @@ class User {
   }
 
   @override
-  String toString() => 'User(username: $username, role: $role, college: $collegeName)';
+  String toString() =>
+      'User(username: $username, role: $role, college: $collegeName)';
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../login.dart';
 
 import '../../services/student_service.dart';
 
@@ -94,11 +96,16 @@ class StudentSidebar extends StatelessWidget {
           }),
           const Spacer(),
           const Divider(),
-          _drawerItem(
-            Icons.logout,
-            "Logout",
-            () => Navigator.pushReplacementNamed(context, '/login'),
-          ),
+          _drawerItem(Icons.logout, "Logout", () async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.clear();
+            if (context.mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+                (route) => false,
+              );
+            }
+          }),
           const SizedBox(height: 20),
         ],
       ),

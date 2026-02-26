@@ -23,61 +23,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   final List<String> semesters = ["Semester 1 (Current)"];
   String searchQuery = "";
 
-  // Hardcoded subjects to approximate 75% overall
-  // Target: 75%
-  // Total classes across 5 subjects: let's say 40 per subject -> 200 total
-  // Total present needed: 150
-  // 1. Math: 30/40 (75%)
-  // 2. Physics: 28/40 (70%)
-  // 3. Chemistry: 32/40 (80%)
-  // 4. Computer: 34/40 (85%)
-  // 5. English: 26/40 (65%)
-  // Sum Present: 30+28+32+34+26 = 150. Sum Total: 200. 150/200 = 75%.
-  final List<Map<String, dynamic>> _staticSubjects = [
-    {
-      'subject': 'ADVANCED DATA STRUCTURES',
-      'code': 'MCA101',
-      'present': 30,
-      'total': 40,
-    },
-    {
-      'subject': 'ADVANCED SOFTWARE ENGINEERING',
-      'code': 'MCA102',
-      'present': 28,
-      'total': 40,
-    },
-    {
-      'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
-      'code': 'MCA103',
-      'present': 32,
-      'total': 40,
-    },
-    {
-      'subject': 'MATHEMATICAL FOUNDATIONS FOR COMPUTING',
-      'code': 'MCA104',
-      'present': 38,
-      'total': 40,
-    },
-    {
-      'subject': 'DATA STRUCTURES LAB',
-      'code': 'MCA105',
-      'present': 26,
-      'total': 40,
-    },
-    {
-      'subject': 'PROGRAMMING LAB',
-      'code': 'MCA106',
-      'present': 31,
-      'total': 40,
-    },
-    {
-      'subject': 'WEB PROGRAMMING LAB',
-      'code': 'MCA107',
-      'present': 29,
-      'total': 40,
-    },
-  ];
-
   // Helper to assign consistent colors to subjects based on name
   Color _getColorForSubject(String subject) {
     if (subject.isEmpty) return Colors.grey;
@@ -122,27 +67,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     return Icons.subject;
   }
 
-  // Calculate total present classes
-  int _calculateTotalPresent() {
-    return _staticSubjects.fold(
-      0,
-      (sum, item) => sum + (item['present'] as int),
-    );
-  }
-
-  // Calculate total classes held
-  int _calculateTotalClasses() {
-    return _staticSubjects.fold(0, (sum, item) => sum + (item['total'] as int));
-  }
-
-  // Calculate overall percentage
-  double _calculateOverallPercentage() {
-    int totalPresent = _calculateTotalPresent();
-    int totalClasses = _calculateTotalClasses();
-    if (totalClasses == 0) return 0.0;
-    return (totalPresent / totalClasses) * 100;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -168,199 +92,263 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Overall Attendance Card
-            _buildOverallAttendanceCard(
-              _calculateOverallPercentage(),
-              _calculateTotalPresent(),
-              _calculateTotalClasses(),
-            ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _studentService.getAttendance(widget.studentRegNo ?? ""),
+        builder: (context, snapshot) {
+          List<Map<String, dynamic>> displaySubjects = [];
+          int overallPresent = 0;
+          int overallTotal = 0;
 
-            const SizedBox(height: 20),
+          // Define the static baseline subjects first
+          final List<Map<String, dynamic>> baselineSubjects = [
+            {
+              'subject': 'ADVANCED DATA STRUCTURES',
+              'code': 'MCA101',
+              'present': 6,
+              'total': 8,
+            },
+            {
+              'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
+              'code': 'MCA105',
+              'present': 6,
+              'total': 8,
+            },
+            {
+              'subject': 'WEB PROGRAMMING LAB',
+              'code': 'MCA106',
+              'present': 6,
+              'total': 8,
+            },
+          ];
 
-            // Semester Dropdown
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+          final Map<String, Map<String, dynamic>> aggregated = {};
+
+          // 1. Initialize with baseline if no real records exist or for certain student IDs
+          if (widget.studentRegNo != null) {
+            for (var base in baselineSubjects) {
+              aggregated[base['subject']] = {...base, 'isBaseline': true};
+            }
+          }
+
+          if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+            bool hasRealRecords = snapshot.data!.docs.any(
+              (doc) =>
+                  (doc.data() as Map<String, dynamic>).containsKey('isPresent'),
+            );
+
+            for (var doc in snapshot.data!.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final subjectName =
+                  (data['subjectName'] ?? data['subject'] ?? 'Unknown')
+                      .toString()
+                      .toUpperCase();
+              final isRealRecord = data.containsKey('isPresent');
+
+              if (hasRealRecords && !isRealRecord) continue;
+
+              if (isRealRecord) {
+                if (!aggregated.containsKey(subjectName)) {
+                  aggregated[subjectName] = {
+                    'subject': subjectName,
+                    'code': data['subjectCode'] ?? data['code'] ?? '-',
+                    'present': 0,
+                    'total': 0,
+                  };
+                }
+                aggregated[subjectName]!['total'] += 1;
+                if (data['isPresent'] == true) {
+                  aggregated[subjectName]!['present'] += 1;
+                }
+              } else if (data.containsKey('present') &&
+                  data.containsKey('total')) {
+                // For summary records
+                if (!aggregated.containsKey(subjectName)) {
+                  aggregated[subjectName] = {
+                    'subject': subjectName,
+                    'code': data['subjectCode'] ?? data['code'] ?? '-',
+                    'present': data['present'] ?? 0,
+                    'total': data['total'] ?? 0,
+                  };
+                } else if (!(aggregated[subjectName]!['isBaseline'] ?? false)) {
+                  // Only add summary records if not already populated by baseline
+                  aggregated[subjectName]!['present'] += data['present'] ?? 0;
+                  aggregated[subjectName]!['total'] += data['total'] ?? 0;
+                }
+              }
+            }
+          }
+
+          displaySubjects = aggregated.values.map((data) {
+            overallPresent += (data['present'] as int);
+            overallTotal += (data['total'] as int);
+            return {
+              ...data,
+              'icon': _getIconForSubject(data['subject']),
+              'color': _getColorForSubject(data['subject']),
+            };
+          }).toList();
+
+          double overallPercentage = overallTotal > 0
+              ? (overallPresent / overallTotal) * 100
+              : 0.0;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildOverallAttendanceCard(
+                  overallPercentage,
+                  overallPresent,
+                  overallTotal,
+                ),
+                const SizedBox(height: 20),
+
+                // Semester Dropdown
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
                   ),
-                ],
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: selectedSemester,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down,
-                    color: Colors.grey,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  isExpanded: true,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  items: semesters.map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.school_outlined,
-                            size: 20,
-                            color: Colors.grey,
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedSemester,
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.grey,
+                      ),
+                      isExpanded: true,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      items: semesters.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.school_outlined,
+                                size: 20,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(value),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Text(value),
-                        ],
+                        );
+                      }).toList(),
+                      onChanged: (newValue) {
+                        setState(() {
+                          selectedSemester = newValue!;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Daily Log Shortcut
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TimetableScreen(),
                       ),
                     );
-                  }).toList(),
-                  onChanged: (newValue) {
-                    setState(() {
-                      selectedSemester = newValue!;
-                    });
                   },
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Daily Log / Timetable Shortcut Section
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TimetableScreen(),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF001FF4).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(
+                            Icons.calendar_month_rounded,
+                            color: Color(0xFF001FF4),
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Daily Attendance Log",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "View attendance status per day",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 18,
+                          color: Color(0xFF001FF4),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF001FF4).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(
-                        Icons.calendar_month_rounded,
-                        color: Color(0xFF001FF4),
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Daily Attendance Log",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "View attendance status per day",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 18,
-                      color: Color(0xFF001FF4),
-                    ),
-                  ],
+
+                const SizedBox(height: 20),
+
+                // Subject-wise Attendance Header
+                const Text(
+                  "Subject-wise Attendance",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
-            // Subject-wise Attendance Header
-            const Text(
-              "Subject-wise Attendance",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Subject Cards List
-            StreamBuilder<QuerySnapshot>(
-              stream: _studentService.getAttendance(widget.studentRegNo ?? ""),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                List<Map<String, dynamic>> displaySubjects = [];
-
-                if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                  displaySubjects = snapshot.data!.docs.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return {
-                      'subject':
-                          data['subjectName'] ?? data['subject'] ?? 'Unknown',
-                      'code': data['subjectCode'] ?? data['code'] ?? '-',
-                      'present': data['present'] ?? 0,
-                      'total': data['total'] ?? 0,
-                      'icon': _getIconForSubject(
-                        data['subjectName'] ?? data['subject'] ?? '',
-                      ),
-                      'color': _getColorForSubject(
-                        data['subjectName'] ?? data['subject'] ?? '',
-                      ),
-                    };
-                  }).toList();
-                } else {
-                  // Fallback to static data if DB is empty
-                  displaySubjects = _staticSubjects.map((data) {
-                    return {
-                      ...data,
-                      'icon': _getIconForSubject(data['subject']),
-                      'color': _getColorForSubject(data['subject']),
-                    };
-                  }).toList();
-                }
-
-                return ListView.separated(
+                // Subject Cards List - Already computed from Stream
+                ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: displaySubjects.length,
@@ -369,13 +357,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   itemBuilder: (context, index) {
                     return _buildSubjectCard(displaySubjects[index]);
                   },
-                );
-              },
-            ),
+                ),
 
-            const SizedBox(height: 20),
-          ],
-        ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

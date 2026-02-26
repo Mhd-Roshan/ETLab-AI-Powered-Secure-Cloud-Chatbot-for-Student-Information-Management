@@ -14,29 +14,18 @@ class FeesScreen extends StatefulWidget {
 class _FeesScreenState extends State<FeesScreen>
     with SingleTickerProviderStateMixin {
   final StudentService _studentService = StudentService();
-  late TabController _tabController;
 
   List<Map<String, dynamic>> _dummySemester = [];
   List<Map<String, dynamic>> _dummyExam = [];
-  List<Map<String, dynamic>> _dummyHistory = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _initializeDummyData();
   }
 
   void _initializeDummyData() {
     _dummySemester = [
-      {
-        'title': 'Semester 4 Tuition Fee',
-        'amount': 45000,
-        'dueDate': DateTime.now().add(const Duration(days: 15)),
-        'status': 'Pending',
-        'type': 'Semester',
-        'id': '1',
-      },
       {
         'title': 'Library Fine',
         'amount': 250,
@@ -56,31 +45,7 @@ class _FeesScreenState extends State<FeesScreen>
         'type': 'Exam',
         'id': '2',
       },
-      {
-        'title': 'Supplementary Exam Fee (Sem 2)',
-        'amount': 500,
-        'dueDate': DateTime.now().add(const Duration(days: 10)),
-        'status': 'Pending',
-        'type': 'Exam',
-        'id': '4',
-      },
     ];
-
-    _dummyHistory = [
-      {
-        'title': 'Semester 3 Tuition Fee',
-        'amount': 45000,
-        'paymentDate': DateTime.now().subtract(const Duration(days: 180)),
-        'status': 'Paid',
-        'transactionId': 'TXN123456789',
-      },
-    ];
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
@@ -103,25 +68,13 @@ class _FeesScreenState extends State<FeesScreen>
             color: Colors.black,
           ),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFF001FF4),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF001FF4),
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-          tabs: const [
-            Tab(text: "Semester Fees"),
-            Tab(text: "Exam Registration"),
-            Tab(text: "History"),
-          ],
-        ),
       ),
       body: widget.studentId == null
-          ? _buildDummyDataView() // Fallback if no ID
+          ? _buildPendingList(
+              [..._dummySemester, ..._dummyExam],
+              isRealData: false,
+              type: 'Pending',
+            )
           : StreamBuilder<QuerySnapshot>(
               stream: _studentService.getFees(widget.studentId!),
               builder: (context, snapshot) {
@@ -134,7 +87,11 @@ class _FeesScreenState extends State<FeesScreen>
 
                 // If no real data, show dummy data for demonstration
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return _buildDummyDataView();
+                  return _buildPendingList(
+                    [..._dummySemester, ..._dummyExam],
+                    isRealData: false,
+                    type: 'Pending',
+                  );
                 }
 
                 // Process real data safely
@@ -144,47 +101,13 @@ class _FeesScreenState extends State<FeesScreen>
                   return data != null && data['status'] == 'Pending';
                 }).toList();
 
-                final historyFees = docs.where((d) {
-                  final data = d.data() as Map<String, dynamic>?;
-                  return data != null && data['status'] != 'Pending';
-                }).toList();
-
-                return TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildPendingList(
-                      pendingFees.where((f) {
-                        final data = f.data() as Map<String, dynamic>;
-                        return (data['type'] == 'Semester') ||
-                            (data['type'] == null);
-                      }).toList(),
-                      isRealData: true,
-                      type: 'Semester',
-                    ),
-                    _buildPendingList(
-                      pendingFees.where((f) {
-                        final data = f.data() as Map<String, dynamic>;
-                        return data['type'] == 'Exam';
-                      }).toList(),
-                      isRealData: true,
-                      type: 'Exam',
-                    ),
-                    _buildHistoryList(historyFees, isRealData: true),
-                  ],
+                return _buildPendingList(
+                  pendingFees,
+                  isRealData: true,
+                  type: 'Pending',
                 );
               },
             ),
-    );
-  }
-
-  Widget _buildDummyDataView() {
-    return TabBarView(
-      controller: _tabController,
-      children: [
-        _buildPendingList(_dummySemester, isRealData: false, type: 'Semester'),
-        _buildPendingList(_dummyExam, isRealData: false, type: 'Exam'),
-        _buildHistoryList(_dummyHistory, isRealData: false),
-      ],
     );
   }
 
@@ -325,90 +248,6 @@ class _FeesScreenState extends State<FeesScreen>
     );
   }
 
-  Widget _buildHistoryList(List<dynamic>? fees, {required bool isRealData}) {
-    if (fees == null || fees.isEmpty) {
-      return _buildEmptyState("No payment history found.", Icons.history);
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(20),
-      itemCount: fees.length,
-      separatorBuilder: (ctx, i) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final rawFee = fees[index];
-        if (rawFee == null) return const SizedBox.shrink();
-
-        final Map<String, dynamic> fee;
-        if (isRealData) {
-          final data = rawFee.data() as Map<String, dynamic>?;
-          if (data == null) return const SizedBox.shrink();
-          fee = data;
-        } else {
-          fee = rawFee as Map<String, dynamic>;
-        }
-
-        final title = fee['title'] ?? 'Fee Payment';
-        final amount = fee['amount'] ?? 0;
-        final paymentDate = isRealData
-            ? (fee['paymentDate'] as Timestamp).toDate()
-            : (fee['paymentDate'] as DateTime);
-        final transactionId = fee['transactionId'] ?? 'N/A';
-
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check, color: Colors.green, size: 20),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Paid on ${DateFormat('dd MMM yyyy').format(paymentDate)}",
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
-                    Text(
-                      "Txn ID: $transactionId",
-                      style: TextStyle(color: Colors.grey[500], fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                "₹$amount",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildEmptyState(String message, IconData icon) {
     return Center(
       child: Column(
@@ -459,7 +298,7 @@ class _FeesScreenState extends State<FeesScreen>
               paidFee['status'] = 'Paid';
               paidFee['paymentDate'] = paymentDate;
               paidFee['transactionId'] = transactionId;
-              _dummyHistory.insert(0, paidFee);
+              // No history list to insert into anymore
             } else {
               // Try Exam
               var examIndex = _dummyExam.indexWhere(
@@ -470,7 +309,7 @@ class _FeesScreenState extends State<FeesScreen>
                 paidFee['status'] = 'Paid';
                 paidFee['paymentDate'] = paymentDate;
                 paidFee['transactionId'] = transactionId;
-                _dummyHistory.insert(0, paidFee);
+                // No history list to insert into anymore
               }
             }
           });

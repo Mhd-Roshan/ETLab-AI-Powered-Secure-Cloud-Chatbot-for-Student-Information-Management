@@ -14,7 +14,7 @@ import 'package:edlab/student/student_chat_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'fees_screen.dart';
 import 'survey_screen.dart';
-import 'notifications_screen.dart';
+import 'widgets/notification_bell.dart';
 import 'exams_screen.dart';
 import 'assignments_screen.dart';
 import '../login.dart';
@@ -159,23 +159,51 @@ class _StudentDashboardState extends State<StudentDashboard> {
         debugPrint("User Data: $userData");
         debugPrint("Mapped Student Data: $studentData");
 
-        // Get attendance for profile
+        // Get attendance for profile with proper aggregation
         return StreamBuilder<QuerySnapshot>(
           stream: _studentService.getAttendance(widget.studentRegNo),
           builder: (context, attendanceSnap) {
-            // Use the attendance from user data directly, or fallback to calculation if available
-            String attendancePercentage =
-                (userData['attendancePercentage']?.toString() ?? "75") + "%";
+            String attendancePercentage = "75.0%";
 
-            if (attendanceSnap.hasData &&
-                attendanceSnap.data!.docs.isNotEmpty) {
-              double val =
-                  attendanceSnap.data!.docs
-                      .where((d) => d['status'] == 'present')
-                      .length /
-                  attendanceSnap.data!.docs.length;
-              attendancePercentage = "${(val * 100).toInt()}%";
+            if (attendanceSnap.hasData) {
+              final docs = attendanceSnap.data!.docs;
+
+              // Adjusting to user requested 24 classes total (18/24 = 75.0%)
+              int totalPresent = 18;
+              int totalClasses = 24;
+
+              bool hasRealRecords = docs.any(
+                (doc) => (doc.data() as Map<String, dynamic>).containsKey(
+                  'isPresent',
+                ),
+              );
+
+              for (var doc in docs) {
+                final data = doc.data() as Map<String, dynamic>;
+                final isRealRecord = data.containsKey('isPresent');
+
+                if (hasRealRecords && !isRealRecord) continue;
+
+                if (isRealRecord) {
+                  totalClasses++;
+                  if (data['isPresent'] == true) totalPresent++;
+                } else if (data.containsKey('present') &&
+                    data.containsKey('total')) {
+                  // Only add summary records if not already using baseline
+                  // But for this demo, we assume the baseline is the primary source
+                }
+              }
+
+              if (totalClasses > 0) {
+                attendancePercentage =
+                    "${((totalPresent / totalClasses) * 100).toStringAsFixed(1)}%";
+              }
             }
+
+            // Add computed attendance + loginId to studentData for AI
+            studentData['attendance'] = attendancePercentage;
+            studentData['attendancePercentage'] = attendancePercentage;
+            studentData['loginId'] = widget.studentRegNo;
 
             // Define Pages - Each screen is now separate with stable keys
             final List<Widget> pages = [
@@ -198,7 +226,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 key: const ValueKey('profile_screen'),
                 userData: studentData,
                 attendancePercentage: attendancePercentage,
-                studentId: doc.id,
+                studentId: widget.studentRegNo,
               ), // Index 3 - Profile
             ];
 
@@ -262,41 +290,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: Image.asset('assets/edlab.png', height: 40),
                           centerTitle: true,
                           actions: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const NotificationsScreen(),
-                                  ),
-                                );
-                              },
-                              child: Stack(
-                                children: [
-                                  const Icon(
-                                    Icons.notifications_outlined,
-                                    size: 28,
-                                  ),
-                                  Positioned(
-                                    right: 2,
-                                    top: 2,
-                                    child: Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: BoxDecoration(
-                                        color: Colors.redAccent,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            NotificationBell(studentId: widget.studentRegNo),
                             const SizedBox(width: 10),
                           ],
                         )
@@ -841,7 +835,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
         _actionCard(Icons.school_rounded, "Assignments", Colors.green, () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AssignmentsScreen()),
+            MaterialPageRoute(
+              builder: (context) =>
+                  AssignmentsScreen(studentId: widget.studentRegNo),
+            ),
           );
         }),
         _actionCard(
@@ -935,8 +932,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
         ),
         Text(
-          "${(val * 100).toInt()}%",
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          "${(val * 100).toStringAsFixed(1)}%",
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
         ),
       ],
     );
@@ -947,10 +944,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
     String attendance,
   ) {
     // Safety check for insights list
-    // ignore: unnecessary_null_comparison
-    if (_insights == null) {
-      _insights = [];
-    }
+    // ignore: unnecessary_null_comparison, dead_code
+    _insights ??= [];
 
     // Fetch insights if not already loaded
     if (_insights.isEmpty && _insightListFuture == null) {

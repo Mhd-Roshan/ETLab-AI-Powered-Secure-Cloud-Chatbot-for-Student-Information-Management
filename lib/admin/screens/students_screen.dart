@@ -97,7 +97,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: department,
+                              initialValue: department,
                               decoration: const InputDecoration(labelText: "Department", border: OutlineInputBorder()),
                               items: _departments
                                   .map((d) => DropdownMenuItem(value: d, child: Text(d)))
@@ -108,7 +108,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                           const SizedBox(width: 16),
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: batch,
+                              initialValue: batch,
                               decoration: const InputDecoration(labelText: "Batch", border: OutlineInputBorder()),
                               items: _batches
                                   .map((b) => DropdownMenuItem(value: b, child: Text(b)))

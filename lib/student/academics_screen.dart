@@ -11,6 +11,7 @@ import 'materials_screen.dart';
 import 'fees_screen.dart';
 import 'notifications_screen.dart';
 import 'survey_screen.dart';
+import 'widgets/notification_bell.dart';
 
 class AcademicsScreen extends StatefulWidget {
   final String? attendancePercentage;
@@ -81,34 +82,7 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
           ],
         ),
         Image.asset('assets/edlab.png', height: 40),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const NotificationsScreen(),
-              ),
-            );
-          },
-          child: Stack(
-            children: [
-              const Icon(Icons.notifications_outlined, size: 28),
-              Positioned(
-                right: 2,
-                top: 2,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        NotificationBell(studentId: widget.studentId),
       ],
     );
   }
@@ -173,7 +147,7 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
               return _buildEmptyState();
             }
 
-            var docs = snapshot.data!.docs;
+            var docs = snapshot.data!.docs.take(3).toList();
 
             return ListView.separated(
               shrinkWrap: true,
@@ -232,55 +206,56 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
   }
 
   Widget _buildEmptyState() {
-    // Show dummy upcoming events when Firebase is empty
+    final now = DateTime.now();
+    final isEvenDay = now.day % 2 == 0;
+
+    // Date formatting for display
+    final todayStr = DateFormat('MMM d, yyyy').format(now);
+    final tomorrow = now.add(const Duration(days: 1));
+    final tomorrowStr = DateFormat('MMM d, yyyy').format(tomorrow);
+
     return Column(
       children: [
+        if (isEvenDay) ...[
+          _buildEventCard(
+            icon: Icons.beach_access,
+            iconColor: Colors.deepOrange,
+            bgColor: Colors.deepOrange.withOpacity(0.1),
+            title: "Today's Holiday: Maha Shivratri",
+            subtitle: "College Closed • $todayStr",
+          ),
+          const SizedBox(height: 12),
+          _buildEventCard(
+            icon: Icons.emoji_events,
+            iconColor: Colors.amber.shade700,
+            bgColor: Colors.amber.withOpacity(0.1),
+            title: "Tomorrow: Tech Fest Innovate '26",
+            subtitle: "Main Campus • Starts $tomorrowStr",
+          ),
+        ] else ...[
+          _buildEventCard(
+            icon: Icons.emoji_events,
+            iconColor: Colors.amber.shade700,
+            bgColor: Colors.amber.withOpacity(0.1),
+            title: "Current Event: Annual Sports Day",
+            subtitle: "College Athletics Ground • $todayStr",
+          ),
+          const SizedBox(height: 12),
+          _buildEventCard(
+            icon: Icons.edit_calendar,
+            iconColor: Colors.red,
+            bgColor: Colors.red.withOpacity(0.1),
+            title: "Reminder: Mid-Term Exam (MCA101)",
+            subtitle: "Exam Hall A • Starts $tomorrowStr",
+          ),
+        ],
+        const SizedBox(height: 12),
         _buildEventCard(
           icon: Icons.mic,
           iconColor: Colors.deepPurple,
-          bgColor: Colors.deepPurple.withValues(alpha: 0.1),
+          bgColor: Colors.deepPurple.withOpacity(0.1),
           title: "Guest Lecture: Future of AI",
-          subtitle: "Auditorium • Tomorrow, 2:00 PM",
-        ),
-        const SizedBox(height: 12),
-        _buildEventCard(
-          icon: Icons.edit_calendar,
-          iconColor: Colors.red,
-          bgColor: Colors.red.withValues(alpha: 0.1),
-          title: "Data Structure Mid-Term Exam",
-          subtitle: "Exam Hall B • Monday, 9:00 AM",
-        ),
-        const SizedBox(height: 12),
-        _buildEventCard(
-          icon: Icons.assignment_turned_in,
-          iconColor: Colors.orange,
-          bgColor: Colors.orange.withValues(alpha: 0.1),
-          title: "Python Project Submission",
-          subtitle: "Online Portal • Due: Feb 15, 11:59 PM",
-        ),
-        const SizedBox(height: 12),
-        _buildEventCard(
-          icon: Icons.computer,
-          iconColor: Colors.teal,
-          bgColor: Colors.teal.withValues(alpha: 0.1),
-          title: "Android Development Workshop",
-          subtitle: "Computer Lab 3 • Friday, 10:00 AM",
-        ),
-        const SizedBox(height: 12),
-        _buildEventCard(
-          icon: Icons.sports_soccer,
-          iconColor: Colors.green,
-          bgColor: Colors.green.withValues(alpha: 0.1),
-          title: "Inter-Department Football Match",
-          subtitle: "Sports Ground • Saturday, 4:00 PM",
-        ),
-        const SizedBox(height: 12),
-        _buildEventCard(
-          icon: Icons.groups,
-          iconColor: Colors.indigo,
-          bgColor: Colors.indigo.withValues(alpha: 0.1),
-          title: "Career Guidance Seminar",
-          subtitle: "Seminar Hall • Next Week, 3:00 PM",
+          subtitle: "Auditorium • Next Class Session",
         ),
       ],
     );
@@ -392,6 +367,7 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => AttendanceScreen(
+                    studentRegNo: widget.studentId,
                     overallAttendance: widget.attendancePercentage,
                   ),
                 ),
@@ -420,7 +396,8 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const AssignmentsScreen(),
+                  builder: (context) =>
+                      AssignmentsScreen(studentId: widget.studentId),
                 ),
               );
             } else if (item['label'] == 'Syllabus') {

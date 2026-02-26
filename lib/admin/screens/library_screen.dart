@@ -1217,8 +1217,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                           required: true,
                           validator: (value) {
                             if (value?.isEmpty ?? true) return 'Required';
-                            if (int.tryParse(value!) == null)
+                            if (int.tryParse(value!) == null) {
                               return 'Must be a number';
+                            }
                             return null;
                           },
                         ),
@@ -1459,7 +1460,7 @@ class _LibraryScreenState extends State<LibraryScreen>
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
+        child: SizedBox(
           width: 500,
           child: Column(
             mainAxisSize: MainAxisSize.min,

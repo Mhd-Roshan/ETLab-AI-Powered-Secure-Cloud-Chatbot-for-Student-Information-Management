@@ -84,7 +84,7 @@ class _HostelScreenState extends State<HostelScreen> {
                         Column(
                           children: [
                             DropdownButtonFormField<String>(
-                              value: selectedCollection,
+                              initialValue: selectedCollection,
                               decoration: InputDecoration(
                                 labelText: "Allocate To",
                                 prefixIcon: const Icon(Icons.category_rounded, size: 20),
@@ -142,7 +142,7 @@ class _HostelScreenState extends State<HostelScreen> {
 
                             return DropdownButtonFormField<String>(
                               key: ValueKey(selectedCollection), // Force rebuild when collection changes
-                              value: selectedPersonId,
+                              initialValue: selectedPersonId,
                               decoration: InputDecoration(
                                 labelText: selectedCollection == 'students' ? "Select Student" : "Select Staff",
                                 prefixIcon: const Icon(Icons.person_rounded, size: 20),
@@ -211,7 +211,7 @@ class _HostelScreenState extends State<HostelScreen> {
 
                       // Hostel Block
                       DropdownButtonFormField<String>(
-                        value: hostelBlock,
+                        initialValue: hostelBlock,
                         decoration: InputDecoration(
                           labelText: "Hostel Block",
                           prefixIcon: const Icon(Icons.apartment_rounded, size: 20),
@@ -244,7 +244,7 @@ class _HostelScreenState extends State<HostelScreen> {
 
                       // Room Type
                       DropdownButtonFormField<String>(
-                        value: roomType,
+                        initialValue: roomType,
                         decoration: InputDecoration(
                           labelText: "Room Type",
                           prefixIcon: const Icon(Icons.bed_rounded, size: 20),

@@ -1,9 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'assignments_screen.dart';
 
-class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({super.key});
+class NotificationsScreen extends StatefulWidget {
+  final String? studentId;
+  const NotificationsScreen({super.key, this.studentId});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  DateTime? _lastClearedAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClearedAt();
+    _markAsRead();
+  }
+
+  Future<void> _loadClearedAt() async {
+    final prefs = await SharedPreferences.getInstance();
+    final clearedStr = prefs.getString('notifications_cleared_at');
+    if (clearedStr != null) {
+      setState(() {
+        _lastClearedAt = DateTime.parse(clearedStr);
+      });
+    }
+  }
+
+  Future<void> _markAsRead() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'notifications_last_read_at',
+      DateTime.now().toIso8601String(),
+    );
+  }
+
+  Future<void> _clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    await prefs.setString('notifications_cleared_at', now.toIso8601String());
+    setState(() {
+      _lastClearedAt = now;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +69,19 @@ class NotificationsScreen extends StatelessWidget {
             color: Colors.black,
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _clearAll,
+            child: const Text(
+              "Clear All",
+              style: TextStyle(
+                color: Color(0xFF001FF4),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: StreamBuilder<QuerySnapshot>(
@@ -44,7 +101,18 @@ class NotificationsScreen extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            final allDocs = snapshot.data?.docs ?? [];
+            final filteredDocs = _lastClearedAt == null
+                ? allDocs
+                : allDocs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final postedDate = (data['postedDate'] as Timestamp?)
+                        ?.toDate();
+                    return postedDate != null &&
+                        postedDate.isAfter(_lastClearedAt!);
+                  }).toList();
+
+            if (filteredDocs.isEmpty) {
               return _buildEmptyState(
                 "No new notifications",
                 Icons.notifications_off_outlined,
@@ -53,10 +121,10 @@ class NotificationsScreen extends StatelessWidget {
 
             return ListView.separated(
               padding: const EdgeInsets.all(24),
-              itemCount: snapshot.data!.docs.length,
+              itemCount: filteredDocs.length,
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                final doc = snapshot.data!.docs[index];
+                final doc = filteredDocs[index];
                 final data = doc.data() as Map<String, dynamic>;
 
                 final title = data['title'] ?? 'Notification';
@@ -65,7 +133,6 @@ class NotificationsScreen extends StatelessWidget {
                     ?.toDate();
                 final priority = data['priority'] ?? 'normal';
 
-                // Consistent Colors with AcademicsScreen
                 Color iconColor = Colors.green;
                 Color bgColor = Colors.green.withOpacity(0.1);
                 IconData icon = Icons.notifications_none;
@@ -79,7 +146,6 @@ class NotificationsScreen extends StatelessWidget {
                   bgColor = Colors.blue.withOpacity(0.1);
                   icon = Icons.event;
                 } else {
-                  // Low/Normal
                   iconColor = Colors.green;
                   bgColor = Colors.green.withOpacity(0.1);
                   icon = Icons.info_outline;
@@ -90,12 +156,25 @@ class NotificationsScreen extends StatelessWidget {
                   timeString = DateFormat('MMM d, h:mm a').format(date);
                 }
 
+                final type = data['type'] ?? 'info';
+
                 return _buildEventCard(
                   icon: icon,
                   iconColor: iconColor,
                   bgColor: bgColor,
                   title: title,
                   subtitle: "$content • $timeString",
+                  onTap: () {
+                    if (type == 'assignment') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              AssignmentsScreen(studentId: widget.studentId),
+                        ),
+                      );
+                    }
+                  },
                 );
               },
             );
@@ -128,6 +207,7 @@ class NotificationsScreen extends StatelessWidget {
     required Color bgColor,
     required String title,
     required String subtitle,
+    VoidCallback? onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -143,6 +223,7 @@ class NotificationsScreen extends StatelessWidget {
         ],
       ),
       child: ListTile(
+        onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: bgColor,
@@ -159,9 +240,8 @@ class NotificationsScreen extends StatelessWidget {
           padding: const EdgeInsets.only(top: 4),
           child: Text(
             subtitle,
-            maxLines: 2,
-            overflow: TextOverflow
-                .ellipsis, // Changed to 2 lines for notifications as content might be longer
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(color: Colors.grey[600], fontSize: 12),
           ),
         ),

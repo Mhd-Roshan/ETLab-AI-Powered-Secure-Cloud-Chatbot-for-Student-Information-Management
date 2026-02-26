@@ -444,10 +444,11 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
                               .snapshots(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
-                                ConnectionState.waiting)
+                                ConnectionState.waiting) {
                               return const Center(
                                 child: CircularProgressIndicator(),
                               );
+                            }
                             var docs = snapshot.data?.docs ?? [];
                             var filteredDocs = docs
                                 .where(

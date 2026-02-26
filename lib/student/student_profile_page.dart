@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 import '../login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentProfilePage extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -591,7 +592,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             _buildInfoTile(
               Icons.calendar_today_rounded,
               "Batch",
-              "${_currentBatch ?? 'N/A'}",
+              _currentBatch ?? 'N/A',
             ),
           ]),
 
@@ -631,13 +632,17 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   label: "Logout",
                   icon: Icons.logout_rounded,
                   color: Colors.redAccent,
-                  onPressed: () {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
-                      ),
-                      (route) => false,
-                    );
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.clear();
+                    if (context.mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                        (route) => false,
+                      );
+                    }
                   },
                   isOutlined: true,
                 ),

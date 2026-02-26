@@ -5,6 +5,7 @@ import 'package:edlab/admin/screens/courses_screen.dart';
 import 'package:edlab/admin/screens/ai_chat_screen.dart';
 import 'package:edlab/admin/screens/settings_screen.dart';
 import 'package:edlab/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminSidebar extends StatelessWidget {
   final int activeIndex;
@@ -99,11 +100,15 @@ class AdminSidebar extends StatelessWidget {
 
           // --- 3. LOGOUT ---
           IconButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-              );
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  (route) => false,
+                );
+              }
             },
             icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
             tooltip: "Logout",
@@ -143,9 +148,7 @@ class AdminSidebar extends StatelessWidget {
                     const CircleAvatar(
                       radius: 20,
                       backgroundColor: Color(0xFFF1F5F9),
-                      backgroundImage: NetworkImage(
-                        'assets/kmct.png',
-                      ),
+                      backgroundImage: NetworkImage('assets/kmct.png'),
                     ),
                     Container(
                       padding: const EdgeInsets.all(2),

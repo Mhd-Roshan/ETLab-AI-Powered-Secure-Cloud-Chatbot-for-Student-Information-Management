@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import '../login.dart';
+import 'package:firebase_core/firebase_core.dart';
+import '../firebase_options.dart';
+import '../widgets/auth_gate.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const StaffAdvisorApp());
 }
 
@@ -23,7 +27,7 @@ class StaffAdvisorApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      home: const AuthGate(),
     );
   }
 }

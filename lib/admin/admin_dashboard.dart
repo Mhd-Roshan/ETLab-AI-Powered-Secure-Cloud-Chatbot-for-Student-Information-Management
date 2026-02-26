@@ -112,27 +112,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   const SizedBox(height: 40),
 
                   // --- SECTION 3: WORKSPACE TITLE ---
-                  Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.black87,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        "EDLAB WORKSPACE",
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF64748B),
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    "WORKSPACE",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF64748B),
+                      letterSpacing: 1.5,
+                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -684,9 +671,13 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                                 widget.onSubmitted(value);
                               },
                               decoration: InputDecoration(
-                                hintText: _isListening ? "Listening..." : "Type a command...",
+                                hintText: _isListening
+                                    ? "Listening..."
+                                    : "Type a command...",
                                 hintStyle: GoogleFonts.inter(
-                                  color: _isListening ? const Color(0xFF6366F1) : const Color(0xFF6B7280),
+                                  color: _isListening
+                                      ? const Color(0xFF6366F1)
+                                      : const Color(0xFF6B7280),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -700,7 +691,11 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                                   children: [
                                     // Voice button
                                     Container(
-                                      margin: const EdgeInsets.only(right: 4, top: 6, bottom: 6),
+                                      margin: const EdgeInsets.only(
+                                        right: 4,
+                                        top: 6,
+                                        bottom: 6,
+                                      ),
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           begin: Alignment.topLeft,
@@ -718,8 +713,15 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                                         borderRadius: BorderRadius.circular(8),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: (_isListening ? const Color(0xFFEF4444) : const Color(0xFF10B981))
-                                                .withValues(alpha: 0.3),
+                                            color:
+                                                (_isListening
+                                                        ? const Color(
+                                                            0xFFEF4444,
+                                                          )
+                                                        : const Color(
+                                                            0xFF10B981,
+                                                          ))
+                                                    .withValues(alpha: 0.3),
                                             blurRadius: 6,
                                             offset: const Offset(0, 3),
                                           ),
@@ -727,15 +729,21 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                                       ),
                                       child: IconButton(
                                         icon: AnimatedSwitcher(
-                                          duration: const Duration(milliseconds: 200),
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
                                           child: Icon(
-                                            _isListening ? Icons.stop_rounded : Icons.mic_rounded,
+                                            _isListening
+                                                ? Icons.stop_rounded
+                                                : Icons.mic_rounded,
                                             key: ValueKey(_isListening),
                                             size: 16,
                                             color: Colors.white,
                                           ),
                                         ),
-                                        onPressed: _isVoiceInitialized ? _toggleVoiceListening : null,
+                                        onPressed: _isVoiceInitialized
+                                            ? _toggleVoiceListening
+                                            : null,
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(
                                           minWidth: 30,
@@ -745,7 +753,11 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                                     ),
                                     // Submit button
                                     Container(
-                                      margin: const EdgeInsets.only(right: 6, top: 6, bottom: 6),
+                                      margin: const EdgeInsets.only(
+                                        right: 6,
+                                        top: 6,
+                                        bottom: 6,
+                                      ),
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(
                                           begin: Alignment.topLeft,
@@ -758,7 +770,9 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                                         borderRadius: BorderRadius.circular(8),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                                            color: const Color(
+                                              0xFF6366F1,
+                                            ).withValues(alpha: 0.3),
                                             blurRadius: 6,
                                             offset: const Offset(0, 3),
                                           ),
@@ -772,7 +786,9 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                                         ),
                                         onPressed: () {
                                           if (_controller.text.isNotEmpty) {
-                                            widget.onSubmitted(_controller.text);
+                                            widget.onSubmitted(
+                                              _controller.text,
+                                            );
                                           }
                                         },
                                         padding: EdgeInsets.zero,
