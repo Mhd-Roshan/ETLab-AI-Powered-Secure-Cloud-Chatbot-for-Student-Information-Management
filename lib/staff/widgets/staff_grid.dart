@@ -6,6 +6,7 @@ import 'package:edlab/staff/screens/staff_attendance_screen.dart';
 import 'package:edlab/staff/screens/staff_survey_screen.dart';
 import 'package:edlab/staff/screens/staff_cert_scholarship_screen.dart';
 import 'package:edlab/staff/screens/university_circulars_screen.dart';
+import 'package:edlab/staff/screens/staff_timetable_screen.dart';
 import 'package:edlab/staff/screens/staff_complaints_screen.dart';
 
 class StaffWorkspaceGrid extends StatelessWidget {
@@ -19,7 +20,7 @@ class StaffWorkspaceGrid extends StatelessWidget {
         'icon': Icons.calendar_today_outlined,
         'label': 'Timetable',
         'color': const Color(0xFF001FF4),
-        'route': const GenericPage(title: 'Timetable'),
+        'route': StaffTimetableScreen(userId: staffId),
       },
       {
         'icon': Icons.task_outlined,
@@ -80,26 +81,26 @@ class StaffWorkspaceGrid extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        width: 160,
-        height: 130,
+        width: 175,
+        height: 150,
         decoration: const BoxDecoration(color: Colors.transparent),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: (item['color'] as Color).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(item['icon'], color: item['color'], size: 28),
+              child: Icon(item['icon'], color: item['color'], size: 36),
             ),
             const SizedBox(height: 16),
             Text(
               item['label'],
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: 14,
                 color: const Color(0xFF0F172A),
                 fontWeight: FontWeight.w600,
               ),

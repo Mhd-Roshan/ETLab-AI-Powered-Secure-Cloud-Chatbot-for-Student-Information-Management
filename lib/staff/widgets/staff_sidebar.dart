@@ -257,7 +257,7 @@ class _StaffSidebarState extends State<StaffSidebar> {
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.redAccent,
                           fontWeight: FontWeight.w700,
-                          fontSize: 14,
+                          fontSize: 16,
                         ),
                       ),
                     ],
@@ -318,7 +318,7 @@ class _StaffSidebarState extends State<StaffSidebar> {
             children: [
               Icon(
                 icon,
-                size: 24,
+                size: 28,
                 color: isActive ? Colors.white : const Color(0xFF94A3B8),
               ),
               if (isExpanded) ...[
@@ -326,7 +326,7 @@ class _StaffSidebarState extends State<StaffSidebar> {
                 Text(
                   label,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),

@@ -223,19 +223,19 @@ class MyClassesScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: (service['color'] as Color).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(service['icon'], color: service['color'], size: 28),
+              child: Icon(service['icon'], color: service['color'], size: 36),
             ),
             const SizedBox(height: 16),
             Text(
               service['title'],
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF0F172A),
               ),
@@ -294,7 +294,7 @@ class MyClassesScreen extends StatelessWidget {
         title,
         textAlign: TextAlign.center,
         style: GoogleFonts.poppins(
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF1E293B),
         ),

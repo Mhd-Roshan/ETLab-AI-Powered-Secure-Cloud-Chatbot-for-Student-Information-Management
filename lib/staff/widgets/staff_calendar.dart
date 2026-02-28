@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -349,9 +349,10 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // 1. Calendar Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -363,7 +364,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                     DateFormat('MMMM yyyy').format(DateTime.now()),
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: 20,
                       color: const Color(0xFF1E293B),
                     ),
                   ),
@@ -372,7 +373,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                     children: [
                       Icon(
                         Icons.access_time,
-                        size: 14,
+                        size: 16,
                         color: Color(0xFF001FF4),
                       ),
                       SizedBox(width: 6),
@@ -418,7 +419,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
               Text(
                 "TASKS",
                 style: GoogleFonts.poppins(
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.0,
                   color: const Color(0xFF94A3B8),
@@ -435,7 +436,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   ),
                   child: const Icon(
                     Icons.add_rounded,
-                    size: 16,
+                    size: 20,
                     color: Color(0xFF64748B),
                   ),
                 ),
@@ -477,7 +478,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
           Text(
             "RECENT ACTIVITY",
             style: GoogleFonts.poppins(
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
               color: const Color(0xFF94A3B8),
@@ -515,6 +516,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
             },
           ),
         ],
+        ),
       ),
     );
   }
@@ -535,14 +537,14 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
           Icon(
             Icons.assignment_turned_in_outlined,
             color: Colors.grey.shade300,
-            size: 32,
+            size: 40,
           ),
           const SizedBox(height: 8),
           Text(
             "No tasks pending",
             style: GoogleFonts.poppins(
               color: Colors.grey.shade400,
-              fontSize: 12,
+              fontSize: 14,
             ),
           ),
         ],
@@ -573,8 +575,8 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
             onTap: () => service.toggleTask(doc.id, isDone),
             borderRadius: BorderRadius.circular(20),
             child: Container(
-              width: 20,
-              height: 20,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
                 color: isDone ? const Color(0xFF10B981) : Colors.transparent,
                 shape: BoxShape.circle,
@@ -600,7 +602,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   Text(
                     title,
                     style: GoogleFonts.poppins(
-                      fontSize: 13,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       decoration: isDone ? TextDecoration.lineThrough : null,
                       color: isDone
@@ -611,7 +613,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   Text(
                     time,
                     style: GoogleFonts.poppins(
-                      fontSize: 10,
+                      fontSize: 12,
                       color: const Color(0xFF94A3B8),
                     ),
                   ),
@@ -630,7 +632,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   padding: const EdgeInsets.all(4.0),
                   child: Icon(
                     Icons.edit_outlined,
-                    size: 16,
+                    size: 20,
                     color: Colors.grey.shade400,
                   ),
                 ),
@@ -643,7 +645,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   padding: const EdgeInsets.all(4.0),
                   child: Icon(
                     Icons.delete_outline,
-                    size: 16,
+                    size: 20,
                     color: Colors.redAccent.withValues(alpha: 0.6),
                   ),
                 ),
@@ -674,7 +676,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 14, color: color),
+                child: Icon(icon, size: 18, color: color),
               ),
               Container(width: 2, height: 20, color: const Color(0xFFF1F5F9)),
             ],
@@ -687,7 +689,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                 Text(
                   title,
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF334155),
                   ),
@@ -696,7 +698,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                 Text(
                   time,
                   style: GoogleFonts.poppins(
-                    fontSize: 11,
+                    fontSize: 13,
                     color: const Color(0xFF94A3B8),
                   ),
                 ),
@@ -713,13 +715,13 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
       onTap: () {},
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 28,
-        height: 28,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFFE2E8F0)),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, size: 16, color: const Color(0xFF64748B)),
+        child: Icon(icon, size: 20, color: const Color(0xFF64748B)),
       ),
     );
   }
@@ -754,7 +756,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   child: Text(
                     entry.value,
                     style: GoogleFonts.poppins(
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       // Highlight Sunday column
                       color: entry.key == 6

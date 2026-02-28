@@ -45,7 +45,8 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
   @override
   void initState() {
     super.initState();
-    _circularService.seedInitialCirculars();
+    // forceSeedMCACirculars checks if MCA docs exist before seeding
+    _circularService.forceSeedMCACirculars();
     _loadStaffProfile();
   }
 
@@ -115,20 +116,28 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
                   return _buildEmptyState();
                 }
 
-                final docs = snapshot.data!.docs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final matchesCat =
-                      _selectedCategory == 'All' ||
-                      data['category'] == _selectedCategory;
-                  final matchesSearch =
-                      data['title'].toString().toLowerCase().contains(
-                        _searchQuery.toLowerCase(),
-                      ) ||
-                      data['refNo'].toString().toLowerCase().contains(
-                        _searchQuery.toLowerCase(),
-                      );
-                  return matchesCat && matchesSearch;
-                }).toList();
+                final docs =
+                    snapshot.data!.docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final matchesCat =
+                          _selectedCategory == 'All' ||
+                          data['category'] == _selectedCategory;
+                      final matchesSearch =
+                          data['title'].toString().toLowerCase().contains(
+                            _searchQuery.toLowerCase(),
+                          ) ||
+                          data['refNo'].toString().toLowerCase().contains(
+                            _searchQuery.toLowerCase(),
+                          );
+                      return matchesCat && matchesSearch;
+                    }).toList()..sort((a, b) {
+                      final aTime =
+                          (a.data() as Map<String, dynamic>)['timestamp'];
+                      final bTime =
+                          (b.data() as Map<String, dynamic>)['timestamp'];
+                      if (aTime == null || bTime == null) return 0;
+                      return bTime.compareTo(aTime);
+                    });
 
                 if (docs.isEmpty) return _buildEmptyState();
 

@@ -68,7 +68,7 @@ class StaffHeader extends StatelessWidget {
                 title,
                 style: GoogleFonts.plusJakartaSans(
                   color: textColor,
-                  fontSize: 24,
+                  fontSize: 28,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -1,
                 ),
@@ -79,7 +79,7 @@ class StaffHeader extends StatelessWidget {
                   DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
                   style: GoogleFonts.plusJakartaSans(
                     color: subColor,
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -110,7 +110,7 @@ class StaffHeader extends StatelessWidget {
                 textAlignVertical: TextAlignVertical.center,
                 style: GoogleFonts.plusJakartaSans(
                   color: textColor,
-                  fontSize: 14,
+                  fontSize: 15,
                 ),
                 decoration: InputDecoration(
                   isDense: true,
@@ -119,14 +119,14 @@ class StaffHeader extends StatelessWidget {
                     color: isWhite
                         ? Colors.white.withValues(alpha: 0.5)
                         : const Color(0xFF94A3B8),
-                    fontSize: 14,
+                    fontSize: 15,
                   ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                   prefixIcon: Icon(
                     Icons.search_rounded,
                     color: isWhite ? Colors.white : const Color(0xFF64748B),
-                    size: 22,
+                    size: 24,
                   ),
                   suffixIcon: Container(
                     margin: const EdgeInsets.all(8),
@@ -221,7 +221,7 @@ class StaffHeader extends StatelessWidget {
                   Icon(
                     Icons.notifications_none_rounded,
                     color: bellIconColor,
-                    size: 22,
+                    size: 26,
                   ),
                   if (unreadCount > 0)
                     Positioned(
@@ -254,7 +254,7 @@ class StaffHeader extends StatelessWidget {
                           "Notifications",
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 16,
                           ),
                         ),
                         if (unreadCount > 0)
@@ -337,7 +337,7 @@ class StaffHeader extends StatelessWidget {
                               Text(
                                 data['title'] ?? "Alert",
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
+                                  fontSize: 14,
                                   fontWeight: isRead
                                       ? FontWeight.normal
                                       : FontWeight.bold,
