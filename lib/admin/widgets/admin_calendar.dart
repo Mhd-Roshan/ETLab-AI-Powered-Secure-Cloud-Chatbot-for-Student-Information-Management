@@ -20,12 +20,12 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
   @override
   void initState() {
     super.initState();
-    
+
     // Check tasks every 30 seconds (more frequent)
     _taskCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _checkTaskTimes();
     });
-    
+
     // Also check immediately on load
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) _checkTaskTimes();
@@ -52,7 +52,7 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final timeLabel = data['timeLabel'] as String?;
-        
+
         if (timeLabel == null || _alertedTasks.contains(doc.id)) continue;
 
         // Parse time from label (e.g., "3:05 PM")
@@ -60,15 +60,14 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
         if (taskTime == null) continue;
 
         // Check if task time matches current time
-        if (taskTime.hour == currentTime.hour && 
+        if (taskTime.hour == currentTime.hour &&
             taskTime.minute == currentTime.minute) {
-          
           // Mark as alerted to prevent duplicate processing
           _alertedTasks.add(doc.id);
-          
+
           // Automatically mark task as done
           await _adminService.toggleTask(doc.id, false);
-          
+
           // Show success notification
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -95,14 +94,14 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                         children: [
                           Text(
                             'Task Completed',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
                           ),
                           Text(
                             data['title'] ?? 'Task',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               color: Colors.white70,
                             ),
@@ -114,7 +113,7 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                     ),
                     Text(
                       timeLabel,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -337,185 +336,190 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Calendar Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Scrollbar(
+        thumbVisibility: true,
+        thickness: 4,
+        radius: const Radius.circular(10),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // 1. Calendar Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    DateFormat('MMMM yyyy').format(DateTime.now()),
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: const Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: Color(0xFF6366F1),
+                      Text(
+                        DateFormat('MMMM yyyy').format(DateTime.now()),
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: const Color(0xFF1E293B),
+                        ),
                       ),
-                      SizedBox(width: 6),
-                      _LiveClock(),
+                      const SizedBox(height: 4),
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 14,
+                            color: Color(0xFF6366F1),
+                          ),
+                          SizedBox(width: 6),
+                          _LiveClock(),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      _buildNavIcon(Icons.chevron_left_rounded),
+                      const SizedBox(width: 8),
+                      _buildNavIcon(Icons.chevron_right_rounded),
                     ],
                   ),
                 ],
               ),
-              Row(
+              const SizedBox(height: 24),
+
+              // 2. Calendar Grid
+              _buildModernCalendar(),
+
+              const SizedBox(height: 20),
+              // Legends
+              Wrap(
+                spacing: 16,
+                runSpacing: 8,
                 children: [
-                  _buildNavIcon(Icons.chevron_left_rounded),
-                  const SizedBox(width: 8),
-                  _buildNavIcon(Icons.chevron_right_rounded),
+                  _buildLegend('Today', const Color(0xFF6366F1), isBox: true),
+                  _buildLegend('Sunday', const Color(0xFFEF4444)),
+                  _buildLegend('Festival', const Color(0xFFF59E0B)),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
 
-          // 2. Calendar Grid
-          _buildModernCalendar(),
+              const SizedBox(height: 24),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 24),
 
-          const SizedBox(height: 20),
-          // Legends
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: [
-              _buildLegend('Today', const Color(0xFF6366F1), isBox: true),
-              _buildLegend('Sunday', const Color(0xFFEF4444)),
-              _buildLegend('Festival', const Color(0xFFF59E0B)),
-            ],
-          ),
+              // 3. FIREBASE TASKS
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "TASKS",
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: _promptAddTask,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        size: 16,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
 
-          const SizedBox(height: 24),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 24),
+              // Task Stream
+              StreamBuilder<QuerySnapshot>(
+                stream: _adminService.getTasks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
 
-          // 3. FIREBASE TASKS
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return _buildEmptyState();
+                  }
+
+                  return Column(
+                    children: snapshot.data!.docs.map((doc) {
+                      return _buildTaskItem(doc);
+                    }).toList(),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 24),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 24),
+
+              // 4. FIREBASE ACTIVITY
               Text(
-                "TASKS",
-                style: GoogleFonts.poppins(
+                "RECENT ACTIVITY",
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.0,
                   color: const Color(0xFF94A3B8),
                 ),
               ),
-              InkWell(
-                onTap: _promptAddTask,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    size: 16,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
+              const SizedBox(height: 20),
+
+              StreamBuilder<QuerySnapshot>(
+                stream: _adminService.getRecentActivities(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Text(
+                      "No recent activity",
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    );
+                  }
+
+                  return Column(
+                    children: snapshot.data!.docs.map((doc) {
+                      var data = doc.data() as Map<String, dynamic>;
+                      String timeAgo = "Just now";
+                      if (data['postedDate'] != null) {
+                        Timestamp ts = data['postedDate'];
+                        timeAgo = DateFormat(
+                          'MMM d, h:mm a',
+                        ).format(ts.toDate());
+                      }
+
+                      return _buildActivityItem(
+                        data['title'] ?? 'New Announcement',
+                        timeAgo,
+                        Colors.blueAccent,
+                        Icons.notifications_none_outlined,
+                      );
+                    }).toList(),
+                  );
+                },
               ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          // Task Stream
-          StreamBuilder<QuerySnapshot>(
-            stream: _adminService.getTasks(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                );
-              }
-
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return _buildEmptyState();
-              }
-
-              return Column(
-                children: snapshot.data!.docs.map((doc) {
-                  return _buildTaskItem(doc);
-                }).toList(),
-              );
-            },
-          ),
-
-          const SizedBox(height: 24),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 24),
-
-          // 4. FIREBASE ACTIVITY
-          Text(
-            "RECENT ACTIVITY",
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.0,
-              color: const Color(0xFF94A3B8),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          StreamBuilder<QuerySnapshot>(
-            stream: _adminService.getRecentActivities(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Text(
-                  "No recent activity",
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
-                );
-              }
-
-              return Column(
-                children: snapshot.data!.docs.map((doc) {
-                  var data = doc.data() as Map<String, dynamic>;
-                  String timeAgo = "Just now";
-                  if (data['postedDate'] != null) {
-                    Timestamp ts = data['postedDate'];
-                    timeAgo = DateFormat('MMM d, h:mm a').format(ts.toDate());
-                  }
-
-                  return _buildActivityItem(
-                    data['title'] ?? 'New Announcement',
-                    timeAgo,
-                    Colors.blueAccent,
-                    Icons.notifications_none_outlined,
-                  );
-                }).toList(),
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -541,10 +545,7 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
           const SizedBox(height: 8),
           Text(
             "No tasks pending",
-            style: GoogleFonts.poppins(
-              color: Colors.grey.shade400,
-              fontSize: 12,
-            ),
+            style: GoogleFonts.inter(color: Colors.grey.shade400, fontSize: 12),
           ),
         ],
       ),
@@ -600,7 +601,7 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       decoration: isDone ? TextDecoration.lineThrough : null,
@@ -611,7 +612,7 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                   ),
                   Text(
                     time,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
                       color: const Color(0xFF94A3B8),
                     ),
@@ -687,7 +688,7 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF334155),
@@ -696,7 +697,7 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                 const SizedBox(height: 2),
                 Text(
                   time,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: const Color(0xFF94A3B8),
                   ),
@@ -729,21 +730,18 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
     final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     final now = DateTime.now(); // February 9, 2026
     final todayDay = now.day.toString();
-    
+
     // Calculate calendar for current month
     final firstDayOfMonth = DateTime(now.year, now.month, 1);
     final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
     final daysInMonth = lastDayOfMonth.day;
-    
+
     // Get the weekday of the first day (1 = Monday, 7 = Sunday)
     final firstWeekday = firstDayOfMonth.weekday;
-    
+
     // Define festivals/holidays for February 2026
-    final festivals = {
-      '14': 'Valentine\'s Day',
-      '16': 'Presidents\' Day',
-    };
-    
+    final festivals = {'14': 'Valentine\'s Day', '16': 'Presidents\' Day'};
+
     // Build calendar rows dynamically
     List<TableRow> rows = [
       // Header row with day names
@@ -757,12 +755,12 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     entry.value,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       // Highlight Sunday column
-                      color: entry.key == 6 
-                          ? const Color(0xFFEF4444) 
+                      color: entry.key == 6
+                          ? const Color(0xFFEF4444)
                           : const Color(0xFF94A3B8),
                     ),
                   ),
@@ -772,46 +770,50 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
             .toList(),
       ),
     ];
-    
+
     // Build date cells
     List<String> currentWeek = [];
     int currentDayOfWeek = firstWeekday;
-    
+
     // Add empty cells for days before the first day of month
     for (int i = 1; i < firstWeekday; i++) {
       currentWeek.add('');
     }
-    
+
     // Add all days of the month
     for (int day = 1; day <= daysInMonth; day++) {
       currentWeek.add(day.toString());
-      
+
       // When we have 7 days, create a row
       if (currentWeek.length == 7) {
-        rows.add(_buildCalRow(
-          currentWeek,
-          activeDay: todayDay,
-          startWeekday: currentDayOfWeek,
-          festivals: festivals,
-        ));
+        rows.add(
+          _buildCalRow(
+            currentWeek,
+            activeDay: todayDay,
+            startWeekday: currentDayOfWeek,
+            festivals: festivals,
+          ),
+        );
         currentWeek = [];
         currentDayOfWeek = 1; // Reset to Monday for next week
       }
     }
-    
+
     // Add remaining days if any
     if (currentWeek.isNotEmpty) {
       while (currentWeek.length < 7) {
         currentWeek.add('');
       }
-      rows.add(_buildCalRow(
-        currentWeek,
-        activeDay: todayDay,
-        startWeekday: currentDayOfWeek,
-        festivals: festivals,
-      ));
+      rows.add(
+        _buildCalRow(
+          currentWeek,
+          activeDay: todayDay,
+          startWeekday: currentDayOfWeek,
+          festivals: festivals,
+        ),
+      );
     }
-    
+
     return Table(
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: rows,
@@ -828,17 +830,17 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
       children: dates.asMap().entries.map((entry) {
         int index = entry.key;
         String date = entry.value;
-        
+
         if (date.isEmpty) return const SizedBox.shrink();
-        
+
         // Calculate the actual weekday for this date
         // startWeekday tells us what day of week the first cell is
         int actualWeekday = (startWeekday + index - 1) % 7 + 1;
-        
+
         bool isToday = date == activeDay;
         bool isSunday = actualWeekday == 7;
         bool isFestival = festivals?.containsKey(date) ?? false;
-        
+
         // Determine dot color
         Color? dotColor;
         if (isFestival) {
@@ -846,10 +848,12 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
         } else if (isSunday) {
           dotColor = const Color(0xFFEF4444); // Red for Sundays
         }
-        
+
         return Center(
           child: Tooltip(
-            message: isFestival ? festivals![date]! : (isSunday ? 'Sunday' : ''),
+            message: isFestival
+                ? festivals![date]!
+                : (isSunday ? 'Sunday' : ''),
             child: Container(
               margin: const EdgeInsets.all(3),
               width: 32,
@@ -870,7 +874,7 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                   Center(
                     child: Text(
                       date,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                         color: isToday
@@ -938,7 +942,7 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.inter(
             fontSize: 11,
             color: Colors.grey.shade600,
             fontWeight: FontWeight.w500,
@@ -986,7 +990,7 @@ class _LiveClockState extends State<_LiveClock> {
   Widget build(BuildContext context) {
     return Text(
       _currentTime,
-      style: GoogleFonts.poppins(
+      style: GoogleFonts.inter(
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: const Color(0xFF6366F1),

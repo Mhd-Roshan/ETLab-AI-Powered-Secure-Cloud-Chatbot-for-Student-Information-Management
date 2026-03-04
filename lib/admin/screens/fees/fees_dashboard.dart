@@ -44,7 +44,7 @@ class FeesDashboard extends StatelessWidget {
                         children: [
                           Text(
                             "Fees Management",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 26,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
@@ -69,7 +69,7 @@ class FeesDashboard extends StatelessWidget {
                   // --- 2. GRID MENU ---
                   Text(
                     "Operations",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -223,7 +223,7 @@ class FeesDashboard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF0F172A),
@@ -284,7 +284,7 @@ class FeesDashboard extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               title,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF1E293B),
@@ -323,3 +323,4 @@ class FeesDashboard extends StatelessWidget {
     );
   }
 }
+

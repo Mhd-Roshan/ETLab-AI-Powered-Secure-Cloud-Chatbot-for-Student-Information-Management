@@ -5,6 +5,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/edlab_ai_service.dart';
 import '../services/voice_service.dart';
+import 'widgets/liquid_glass_button.dart';
 
 class StudentChatScreen extends StatefulWidget {
   final Map<String, dynamic> studentData;
@@ -347,37 +348,49 @@ class _StudentChatScreenState extends State<StudentChatScreen>
           style: GoogleFonts.inter(color: _textSecondary),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Cancel",
-              style: GoogleFonts.inter(color: _textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade50,
-              foregroundColor: Colors.red.shade600,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              LiquidGlassButton(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                onPressed: () => Navigator.pop(context),
+                label: Text(
+                  "Cancel",
+                  style: GoogleFonts.inter(
+                    color: _textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ),
-            onPressed: () {
-              setState(() {
-                _messages.clear();
-                _messages.add({
-                  'role': 'bot',
-                  'text': "Chat cleared! ✨ What would you like to know?",
-                  'time': DateTime.now(),
-                });
-              });
-              Navigator.pop(context);
-            },
-            child: Text(
-              "Clear All",
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-            ),
+              const SizedBox(width: 12),
+              LiquidGlassButton(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _messages.clear();
+                    _messages.add({
+                      'role': 'bot',
+                      'text': "Chat cleared! ✨ What would you like to know?",
+                      'time': DateTime.now(),
+                    });
+                  });
+                  Navigator.pop(context);
+                },
+                label: Text(
+                  "Clear All",
+                  style: GoogleFonts.inter(
+                    color: Colors.red.shade600,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -680,7 +693,7 @@ class _StudentChatScreenState extends State<StudentChatScreen>
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
-                          code: GoogleFonts.firaCode(
+                          code: GoogleFonts.inter(
                             color: _primaryBlue,
                             backgroundColor: _primaryBlue.withOpacity(0.06),
                             fontSize: 13,
@@ -961,3 +974,4 @@ class _LightGradientPainter extends CustomPainter {
   bool shouldRepaint(covariant _LightGradientPainter oldDelegate) =>
       oldDelegate.animation != animation;
 }
+

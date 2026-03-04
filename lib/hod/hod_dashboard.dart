@@ -1,1234 +1,1096 @@
+import 'dart:async';
+import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../login.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:edlab/hod/screens/ai_chat_screen.dart';
+import 'package:edlab/hod/screens/ai_insight_screen.dart';
+import 'package:edlab/services/hod_service.dart';
+import 'package:edlab/services/staff_service.dart';
+import 'package:edlab/services/voice_service.dart';
+
+// Ensure these widget files exist in your project
+import 'widgets/hod_sidebar.dart';
+import 'widgets/hod_header.dart';
+import 'widgets/hod_grid.dart';
+import 'widgets/hod_calendar.dart';
 
 class HodDashboard extends StatefulWidget {
-  const HodDashboard({super.key});
+  final dynamic user;
+  const HodDashboard({super.key, this.user});
 
   @override
   State<HodDashboard> createState() => _HodDashboardState();
 }
 
 class _HodDashboardState extends State<HodDashboard> {
-  // --- Constants based on Tailwind Config ---
-  final Color primaryBlue = const Color(0xFF3B82F6);
-  final Color pageBg = const Color(0xFFF3F5F9);
-  final Color textSlate800 = const Color(0xFF1E293B);
-  final Color textSlate500 = const Color(0xFF64748B);
-  final Color aiPurple = const Color(0xFF6C5DD3);
-  final Color aiGreen = const Color(0xFF10B981);
+  final StaffService service = StaffService();
+  final HodService _hodService = HodService();
+
+  @override
+  void initState() {
+    super.initState();
+    _seedDatabaseIfNeeded();
+  }
+
+  /// Seeds Firestore with batch and student data if not already present.
+  Future<void> _seedDatabaseIfNeeded() async {
+    try {
+      final existing = await FirebaseFirestore.instance
+          .collection('batches')
+          .limit(1)
+          .get();
+      if (existing.docs.isEmpty) {
+        await _hodService.seedBatches();
+        await _hodService.seedBatchStudents();
+        await _hodService.seedStaff();
+      }
+    } catch (_) {
+      // Silently ignore seed errors — data may already exist
+    }
+  }
+
+  // ✅ Navigation Helper
+  void _navigateToAi(String prompt) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AiChatScreen(
+          initialPrompt: prompt,
+          userId: widget.user?.toString() ?? 'hod@gmail.com',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Use LayoutBuilder to handle responsiveness if needed,
-    // for now we assume a standard desktop/tablet view as per dashboard standard.
     return Scaffold(
-      backgroundColor: pageBg,
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Left Sidebar ---
-          Container(
-            width: 260,
-            color: Colors.white,
-            child: Column(
-              children: [
-                _buildSidebarHeader(),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 24,
-                      horizontal: 16,
+          // 1. Sidebar
+          HodSidebar(
+            activeIndex: 0,
+            userId: widget.user?.toString() ?? 'hod@gmail.com',
+          ),
+
+          // 2. Main Content Area
+          Expanded(
+            flex: 5,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 32, 32, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HodHeader(userId: widget.user?.toString() ?? 'hod@gmail.com'),
+                  const SizedBox(height: 32),
+
+                  // --- SECTION 1: LIVE DEPARTMENT METRICS ---
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: _hodService.getProfile(
+                      widget.user?.toString() ?? 'hod@gmail.com',
                     ),
+                    builder: (context, profileSnapshot) {
+                      String department = "MCA"; // Fallback
+                      if (profileSnapshot.hasData &&
+                          profileSnapshot.data!.exists) {
+                        final data =
+                            profileSnapshot.data!.data()
+                                as Map<String, dynamic>;
+                        department = data['department'] ?? "MCA";
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _buildLiveCard(
+                              title: 'Total Batches',
+                              stream: _hodService
+                                  .getDepartmentBatches(department)
+                                  .map((s) => s.docs.length),
+                              color: const Color(0xFF6366F1),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: _buildLiveCard(
+                              title: 'Total Coordinators',
+                              stream: _hodService
+                                  .getDepartmentBatches(department)
+                                  .map(
+                                    (s) => s.docs
+                                        .map((d) {
+                                          final data =
+                                              d.data() as Map<String, dynamic>;
+                                          return data['coordinator'] as String?;
+                                        })
+                                        .where((c) => c != null)
+                                        .cast<String>()
+                                        .toSet()
+                                        .length,
+                                  ),
+                              color: const Color(0xFF10B981),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: _buildLiveCard(
+                              title: 'Exams Scheduled',
+                              stream: _hodService
+                                  .getDepartmentExams(department)
+                                  .map((s) => s.docs.length),
+                              color: const Color(0xFFF59E0B),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // --- SECTION 2: AI INTELLIGENCE HUB ---
+                  Row(
                     children: [
-                      _buildNavItem(
-                        Icons.dashboard,
-                        "Dashboard",
-                        isActive: true,
+                      // ✅ INTERACTIVE AI CHAT (Main Assistant)
+                      Expanded(
+                        flex: 3,
+                        child: AiChatAssistantCard(
+                          onSubmitted: (text) => _navigateToAi(text),
+                        ),
                       ),
-                      _buildNavItem(Icons.book, "My Classes"),
-                      _buildNavItem(Icons.calendar_view_week, "My Timetable"),
-                      _buildNavItem(Icons.swap_horiz, "Substitutions"),
-                      const SizedBox(height: 24),
-                      Padding(
+                      const SizedBox(width: 20),
+
+                      // ✅ AI PREDICTIVE INSIGHT CARD
+                      Expanded(
+                        flex: 2,
+                        child: GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AiInsightScreen(
+                                userId:
+                                    widget.user?.toString() ?? 'hod@gmail.com',
+                              ),
+                            ),
+                          ),
+                          child: const AiInsightCard(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+
+                  // --- SECTION 3: WORKSPACE ---
+                  Text(
+                    "WORKSPACE",
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF64748B),
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // --- SECTION 4: INTERACTIVE SERVICE GRID ---
+                  HodWorkspaceGrid(
+                    userId: widget.user?.toString() ?? 'hod@gmail.com',
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 3. Right Sidebar
+          Container(
+            width: 380,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 20,
+                  offset: const Offset(-5, 0),
+                ),
+              ],
+            ),
+            child: const HodRightPanel(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiveCard({
+    required String title,
+    required Stream<int> stream,
+    required Color color,
+  }) {
+    return StreamBuilder<int>(
+      stream: stream,
+      builder: (context, snapshot) {
+        String count = snapshot.hasData ? snapshot.data.toString() : "...";
+        return LiveMetricCarousel(
+          baseColor: color,
+          dataPoints: [
+            {'title': title, 'count': count, 'percent': 'Live', 'isUp': true},
+            {
+              'title': 'Department View',
+              'count': count,
+              'percent': '100%',
+              'isUp': true,
+            },
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ------------------------------------------------------------------
+// ✅ AI CHAT CARD (From StaffDashboard)
+// ------------------------------------------------------------------
+class AiChatAssistantCard extends StatefulWidget {
+  final Function(String) onSubmitted;
+
+  const AiChatAssistantCard({super.key, required this.onSubmitted});
+
+  @override
+  State<AiChatAssistantCard> createState() => _AiChatAssistantCardState();
+}
+
+class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
+  final TextEditingController _controller = TextEditingController();
+  final VoiceService _voiceService = VoiceService();
+  bool _isVoiceInitialized = false;
+  bool _isListening = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVoice();
+  }
+
+  Future<void> _initializeVoice() async {
+    final initialized = await _voiceService.initialize();
+    if (mounted) {
+      setState(() {
+        _isVoiceInitialized = initialized;
+      });
+    }
+
+    _voiceService.onSpeechResult = (result) {
+      if (mounted) {
+        _controller.text = result;
+        if (result.isNotEmpty) {
+          widget.onSubmitted(result);
+        }
+      }
+    };
+
+    _voiceService.onListeningStateChanged = (isListening) {
+      if (mounted) {
+        setState(() {
+          _isListening = isListening;
+        });
+      }
+    };
+
+    _voiceService.onSpeechError = (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Voice error: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    };
+  }
+
+  Future<void> _toggleVoiceListening() async {
+    if (!_isVoiceInitialized) return;
+    if (_isListening) {
+      await _voiceService.stopListening();
+    } else {
+      await _voiceService.startListening();
+    }
+  }
+
+  @override
+  void dispose() {
+    _voiceService.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF001FF4).withValues(alpha: 0.2),
+            blurRadius: 40,
+            offset: const Offset(0, 15),
+            spreadRadius: -5,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF001FF4),
+                    Color(0xFF4F46E5),
+                    Color(0xFF7C3AED),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              top: -50,
+              left: -50,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      blurRadius: 50,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -40,
+              right: 10,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFEC4899).withValues(alpha: 0.3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEC4899).withValues(alpha: 0.4),
+                      blurRadius: 60,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 0.5, sigmaY: 0.5),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "EdLab AI Assistant",
+                              style: GoogleFonts.inter(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            Text(
+                              "Powered by Gemini 2.0 Pro",
+                              style: GoogleFonts.inter(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: _isListening
+                                    ? "Listening..."
+                                    : "Ask anything about your department...",
+                                hintStyle: GoogleFonts.inter(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  fontSize: 15,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                              ),
+                              onSubmitted: (val) {
+                                if (val.isNotEmpty) widget.onSubmitted(val);
+                                _controller.clear();
+                              },
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: _isVoiceInitialized
+                                ? _toggleVoiceListening
+                                : null,
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: _isListening
+                                    ? Colors.redAccent
+                                    : Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                _isListening
+                                    ? Icons.stop_rounded
+                                    : Icons.mic_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              if (_controller.text.isNotEmpty) {
+                                widget.onSubmitted(_controller.text);
+                                _controller.clear();
+                              }
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 10,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Color(0xFF001FF4),
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ------------------------------------------------------------------
+// ✅ AI INSIGHT CARD (From StaffDashboard)
+// ------------------------------------------------------------------
+class AiInsightCard extends StatefulWidget {
+  const AiInsightCard({super.key});
+
+  @override
+  State<AiInsightCard> createState() => _AiInsightCardState();
+}
+
+class _AiInsightCardState extends State<AiInsightCard> {
+  double _stability = 0.0;
+  int _atRisk = 0;
+  int _improving = 0;
+  bool _loading = true;
+  String _riskLabel = "Calculating...";
+  Color _riskColor = const Color(0xFF15803D);
+  IconData _riskIcon = Icons.shield_outlined;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInsights();
+  }
+
+  Future<void> _loadInsights() async {
+    try {
+      final db = FirebaseFirestore.instance;
+      final snapshot = await db.collection('attendance').get();
+
+      if (snapshot.docs.isEmpty) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+
+      final Map<String, List<bool>> studentRecords = {};
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final studentId =
+            data['studentId']?.toString() ?? data['regNo']?.toString();
+        if (studentId == null) continue;
+        final isPresent =
+            data['isPresent'] == true || data['status'] == 'present';
+        studentRecords.putIfAbsent(studentId, () => []).add(isPresent);
+      }
+
+      if (studentRecords.isEmpty) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+
+      final List<double> percentages = studentRecords.values.map((records) {
+        final present = records.where((p) => p).length;
+        return present / records.length;
+      }).toList();
+
+      final overall = percentages.reduce((a, b) => a + b) / percentages.length;
+      final atRisk = percentages.where((p) => p < 0.75).length;
+      final improving = percentages.where((p) => p >= 0.85).length;
+
+      String label;
+      Color color;
+      IconData icon;
+      if (overall >= 0.85) {
+        label = "Low Risk";
+        color = const Color(0xFF15803D);
+        icon = Icons.shield_outlined;
+      } else if (overall >= 0.70) {
+        label = "Moderate Risk";
+        color = const Color(0xFFD97706);
+        icon = Icons.warning_amber_rounded;
+      } else {
+        label = "High Risk";
+        color = const Color(0xFFDC2626);
+        icon = Icons.crisis_alert_rounded;
+      }
+
+      if (mounted) {
+        setState(() {
+          _stability = overall;
+          _atRisk = atRisk;
+          _improving = improving;
+          _riskLabel = label;
+          _riskColor = color;
+          _riskIcon = icon;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (_stability * 100).round();
+    final gaugeColor = _stability >= 0.85
+        ? const Color(0xFF10B981)
+        : _stability >= 0.70
+        ? const Color(0xFFF59E0B)
+        : const Color(0xFFEF4444);
+
+    return Container(
+      height: 210,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: gaugeColor.withOpacity(0.06),
+            blurRadius: 40,
+            offset: const Offset(0, 16),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.01),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -40,
+              right: -40,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [gaugeColor.withOpacity(0.08), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: gaugeColor,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: gaugeColor.withOpacity(0.4),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            "AI PREDICTIVE INSIGHTS",
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF94A3B8),
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      _buildRefreshButton(),
+                    ],
+                  ),
+                  const Spacer(),
+                  _loading
+                      ? const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Row(
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 94,
+                                  height: 94,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFFF1F5F9),
+                                      width: 8,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 94,
+                                  height: 94,
+                                  child: CircularProgressIndicator(
+                                    value: _stability,
+                                    strokeWidth: 8,
+                                    backgroundColor: Colors.transparent,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      gaugeColor,
+                                    ),
+                                    strokeCap: StrokeCap.round,
+                                  ),
+                                ),
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "$pct%",
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF0F172A),
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -1,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Stability",
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF94A3B8),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 28),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _riskColor.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(100),
+                                      border: Border.all(
+                                        color: _riskColor.withOpacity(0.1),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _riskIcon,
+                                          color: _riskColor,
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _riskLabel,
+                                          style: GoogleFonts.inter(
+                                            color: _riskColor,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildInsightRow(
+                                    Icons.analytics_outlined,
+                                    "$_atRisk At-risk detected",
+                                    const Color(0xFFF43F5E),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildInsightRow(
+                                    Icons.show_chart_rounded,
+                                    "$_improving Performance up",
+                                    const Color(0xFF10B981),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRefreshButton() {
+    return InkWell(
+      onTap: _loadInsights,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Icon(
+          Icons.refresh_rounded,
+          color: Color(0xFF94A3B8),
+          size: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInsightRow(IconData icon, String text, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color.withOpacity(0.7)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.inter(
+              color: const Color(0xFF64748B),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ------------------------------------------------------------------
+// ✅ LIVE METRIC CAROUSEL (From AdminDashboard)
+// ------------------------------------------------------------------
+class LiveMetricCarousel extends StatefulWidget {
+  final Color baseColor;
+  final List<Map<String, dynamic>> dataPoints;
+
+  const LiveMetricCarousel({
+    super.key,
+    required this.baseColor,
+    required this.dataPoints,
+  });
+
+  @override
+  State<LiveMetricCarousel> createState() => _LiveMetricCarouselState();
+}
+
+class _LiveMetricCarouselState extends State<LiveMetricCarousel> {
+  int _currentIndex = 0;
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentIndex = (_currentIndex + 1) % widget.dataPoints.length;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentData = widget.dataPoints[_currentIndex];
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: widget.baseColor.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(color: Colors.white),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                painter: WaveFlowPainter(
+                  color: widget.baseColor.withOpacity(0.1),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          (currentData['title'] as String).toUpperCase(),
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFF94A3B8),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (currentData['isUp'] as bool)
+                              ? const Color(0xFFDCFCE7)
+                              : const Color(0xFFFEE2E2),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           children: [
-                            Text(
-                              "AI TOOLS",
-                              style: TextStyle(
-                                color: Colors.grey[400],
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
+                            Icon(
+                              (currentData['isUp'] as bool)
+                                  ? Icons.trending_up
+                                  : Icons.trending_down,
+                              size: 12,
+                              color: (currentData['isUp'] as bool)
+                                  ? const Color(0xFF16A34A)
+                                  : Colors.redAccent,
                             ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                "NEW",
-                                style: TextStyle(
-                                  color: primaryBlue,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            const SizedBox(width: 4),
+                            Text(
+                              currentData['percent'],
+                              style: GoogleFonts.inter(
+                                color: (currentData['isUp'] as bool)
+                                    ? const Color(0xFF16A34A)
+                                    : Colors.redAccent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      _buildNavItem(Icons.psychology, "AI Insights"),
                     ],
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: _buildNavItem(Icons.logout, "Logout", isLogout: true),
-                ),
-              ],
-            ),
-          ),
-
-          // --- Vertical Divider ---
-          VerticalDivider(width: 1, thickness: 1, color: Colors.grey[200]),
-
-          // --- Main Content Area ---
-          Expanded(
-            child: Column(
-              children: [
-                // Header
-                _buildTopHeader(),
-
-                // Scrollable Body
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Alert Banner
-                        _buildAlertBanner(),
-                        const SizedBox(height: 32),
-
-                        // Split View: Left (AI + Admin) | Right (Profile + Calendar + Notice)
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            // If screen is wide, use Row, else Column
-                            if (constraints.maxWidth > 1000) {
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: Column(
-                                      children: [
-                                        _buildAIToolsSection(),
-                                        const SizedBox(height: 32),
-                                        _buildAdministrationGrid(),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 32),
-                                  Expanded(flex: 1, child: _buildRightPanel()),
-                                ],
-                              );
-                            } else {
-                              return Column(
-                                children: [
-                                  _buildAIToolsSection(),
-                                  const SizedBox(height: 32),
-                                  _buildAdministrationGrid(),
-                                  const SizedBox(height: 32),
-                                  _buildRightPanel(),
-                                ],
-                              );
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Sidebar Widgets ---
-
-  Widget _buildSidebarHeader() {
-    return Container(
-      height: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.transparent)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: primaryBlue,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.science, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 12),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: "EDLAB",
-                  style: TextStyle(
-                    color: textSlate800,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-                WidgetSpan(
-                  child: Transform.translate(
-                    offset: const Offset(2, -8),
-                    child: Text(
-                      "2026",
-                      style: TextStyle(
-                        color: primaryBlue,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(
-    IconData icon,
-    String label, {
-    bool isActive = false,
-    bool isLogout = false,
-  }) {
-    Color bg = isActive ? Colors.blue[50]! : Colors.transparent;
-    Color text = isLogout
-        ? Colors.red[500]!
-        : (isActive ? primaryBlue : textSlate500);
-    Color hoverBg = isLogout ? Colors.red[50]! : Colors.grey[50]!;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: text),
-        title: Text(
-          label,
-          style: TextStyle(
-            color: text,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        onTap: () async {
-          if (isLogout) {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.clear();
-            if (context.mounted) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
-              );
-            }
-          }
-        },
-        hoverColor: hoverBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        dense: true,
-      ),
-    );
-  }
-
-  // --- Header Widgets ---
-
-  Widget _buildTopHeader() {
-    return Container(
-      color: pageBg,
-      child: Column(
-        children: [
-          Container(
-            height: 80,
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Breadcrumbs
-                Row(
-                  children: [
-                    Text(
-                      "Home",
-                      style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        "/",
-                        style: TextStyle(color: Colors.grey[300]),
-                      ),
-                    ),
-                    Text(
-                      "Dashboard",
-                      style: TextStyle(
-                        color: textSlate800,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Search Bar
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 500),
-                    margin: const EdgeInsets.symmetric(horizontal: 32),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Search student records...",
-                        hintStyle: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Colors.grey[400],
-                          size: 20,
-                        ),
-                        suffixIcon: Icon(
-                          Icons.tune,
-                          color: Colors.grey[400],
-                          size: 18,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.grey[200]!),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.grey[200]!),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Right Actions
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.schedule, size: 16, color: textSlate500),
-                          const SizedBox(width: 6),
-                          Text(
-                            "Wed, 18 Sep 2026 | 12:55 PM",
-                            style: TextStyle(
-                              color: textSlate500,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Stack(
-                      children: [
-                        Icon(
-                          Icons.mail_outline,
-                          color: Colors.grey[400],
-                          size: 28,
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            width: 14,
-                            height: 14,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Text(
-                                "1",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 20),
-                    Container(
-                      padding: const EdgeInsets.only(left: 16),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          left: BorderSide(color: Colors.grey[200]!),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.orange[100],
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.orange,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "HOD",
-                                style: TextStyle(
-                                  color: textSlate800,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.expand_more, color: Colors.grey[400]),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Quick Action Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[100]!),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildQuickAction(Icons.groups, "Batch", isActive: true),
-                  _buildQuickAction(Icons.person_search, "Student"),
-                  _buildQuickAction(Icons.mark_email_unread, "Email"),
-                  _buildQuickAction(Icons.summarize, "Report"),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickAction(
-    IconData icon,
-    String label, {
-    bool isActive = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-      decoration: BoxDecoration(
-        color: isActive ? Colors.blue[50] : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        border: isActive
-            ? Border.all(color: Colors.blue.withOpacity(0.2))
-            : null,
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: isActive ? primaryBlue : textSlate500, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: isActive ? primaryBlue : textSlate500,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Main Body Widgets ---
-
-  Widget _buildAlertBanner() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue[100]!),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: primaryBlue,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.info, color: Colors.white, size: 16),
-              ),
-              const SizedBox(width: 12),
-              RichText(
-                text: TextSpan(
-                  style: TextStyle(color: Colors.blue[900], fontSize: 14),
-                  children: const [
-                    TextSpan(
-                      text: "New Message: ",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(text: "You have 1 unread message in your inbox."),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Text(
-            "View Messages",
-            style: TextStyle(
-              color: primaryBlue,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAIToolsSection() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Text(
-              "AI TOOLS",
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.0,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.blue[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                "BETA",
-                style: TextStyle(
-                  color: primaryBlue,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildAICard(
-                "AI Assistant",
-                Icons.smart_toy,
-                aiPurple,
-                "Ask AI...",
-                Icons.arrow_upward,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildAICard(
-                "Insights",
-                Icons.bar_chart,
-                aiGreen,
-                "Analyze...",
-                Icons.arrow_forward,
-                hasMore: true,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAICard(
-    String title,
-    IconData icon,
-    Color color,
-    String hint,
-    IconData actionIcon, {
-    bool hasMore = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              if (!hasMore)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green[100]!),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        "ON",
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (hasMore)
-                Row(
-                  children: [
-                    Text(
-                      "More",
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: color, size: 16),
-                  ],
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              color: textSlate800,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            height: 36,
-            decoration: BoxDecoration(
-              color: pageBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: TextField(
-              style: const TextStyle(fontSize: 12),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 12),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 0,
-                ),
-                border: InputBorder.none,
-                suffixIcon: Icon(actionIcon, color: color, size: 16),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdministrationGrid() {
-    final List<Map<String, dynamic>> items = [
-      {"icon": Icons.groups, "label": "Batches", "color": Colors.blue},
-      {"icon": Icons.person_search, "label": "Student", "color": Colors.orange},
-      {
-        "icon": Icons.grid_view,
-        "label": "Subject Pool",
-        "color": Colors.purple,
-      },
-      {"icon": Icons.subject, "label": "My Subjects", "color": Colors.yellow},
-      {"icon": Icons.chat_bubble, "label": "Complaints", "color": Colors.grey},
-      {"icon": Icons.forum, "label": "Chat Room", "color": Colors.teal},
-      {
-        "icon": Icons.assignment,
-        "label": "Assignment",
-        "color": Colors.red,
-      }, // Using Red for Rose
-      {"icon": Icons.badge, "label": "Staff", "color": Colors.pink},
-      {"icon": Icons.campaign, "label": "Circular", "color": Colors.indigo},
-      {"icon": Icons.event, "label": "College Calendar", "color": Colors.cyan},
-      {"icon": Icons.public, "label": "Website", "color": Colors.blue},
-      {
-        "icon": Icons.folder_open,
-        "label": "Class Material",
-        "color": Colors.lightGreen,
-      }, // Lime alternative
-      {
-        "icon": Icons.person,
-        "label": "My Profile",
-        "color": Colors.purpleAccent,
-      }, // Fuchsia
-      {"icon": Icons.poll, "label": "Survey", "color": Colors.green}, // Emerald
-      {"icon": Icons.school, "label": "Faculty", "color": Colors.amber},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "ADMINISTRATION",
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.0,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            childAspectRatio: 1.1,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            return _buildAdminCard(items[index]);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAdminCard(Map<String, dynamic> item) {
-    Color color = item['color'];
-    // Approximating the "50" shade for BG and "500/600" for icon
-    Color bg = color.withOpacity(0.1);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[50]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            height: 50,
-            width: 50,
-            decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-            child: Icon(item['icon'], color: color, size: 28),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            item['label'],
-            style: TextStyle(
-              color: textSlate800,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Right Panel Widgets ---
-
-  Widget _buildRightPanel() {
-    return Column(
-      children: [
-        // Profile Abstract
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[50]!),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
                   Text(
-                    "Profile Abstract",
-                    style: TextStyle(
-                      color: textSlate800,
-                      fontWeight: FontWeight.bold,
+                    currentData['count'],
+                    style: GoogleFonts.inter(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                      letterSpacing: -1,
                     ),
                   ),
-                  Text(
-                    "Edit",
-                    style: TextStyle(
-                      color: primaryBlue,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                height: 8,
-                width: 200,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 8,
-                width: 120,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // Calendar
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[50]!),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
                   Row(
-                    children: [
-                      Icon(Icons.calendar_month, color: textSlate800, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Calendar",
-                        style: TextStyle(
-                          color: textSlate800,
-                          fontWeight: FontWeight.bold,
+                    children: List.generate(widget.dataPoints.length, (index) {
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.only(right: 4),
+                        height: 4,
+                        width: _currentIndex == index ? 16 : 6,
+                        decoration: BoxDecoration(
+                          color: _currentIndex == index
+                              ? widget.baseColor
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.edit, color: Colors.white, size: 10),
-                        SizedBox(width: 2),
-                        Text(
-                          "Pending Task",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    }),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(Icons.chevron_left, color: Colors.grey[400]),
-                  Text(
-                    "December 2026",
-                    style: TextStyle(
-                      color: textSlate800,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.grey[400]),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Days Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
-                    .map(
-                      (day) => SizedBox(
-                        width: 30,
-                        child: Center(
-                          child: Text(
-                            day,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[400],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 8),
-              // Static Grid Logic to match visual
-              _buildStaticCalendarGrid(),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Notice Board
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[50]!),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.campaign, color: primaryBlue, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Notice Board",
-                    style: TextStyle(
-                      color: textSlate800,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _buildNoticeItem(
-                "15",
-                "SEP",
-                "Class Timing Update",
-                "Regular online classes will be conducted from 8:30am to 1:30pm starting next week.",
-              ),
-              const SizedBox(height: 16),
-              _buildNoticeItem(
-                "12",
-                "SEP",
-                "Exam Schedule",
-                "Mid-term examination schedule has been published. Check circulars.",
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.blue[100]!),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    "View All Notices",
-                    style: TextStyle(
-                      color: primaryBlue,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStaticCalendarGrid() {
-    // Recreating the specific visual from the HTML
-    List<Widget> days = [];
-
-    // Previous month (29, 30)
-    days.add(_calDay("29", isGrey: true));
-    days.add(_calDay("30", isGrey: true));
-
-    // Days 1-18
-    for (int i = 1; i <= 18; i++) {
-      days.add(_calDay(i.toString()));
-    }
-
-    // Day 19 (Yellow Dot)
-    days.add(
-      Stack(
-        alignment: Alignment.center,
-        children: [
-          _calDay("19"),
-          const Positioned(
-            top: 6,
-            right: 6,
-            child: CircleAvatar(radius: 3, backgroundColor: Colors.amber),
-          ),
-        ],
-      ),
-    );
-
-    // Days 20-28 (Red Block)
-    for (int i = 20; i <= 28; i++) {
-      days.add(
-        Container(
-          margin: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: Colors.red[600],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: Text(
-              i.toString(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-        ),
-      );
-    }
-
-    // Days 29-31
-    for (int i = 29; i <= 31; i++) {
-      days.add(_calDay(i.toString()));
-    }
-
-    // Next month (1, 2)
-    days.add(_calDay("1", isGrey: true));
-    days.add(_calDay("2", isGrey: true));
-
-    return GridView.count(
-      shrinkWrap: true,
-      crossAxisCount: 7,
-      physics: const NeverScrollableScrollPhysics(),
-      children: days,
-    );
-  }
-
-  Widget _calDay(String text, {bool isGrey = false}) {
-    return Center(
-      child: Text(
-        text,
-        style: TextStyle(
-          color: isGrey ? Colors.grey[300] : Colors.grey[600],
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildNoticeItem(String day, String month, String title, String desc) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 50,
-          height: 56,
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                month,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
-              Text(
-                day,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: textSlate800,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: textSlate800,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                desc,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 11,
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+class WaveFlowPainter extends CustomPainter {
+  final Color color;
+  WaveFlowPainter({required this.color});
+  @override
+  void paint(Canvas canvas, Size size) {
+    var paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    var path = Path();
+    path.moveTo(0, size.height);
+    path.lineTo(0, size.height * 0.7);
+    path.quadraticBezierTo(
+      size.width * 0.25,
+      size.height * 0.60,
+      size.width * 0.5,
+      size.height * 0.8,
     );
+    path.quadraticBezierTo(
+      size.width * 0.75,
+      size.height * 0.95,
+      size.width,
+      size.height * 0.65,
+    );
+    path.lineTo(size.width, size.height);
+    path.close();
+    canvas.drawPath(path, paint);
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

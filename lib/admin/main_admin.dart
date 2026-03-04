@@ -19,8 +19,8 @@ class AdminApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Edlab',
       theme: ThemeData(
-        fontFamily: GoogleFonts.poppins().fontFamily,
-        textTheme: GoogleFonts.poppinsTextTheme(),
+        fontFamily: GoogleFonts.inter().fontFamily,
+        textTheme: GoogleFonts.interTextTheme(),
         primaryColor: const Color(0xFF1867DC),
         scaffoldBackgroundColor: const Color(0xFFF8F9FB),
         colorScheme: ColorScheme.fromSeed(

@@ -72,7 +72,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
                             children: [
                               Text(
                                 "Evaluation Surveys",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
                                   color: Colors.white,
@@ -82,7 +82,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 "Surveys you've sent to your students",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontSize: 13,
                                   color: Colors.white.withOpacity(0.75),
                                   fontWeight: FontWeight.w500,
@@ -105,7 +105,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               elevation: 0,
-                              textStyle: GoogleFonts.plusJakartaSans(
+                              textStyle: GoogleFonts.inter(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
                               ),
@@ -225,7 +225,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF0F172A),
@@ -258,7 +258,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
                       children: [
                         Text(
                           "Student Feedback Results",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF64748B),
@@ -334,7 +334,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
                   ),
                   child: Text(
                     status,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: isActive
@@ -372,7 +372,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
         const SizedBox(width: 4),
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: color,
@@ -404,7 +404,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
           const SizedBox(height: 24),
           Text(
             "No Surveys Sent Yet",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0F172A),
@@ -414,7 +414,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
           Text(
             "Click 'Send New Survey' to request feedback from your students.",
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: const Color(0xFF64748B),
             ),
@@ -432,7 +432,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
               elevation: 0,
-              textStyle: GoogleFonts.plusJakartaSans(
+              textStyle: GoogleFonts.inter(
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
               ),
@@ -452,11 +452,11 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           "Delete Survey?",
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w800),
         ),
         content: Text(
           "\"$title\" will be permanently removed and students will no longer see it.",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 13,
             color: const Color(0xFF64748B),
           ),
@@ -503,7 +503,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           "Send Survey to Students",
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w800),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -512,7 +512,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
             children: [
               Text(
                 "Survey Title",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF64748B),
@@ -624,7 +624,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
             children: [
               Text(
                 label,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF64748B),
@@ -632,7 +632,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
               ),
               Text(
                 value,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF0F172A),
@@ -661,7 +661,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
           children: [
             Text(
               label,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 color: color,
@@ -670,7 +670,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
             const SizedBox(height: 2),
             Text(
               "$c",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
                 color: color,
@@ -678,7 +678,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
             ),
             Text(
               "${percent.toStringAsFixed(0)}%",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 8,
                 fontWeight: FontWeight.w600,
                 color: color.withValues(alpha: 0.7),
@@ -690,3 +690,4 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
     );
   }
 }
+

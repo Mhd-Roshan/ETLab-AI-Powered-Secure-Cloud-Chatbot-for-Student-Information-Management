@@ -74,7 +74,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
       appBar: AppBar(
         title: Text(
           "KTU Circulars",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1E293B),
           ),
@@ -174,7 +174,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: "Search circulars, ref numbers...",
-            hintStyle: GoogleFonts.plusJakartaSans(
+            hintStyle: GoogleFonts.inter(
               color: const Color(0xFF94A3B8),
               fontSize: 14,
             ),
@@ -211,7 +211,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
               if (val) setState(() => _selectedCategory = categories[index]);
             },
             selectedColor: const Color(0xFF0D2F6B),
-            labelStyle: GoogleFonts.plusJakartaSans(
+            labelStyle: GoogleFonts.inter(
               color: isSelected ? Colors.white : const Color(0xFF64748B),
               fontWeight: FontWeight.bold,
               fontSize: 13,
@@ -261,7 +261,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
                 ),
                 child: Text(
                   data['category']?.toUpperCase() ?? "GENERAL",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF0D2F6B),
@@ -291,7 +291,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
                       const SizedBox(width: 6),
                       Text(
                         "LATEST",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: Colors.red,
@@ -305,7 +305,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
           const SizedBox(height: 16),
           Text(
             data['title'] ?? "No Title",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1E293B),
@@ -319,7 +319,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
               const SizedBox(width: 4),
               Text(
                 data['refNo'] ?? "No Ref",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: const Color(0xFF64748B),
                   fontWeight: FontWeight.w600,
@@ -334,7 +334,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
               const SizedBox(width: 4),
               Text(
                 data['date'] ?? "N/A",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: const Color(0xFF64748B),
                   fontWeight: FontWeight.w600,
@@ -363,7 +363,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
                 const SizedBox(width: 12),
                 Text(
                   "View",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF0D2F6B),
@@ -420,7 +420,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
                       children: [
                         Text(
                           "Official Circular",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             color: const Color(0xFF1E293B),
@@ -428,7 +428,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
                         ),
                         Text(
                           data['category'] ?? "General",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             color: const Color(0xFF64748B),
                           ),
@@ -446,7 +446,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
                 children: [
                   Text(
                     data['title'] ?? "No Title",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF1E293B),
@@ -486,7 +486,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
                           const SizedBox(width: 8),
                           Text(
                             "OPEN OFFICIAL PORTAL",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0D2F6B),
@@ -516,7 +516,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
                   ),
                   child: Text(
                     "Dismiss",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -536,7 +536,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
       children: [
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF94A3B8),
@@ -546,7 +546,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF1E293B),
@@ -582,7 +582,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
           const SizedBox(height: 24),
           Text(
             "No Circulars Found",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF475569),
@@ -608,7 +608,7 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
             const SizedBox(height: 16),
             Text(
               "Sync Error",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
@@ -625,3 +625,4 @@ class _UniversityCircularsScreenState extends State<UniversityCircularsScreen> {
     );
   }
 }
+

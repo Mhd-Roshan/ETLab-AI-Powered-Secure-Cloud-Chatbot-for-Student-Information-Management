@@ -137,7 +137,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         children: [
                           Text(
                             "Department Attendance",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
@@ -445,7 +445,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           ),
           child: Text(
             title,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: isSelected ? Colors.white : const Color(0xFF64748B),
@@ -475,7 +475,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           ),
           child: Text(
             division,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: isSelected ? Colors.white : const Color(0xFF64748B),
@@ -507,7 +507,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500)),
-                Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(value, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)),
               ],
             ),
           ],
@@ -531,7 +531,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           const SizedBox(height: 16),
           Text(
             "No students found in $_selectedDept ($_selectedDivision)",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 16, 
               fontWeight: FontWeight.w600,
               color: const Color(0xFF0F172A),

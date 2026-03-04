@@ -32,3 +32,4 @@ class ModuleScreen extends StatelessWidget {
     );
   }
 }
+

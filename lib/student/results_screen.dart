@@ -308,43 +308,58 @@ class _ResultsScreenState extends State<ResultsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF001FF4),
+        // Liquid glass: frosted clear background
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.80),
+            Colors.white.withOpacity(0.40),
+          ],
+        ),
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.85), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF001FF4).withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.40),
+            blurRadius: 6,
+            spreadRadius: -2,
+            offset: const Offset(0, -1),
           ),
         ],
       ),
       child: Column(
         children: [
-          const Text(
-            "OVERALL SMESTER PERFORMANCE",
+          Text(
+            "OVERALL SEMESTER PERFORMANCE",
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
-              color: Colors.white70,
+              color: Colors.grey.shade600,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             "${percentage.toStringAsFixed(1)}%",
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 48,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: Colors.grey.shade900,
               height: 1,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             "${marks.toInt()} / $max Total Marks Obtained",
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: Colors.white,
+              color: Colors.grey.shade700,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -421,22 +436,33 @@ class _ResultsScreenState extends State<ResultsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF001FF4).withValues(alpha: 0.1),
+              // Liquid glass Header
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withOpacity(0.90),
+                  Colors.white.withOpacity(0.60),
+                ],
+              ),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade100, width: 1.5),
+              ),
             ),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   flex: 3,
                   child: Text(
                     'Subject',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF001FF4),
+                      color: Colors.grey.shade800,
                     ),
                   ),
                 ),
@@ -467,10 +493,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF001FF4),
+          color: Colors.grey.shade800,
         ),
       ),
     );
@@ -567,3 +593,4 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
   }
 }
+

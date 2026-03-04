@@ -192,7 +192,7 @@ class StaffTimetableScreen extends StatelessWidget {
               children: [
                 Text(
                   day.toUpperCase(),
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.5,
@@ -258,7 +258,7 @@ class StaffTimetableScreen extends StatelessWidget {
                           ),
                           child: Text(
                             entry.startTime,
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
                               color: entry.color,
@@ -268,7 +268,7 @@ class StaffTimetableScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           "to ${entry.endTime}",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF94A3B8),
@@ -292,7 +292,7 @@ class StaffTimetableScreen extends StatelessWidget {
                         children: [
                           Text(
                             entry.subject,
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF1E293B),
@@ -310,7 +310,7 @@ class StaffTimetableScreen extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 entry.location,
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xFF64748B),
@@ -347,3 +347,4 @@ class _TimetableEntry {
     this.color,
   );
 }
+

@@ -208,7 +208,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
   Widget _buildBreadcrumb(String label, {bool isLast = false}) {
     return Text(
       label,
-      style: GoogleFonts.plusJakartaSans(
+      style: GoogleFonts.inter(
         color: isLast ? Colors.white : Colors.white.withOpacity(0.7),
         fontSize: 12,
         fontWeight: isLast ? FontWeight.w700 : FontWeight.w500,
@@ -262,7 +262,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     color: const Color(0xFF64748B),
                     fontWeight: FontWeight.w600,
@@ -271,7 +271,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 24,
                     color: const Color(0xFF0F172A),
                     fontWeight: FontWeight.w800,
@@ -325,7 +325,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
             children: [
               Text(
                 "DOWNLOADS",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF94A3B8),
@@ -650,7 +650,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
             const SizedBox(width: 10),
             Text(
               label,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: textColor,
@@ -703,7 +703,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
             const SizedBox(width: 12),
             Text(
               "Calculation Settings",
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -729,7 +729,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
                 ),
                 child: Text(
                   "Formula: Internal = (Attendance/10) + Assignments + Series Tests",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: const Color(0xFF0369A1),
                     fontWeight: FontWeight.w600,
@@ -757,7 +757,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
         children: [
           Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 13,
               color: const Color(0xFF475569),
             ),
@@ -770,7 +770,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
             ),
             child: Text(
               value,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF001FF4),
@@ -793,7 +793,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
             const SizedBox(width: 12),
             Text(
               "Instructions",
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -856,7 +856,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
             ),
             child: Text(
               num,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF001FF4),
@@ -867,7 +867,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 color: const Color(0xFF334155),
               ),
@@ -895,7 +895,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
             const SizedBox(width: 8),
             Text(
               label,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF475569),
@@ -923,7 +923,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               children: [
                 Text(
                   "Student List",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0F172A),
@@ -955,7 +955,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
                           decoration: InputDecoration(
                             isDense: true,
                             hintText: "Search by name or reg no...",
-                            hintStyle: GoogleFonts.plusJakartaSans(
+                            hintStyle: GoogleFonts.inter(
                               fontSize: 13,
                               color: const Color(0xFF94A3B8),
                             ),
@@ -1109,7 +1109,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
                 children: [
                   Text(
                     "Showing ${filteredStudents.length} of ${students.length} students",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       color: const Color(0xFF64748B),
                       fontWeight: FontWeight.w500,
@@ -1134,7 +1134,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
       child: Text(
         label,
         textAlign: center ? TextAlign.center : TextAlign.left,
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.w800,
           color: const Color(0xFF64748B),
@@ -1158,7 +1158,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               flex: 1,
               child: Text(
                 data['rollNo'] ?? "-",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1168,7 +1168,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               flex: 2,
               child: Text(
                 data['name'] ?? "-",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1179,7 +1179,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               child: Center(
                 child: Text(
                   "${data['attendance'] ?? 0}%",
-                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                  style: GoogleFonts.inter(fontSize: 13),
                 ),
               ),
             ),
@@ -1188,7 +1188,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               child: Center(
                 child: Text(
                   "${data['assignments'] ?? 0}",
-                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                  style: GoogleFonts.inter(fontSize: 13),
                 ),
               ),
             ),
@@ -1197,7 +1197,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               child: Center(
                 child: Text(
                   "${data['seriesTests'] ?? 0}",
-                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                  style: GoogleFonts.inter(fontSize: 13),
                 ),
               ),
             ),
@@ -1206,7 +1206,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               child: Center(
                 child: Text(
                   "${data['internalMark'] ?? 0}",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF001FF4),
@@ -1306,7 +1306,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
         children: [
           Text(
             "No student data available.",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: const Color(0xFF94A3B8),
               fontStyle: FontStyle.italic,
@@ -1464,7 +1464,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
       ),
       child: Text(
         label,
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF94A3B8),
@@ -1473,3 +1473,4 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
     );
   }
 }
+

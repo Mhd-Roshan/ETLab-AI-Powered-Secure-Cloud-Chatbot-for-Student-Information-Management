@@ -1,0 +1,687 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:edlab/hod/widgets/hod_sidebar.dart';
+import 'package:edlab/hod/widgets/hod_header.dart';
+import 'package:edlab/services/hod_service.dart';
+import 'package:edlab/login.dart';
+
+class HodProfileScreen extends StatefulWidget {
+  final String userId;
+  const HodProfileScreen({super.key, required this.userId});
+
+  @override
+  State<HodProfileScreen> createState() => _HodProfileScreenState();
+}
+
+class _HodProfileScreenState extends State<HodProfileScreen> {
+  HodService? _serviceInstance;
+  HodService get service => _serviceInstance ??= HodService();
+
+  void _changePassword() {
+    final currentPass = TextEditingController();
+    final newPass = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          "Security Update",
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: currentPass,
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: "Current Password",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: newPass,
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: "New Password",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Password updated successfully!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF001FF4),
+            ),
+            child: const Text("Update", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(String title, String field, String currentValue) {
+    final controller = TextEditingController(text: currentValue);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          "Edit $title",
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: "Enter new $title",
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+          ),
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Cancel", style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await service.updateProfile(widget.userId, {
+                  field: controller.text,
+                });
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("$title updated in database!"),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Error: $e"),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF001FF4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Save", style: GoogleFonts.inter(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: service.getProfile(widget.userId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return _buildProfileUI({
+              'fullName': 'HOD User',
+              'email': widget.userId,
+              'department': 'Master Of Computer Application',
+              'role': 'Head of Department',
+              'notifications': true,
+              'darkMode': false,
+              'subjects': 'Department Management, Advanced Systems',
+            });
+          }
+
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          return _buildProfileUI(data);
+        },
+      ),
+    );
+  }
+
+  Widget _buildProfileUI(Map<String, dynamic> data) {
+    final fullName = data['fullName'] ?? data['username'] ?? 'HOD User';
+    final email = data['email'] ?? widget.userId;
+    final department = data['department'] ?? 'Master Of Computer Application';
+    final role = data['role'] ?? 'Head of Department';
+    final subjects =
+        data['subjects'] ?? 'Department Management, Advanced Systems';
+    final notifications = data['notifications'] ?? true;
+    final darkMode = data['darkMode'] ?? false;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        HodSidebar(activeIndex: -1, userId: widget.userId),
+        Expanded(
+          child: Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 350,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF001FF4),
+                        Color(0xFF4F46E5),
+                        Color(0xFF7C3AED),
+                      ],
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: -100,
+                        right: -100,
+                        child: Container(
+                          width: 400,
+                          height: 400,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: -50,
+                        left: -50,
+                        child: Container(
+                          width: 300,
+                          height: 300,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.pinkAccent.withValues(alpha: 0.1),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 32,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    HodHeader(
+                      title: "Account Hub",
+                      isWhite: true,
+                      userId: widget.userId,
+                    ),
+                    const SizedBox(height: 60),
+                    _buildPremiumProfileCard(
+                      fullName,
+                      role,
+                      department,
+                      subjects,
+                    ),
+                    const SizedBox(height: 40),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionHeader("Account Intelligence"),
+                              _buildGlassContainer([
+                                _buildEditableListTile(
+                                  icon: Icons.person_rounded,
+                                  color: const Color(0xFF001FF4),
+                                  title: "Professional Name",
+                                  value: fullName,
+                                  onTap: () => _showEditDialog(
+                                    "Full Name",
+                                    "fullName",
+                                    fullName,
+                                  ),
+                                ),
+                                _buildDivider(),
+                                _buildEditableListTile(
+                                  icon: Icons.alternate_email_rounded,
+                                  color: const Color(0xFFF59E0B),
+                                  title: "Institutional Email",
+                                  value: email,
+                                  onTap: () =>
+                                      _showEditDialog("Email", "email", email),
+                                ),
+                                _buildDivider(),
+                                _buildEditableListTile(
+                                  icon: Icons.business_rounded,
+                                  color: const Color(0xFF10B981),
+                                  title: "Primary Department",
+                                  value: department,
+                                  onTap: () => _showEditDialog(
+                                    "Department",
+                                    "department",
+                                    department,
+                                  ),
+                                ),
+                                _buildDivider(),
+                                _buildEditableListTile(
+                                  icon: Icons.menu_book_rounded,
+                                  color: const Color(0xFF8B5CF6),
+                                  title: "Professional Focus",
+                                  value: subjects,
+                                  onTap: () => _showEditDialog(
+                                    "Handling Subjects",
+                                    "subjects",
+                                    subjects,
+                                  ),
+                                ),
+                              ]),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 32),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionHeader("System Experience"),
+                              _buildGlassContainer([
+                                _buildSwitchTile(
+                                  icon: Icons.notifications_active_rounded,
+                                  color: const Color(0xFFEF4444),
+                                  title: "Real-time Alerts",
+                                  value: notifications,
+                                  onChanged: (v) => service.updateProfile(
+                                    widget.userId,
+                                    {'notifications': v},
+                                  ).ignore(),
+                                ),
+                                _buildDivider(),
+                                _buildSwitchTile(
+                                  icon: Icons.dark_mode_rounded,
+                                  color: const Color(0xFF8B5CF6),
+                                  title: "Night Mode",
+                                  value: darkMode,
+                                  onChanged: (v) => service.updateProfile(
+                                    widget.userId,
+                                    {'darkMode': v},
+                                  ),
+                                ),
+                              ]),
+                              const SizedBox(height: 32),
+                              _buildSectionHeader("Security & Access"),
+                              _buildGlassContainer([
+                                ListTile(
+                                  leading: _buildIcon(
+                                    Icons.lock_person_rounded,
+                                    const Color(0xFF0EA5E9),
+                                  ),
+                                  title: Text(
+                                    "Safety Credentials",
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                      color: const Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    "Update password regularly",
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      color: const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                  onTap: _changePassword,
+                                ),
+                              ]),
+                              const SizedBox(height: 48),
+                              _buildSignOutButton(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPremiumProfileCard(
+    String fullName,
+    String role,
+    String dept,
+    String subjects,
+  ) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 40,
+            offset: const Offset(0, 20),
+            spreadRadius: -10,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -20,
+              right: -20,
+              child: Icon(
+                Icons.school_rounded,
+                size: 180,
+                color: const Color(0xFFF1F5F9).withValues(alpha: 0.5),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(40),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF001FF4), Color(0xFF4F46E5)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF001FF4).withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.white,
+                      backgroundImage: NetworkImage(
+                        'https://ui-avatars.com/api/?name=$fullName&background=random&size=200',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fullName,
+                          style: GoogleFonts.inter(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                            letterSpacing: -1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          role.toUpperCase(),
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF001FF4),
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            _buildPremiumBadge(
+                              Icons.business_rounded,
+                              dept,
+                              const Color(0xFFF1F5F9),
+                            ),
+                            ...subjects
+                                .split(',')
+                                .map(
+                                  (s) => _buildPremiumBadge(
+                                    Icons.menu_book_rounded,
+                                    s.trim(),
+                                    const Color(0xFFEEF2FF),
+                                    textColor: const Color(0xFF001FF4),
+                                  ),
+                                ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumBadge(
+    IconData icon,
+    String label,
+    Color bg, {
+    Color? textColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: textColor ?? const Color(0xFF64748B)),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: textColor ?? const Color(0xFF475569),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlassContainer(List<Widget> children) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 20),
+      child: Text(
+        title.toUpperCase(),
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: const Color(0xFF94A3B8),
+          letterSpacing: 2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditableListTile({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      leading: _buildIcon(icon, color),
+      title: Text(
+        title,
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF94A3B8),
+        ),
+      ),
+      subtitle: Text(
+        value,
+        style: GoogleFonts.inter(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF1E293B),
+        ),
+      ),
+      trailing: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF8FAFC),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.edit_rounded,
+          color: Color(0xFF001FF4),
+          size: 18,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwitchTile({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required bool value,
+    required Function(bool) onChanged,
+  }) {
+    return SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      secondary: _buildIcon(icon, color),
+      activeThumbColor: const Color(0xFF001FF4),
+      title: Text(
+        title,
+        style: GoogleFonts.inter(
+          fontWeight: FontWeight.w700,
+          fontSize: 14,
+          color: const Color(0xFF1E293B),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIcon(IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Icon(icon, color: color, size: 22),
+    );
+  }
+
+  Widget _buildDivider() =>
+      const Divider(height: 1, indent: 80, color: Color(0xFFF1F5F9));
+
+  Widget _buildSignOutButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (r) => false,
+        ),
+        icon: const Icon(Icons.logout_rounded, size: 20),
+        label: const Text("TERMINATE SESSION"),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFFFF1F2),
+          foregroundColor: const Color(0xFFE11D48),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFFECDD3)),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1,
+          ),
+        ),
+      ),
+    );
+  }
+}

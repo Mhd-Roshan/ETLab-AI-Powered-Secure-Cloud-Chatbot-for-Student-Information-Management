@@ -67,7 +67,7 @@ class _HostelScreenState extends State<HostelScreen> {
                 const SizedBox(width: 12),
                 Text(
                   isEdit ? "Edit Room Allocation" : "Allocate Room",
-                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -463,7 +463,7 @@ class _HostelScreenState extends State<HostelScreen> {
                         children: [
                           Text(
                             "Hostel Management",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
@@ -895,7 +895,7 @@ class _HostelScreenState extends State<HostelScreen> {
             const SizedBox(height: 16),
             Text(
               value,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF0F172A),
@@ -945,7 +945,7 @@ class _HostelScreenState extends State<HostelScreen> {
           ),
           child: Text(
             title,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: isSelected ? Colors.white : const Color(0xFF64748B),
@@ -966,7 +966,7 @@ class _HostelScreenState extends State<HostelScreen> {
           const SizedBox(height: 16),
           Text(
             "No residents in $_selectedBlock",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF0F172A),
@@ -982,3 +982,4 @@ class _HostelScreenState extends State<HostelScreen> {
     );
   }
 }
+

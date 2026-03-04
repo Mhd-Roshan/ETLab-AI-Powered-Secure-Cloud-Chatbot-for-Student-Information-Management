@@ -28,7 +28,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           "Security Update",
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -90,7 +90,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           "Edit $title",
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
         ),
         content: TextField(
           controller: controller,
@@ -100,14 +100,14 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
           ),
-          style: GoogleFonts.plusJakartaSans(),
+          style: GoogleFonts.inter(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               "Cancel",
-              style: GoogleFonts.plusJakartaSans(color: Colors.grey),
+              style: GoogleFonts.inter(color: Colors.grey),
             ),
           ),
           ElevatedButton(
@@ -143,7 +143,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
             ),
             child: Text(
               "Save",
-              style: GoogleFonts.plusJakartaSans(color: Colors.white),
+              style: GoogleFonts.inter(color: Colors.white),
             ),
           ),
         ],
@@ -373,7 +373,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
                                   ),
                                   title: Text(
                                     "Safety Credentials",
-                                    style: GoogleFonts.plusJakartaSans(
+                                    style: GoogleFonts.inter(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
                                       color: const Color(0xFF1E293B),
@@ -381,7 +381,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
                                   ),
                                   subtitle: Text(
                                     "Update password regularly",
-                                    style: GoogleFonts.plusJakartaSans(
+                                    style: GoogleFonts.inter(
                                       fontSize: 11,
                                       color: const Color(0xFF64748B),
                                     ),
@@ -477,7 +477,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
                       children: [
                         Text(
                           fullName,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 36,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0F172A),
@@ -487,7 +487,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
                         const SizedBox(height: 6),
                         Text(
                           role.toUpperCase(),
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF001FF4),
@@ -547,7 +547,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
           const SizedBox(width: 8),
           Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: textColor ?? const Color(0xFF475569),
@@ -582,7 +582,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
       padding: const EdgeInsets.only(left: 4, bottom: 20),
       child: Text(
         title.toUpperCase(),
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.w800,
           color: const Color(0xFF94A3B8),
@@ -605,7 +605,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
       leading: _buildIcon(icon, color),
       title: Text(
         title,
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: const Color(0xFF94A3B8),
@@ -613,7 +613,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
       ),
       subtitle: Text(
         value,
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF1E293B),
@@ -649,7 +649,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
       activeThumbColor: const Color(0xFF001FF4),
       title: Text(
         title,
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontWeight: FontWeight.w700,
           fontSize: 14,
           color: const Color(0xFF1E293B),
@@ -692,7 +692,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
             borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: Color(0xFFFECDD3)),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: GoogleFonts.inter(
             fontWeight: FontWeight.w800,
             letterSpacing: 1,
           ),
@@ -701,3 +701,4 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
     );
   }
 }
+

@@ -11,7 +11,10 @@ import 'materials_screen.dart';
 import 'fees_screen.dart';
 import 'notifications_screen.dart';
 import 'survey_screen.dart';
+import 'subject_screen.dart';
 import 'widgets/notification_bell.dart';
+import 'widgets/liquid_glass_button.dart';
+import '../services/student_service.dart';
 
 class AcademicsScreen extends StatefulWidget {
   final String? attendancePercentage;
@@ -23,6 +26,7 @@ class AcademicsScreen extends StatefulWidget {
 }
 
 class _AcademicsScreenState extends State<AcademicsScreen> {
+  final StudentService _studentService = StudentService();
   final Stream<QuerySnapshot> _announcementsStream = FirebaseFirestore.instance
       .collection('announcements')
       .orderBy('postedDate', descending: true)
@@ -34,32 +38,28 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
       // No BottomNavigationBar here! It should be in your Main Dashboard file.
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTopBar(),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTopBar(),
 
-              const SizedBox(height: 24),
-              // Real-world Firestore Section
-              _buildRealtimeUpcomingSection(),
-              const SizedBox(height: 24),
-              _buildGridMenu(context),
-            ],
-          ),
+            const SizedBox(height: 24),
+            // Real-world Firestore Section
+            _buildRealtimeUpcomingSection(),
+            const SizedBox(height: 24),
+            _buildGridMenu(context),
+          ],
         ),
       ),
     );
   }
 
-  // --- 1. Top Bar ---
   Widget _buildTopBar() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Using a Drawer trigger if you have a drawer, else just an icon
         Row(
           children: [
             Container(
@@ -73,7 +73,7 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
             const SizedBox(width: 6),
             Text(
               "LIVE",
-              style: GoogleFonts.pressStart2p(
+              style: GoogleFonts.inter(
                 color: Colors.green,
                 fontWeight: FontWeight.bold,
                 fontSize: 10,
@@ -98,8 +98,9 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
               "Upcoming",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            GestureDetector(
-              onTap: () {
+            LiquidGlassButton(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -107,23 +108,9 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
                   ),
                 );
               },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  "See All",
-                  style: TextStyle(
-                    color: Color(0xFF3D6AF2),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
+              label: const Text(
+                "See All",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
               ),
             ),
           ],
@@ -206,59 +193,68 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
   }
 
   Widget _buildEmptyState() {
-    final now = DateTime.now();
-    final isEvenDay = now.day % 2 == 0;
+    return StreamBuilder<QuerySnapshot>(
+      stream: _studentService.getEvents(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    // Date formatting for display
-    final todayStr = DateFormat('MMM d, yyyy').format(now);
-    final tomorrow = now.add(const Duration(days: 1));
-    final tomorrowStr = DateFormat('MMM d, yyyy').format(tomorrow);
+        final events = snapshot.data?.docs ?? [];
+        if (events.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Text(
+                "No upcoming events",
+                style: GoogleFonts.inter(color: Colors.grey, fontSize: 13),
+              ),
+            ),
+          );
+        }
 
-    return Column(
-      children: [
-        if (isEvenDay) ...[
-          _buildEventCard(
-            icon: Icons.beach_access,
-            iconColor: Colors.deepOrange,
-            bgColor: Colors.deepOrange.withOpacity(0.1),
-            title: "Today's Holiday: Maha Shivratri",
-            subtitle: "College Closed • $todayStr",
-          ),
-          const SizedBox(height: 12),
-          _buildEventCard(
-            icon: Icons.emoji_events,
-            iconColor: Colors.amber.shade700,
-            bgColor: Colors.amber.withOpacity(0.1),
-            title: "Tomorrow: Tech Fest Innovate '26",
-            subtitle: "Main Campus • Starts $tomorrowStr",
-          ),
-        ] else ...[
-          _buildEventCard(
-            icon: Icons.emoji_events,
-            iconColor: Colors.amber.shade700,
-            bgColor: Colors.amber.withOpacity(0.1),
-            title: "Current Event: Annual Sports Day",
-            subtitle: "College Athletics Ground • $todayStr",
-          ),
-          const SizedBox(height: 12),
-          _buildEventCard(
-            icon: Icons.edit_calendar,
-            iconColor: Colors.red,
-            bgColor: Colors.red.withOpacity(0.1),
-            title: "Reminder: Mid-Term Exam (MCA101)",
-            subtitle: "Exam Hall A • Starts $tomorrowStr",
-          ),
-        ],
-        const SizedBox(height: 12),
-        _buildEventCard(
-          icon: Icons.mic,
-          iconColor: Colors.deepPurple,
-          bgColor: Colors.deepPurple.withOpacity(0.1),
-          title: "Guest Lecture: Future of AI",
-          subtitle: "Auditorium • Next Class Session",
-        ),
-      ],
+        return Column(
+          children: events.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final iconName = data['icon'] ?? 'event';
+            final colorHex = data['color'] ?? '0xFF001FF4';
+            final iconColor = Color(int.parse(colorHex));
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildEventCard(
+                icon: _getIconData(iconName),
+                iconColor: iconColor,
+                bgColor: iconColor.withOpacity(0.1),
+                title: data['title'] ?? 'Event',
+                subtitle: data['subtitle'] ?? 'Upcoming session',
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
+  }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'beach_access':
+        return Icons.beach_access_rounded;
+      case 'emoji_events':
+        return Icons.emoji_events_rounded;
+      case 'mic':
+        return Icons.mic_external_on_rounded;
+      case 'edit_calendar':
+        return Icons.edit_calendar_rounded;
+      case 'event':
+        return Icons.event_note_rounded;
+      case 'school':
+        return Icons.school_rounded;
+      case 'verified':
+        return Icons.verified_rounded;
+      default:
+        return Icons.info_outline_rounded;
+    }
   }
 
   Widget _buildEventCard({
@@ -270,29 +266,52 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.65),
+            Colors.white.withOpacity(0.25),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withOpacity(0.85), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 15,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.40),
+            blurRadius: 6,
+            spreadRadius: -2,
+            offset: const Offset(0, -1),
           ),
         ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: bgColor,
-          radius: 24,
+        leading: Container(
+          height: 48,
+          width: 48,
+          decoration: BoxDecoration(
+            color: bgColor.withOpacity(0.3),
+            shape: BoxShape.circle,
+            border: Border.all(color: iconColor.withOpacity(0.2), width: 1),
+          ),
           child: Icon(icon, color: iconColor, size: 22),
         ),
         title: Text(
           title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+            color: Colors.grey.shade800,
+          ),
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
@@ -300,7 +319,7 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
             subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
           ),
         ),
       ),
@@ -311,133 +330,155 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
   Widget _buildGridMenu(BuildContext context) {
     final List<Map<String, dynamic>> menuItems = [
       {
-        'icon': Icons.calendar_today,
+        'icon': Icons.calendar_today_rounded,
         'label': 'Attendance',
-        'color': Colors.blue,
+        'color': const Color(0xFF001FF4),
       },
-      {'icon': Icons.school, 'label': 'Results', 'color': Colors.indigo},
-      {'icon': Icons.edit_document, 'label': 'Exams', 'color': Colors.red},
-      {'icon': Icons.folder, 'label': 'Materials', 'color': Colors.orange},
-      {'icon': Icons.payments, 'label': 'Fees', 'color': Colors.teal},
       {
-        'icon': Icons.event,
+        'icon': Icons.bar_chart_rounded,
+        'label': 'Results',
+        'color': Colors.purple,
+      },
+      {
+        'icon': Icons.edit_calendar_rounded,
+        'label': 'Exams',
+        'color': Colors.red,
+      },
+      {
+        'icon': Icons.folder_copy_rounded,
+        'label': 'Materials',
+        'color': Colors.orange,
+      },
+      {'icon': Icons.payments_rounded, 'label': 'Fees', 'color': Colors.teal},
+      {
+        'icon': Icons.calendar_month_rounded,
         'label': 'Calendar',
         'color': Colors.blueAccent,
-      }, // Links to Timetable
+      },
       {
-        'icon': Icons.assignment,
+        'icon': Icons.assignment_rounded,
         'label': 'Assignments',
-        'color': Colors.deepPurple,
+        'color': Colors.indigo,
       },
-      {
-        'icon': Icons.quiz,
-        'label': 'Q-Bank',
-        'color': Colors.tealAccent.shade700,
-      },
-      {'icon': Icons.book, 'label': 'Syllabus', 'color': Colors.cyan},
-      {'icon': Icons.work, 'label': 'Placement', 'color': Colors.purple},
-      {'icon': Icons.newspaper, 'label': 'News', 'color': Colors.red},
-      {'icon': Icons.poll, 'label': 'Survey', 'color': Colors.amber},
+      {'icon': Icons.quiz_rounded, 'label': 'Q-Bank', 'color': Colors.green},
+      {'icon': Icons.book_rounded, 'label': 'Subjects', 'color': Colors.cyan},
     ];
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 0.75,
+        crossAxisCount: 3,
+        childAspectRatio: 0.9,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
       itemCount: menuItems.length,
       itemBuilder: (context, index) {
         final item = menuItems[index];
+        void navigateTo() {
+          // Navigation Logic
+          if (item['label'] == 'Calendar') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TimetableScreen()),
+            );
+          } else if (item['label'] == 'Attendance') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AttendanceScreen(
+                  studentRegNo: widget.studentId,
+                  overallAttendance: widget.attendancePercentage,
+                ),
+              ),
+            );
+          } else if (item['label'] == 'Results') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ResultsScreen()),
+            );
+          } else if (item['label'] == 'Exams') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ExamsScreen(studentId: widget.studentId),
+              ),
+            );
+          } else if (item['label'] == 'Fees') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FeesScreen(studentId: widget.studentId),
+              ),
+            );
+          } else if (item['label'] == 'Assignments') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    AssignmentsScreen(studentId: widget.studentId),
+              ),
+            );
+          } else if (item['label'] == 'Materials') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MaterialsScreen()),
+            );
+          } else if (item['label'] == 'Survey') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    SurveyScreen(studentId: widget.studentId ?? ''),
+              ),
+            );
+          } else if (item['label'] == 'Subjects') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    SyllabusScreen(studentRegNo: widget.studentId ?? ''),
+              ),
+            );
+          } else if (item['label'] == 'Q-Bank') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("${item['label']} feature coming soon! ✨"),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            );
+          }
+        }
+
         return GestureDetector(
-          onTap: () {
-            // Navigation Logic
-            if (item['label'] == 'Calendar') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TimetableScreen(),
-                ),
-              );
-            } else if (item['label'] == 'Attendance') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AttendanceScreen(
-                    studentRegNo: widget.studentId,
-                    overallAttendance: widget.attendancePercentage,
-                  ),
-                ),
-              );
-            } else if (item['label'] == 'Results') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ResultsScreen()),
-              );
-            } else if (item['label'] == 'Exams') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ExamsScreen(studentId: widget.studentId),
-                ),
-              );
-            } else if (item['label'] == 'Fees') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FeesScreen(studentId: widget.studentId),
-                ),
-              );
-            } else if (item['label'] == 'Assignments') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      AssignmentsScreen(studentId: widget.studentId),
-                ),
-              );
-            } else if (item['label'] == 'Syllabus') {
-              // Placeholder for Syllabus
-            } else if (item['label'] == 'Materials') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MaterialsScreen(),
-                ),
-              );
-            } else if (item['label'] == 'Survey') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      SurveyScreen(studentId: widget.studentId ?? ''),
-                ),
-              );
-            }
-          },
+          onTap: navigateTo,
+          behavior: HitTestBehavior.opaque,
           child: Column(
             children: [
-              Container(
-                height: 56,
-                width: 56,
-                decoration: BoxDecoration(
-                  color: item['color'].withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
+              LiquidGlassButton(
+                height: 60,
+                width: 60,
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(30),
+                onPressed: navigateTo,
+                label: Icon(
+                  item['icon'],
+                  color: item['color'].withOpacity(0.8),
+                  size: 30,
                 ),
-                child: Icon(item['icon'], color: item['color'], size: 26),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 item['label'],
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[800],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

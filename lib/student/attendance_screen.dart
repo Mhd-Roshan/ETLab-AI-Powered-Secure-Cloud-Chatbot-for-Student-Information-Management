@@ -114,6 +114,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               'total': 8,
             },
             {
+              'subject': 'ADVANCED SOFTWARE ENGINEERING',
+              'code': 'MCA103',
+              'present': 6,
+              'total': 8,
+            },
+            {
               'subject': 'WEB PROGRAMMING LAB',
               'code': 'MCA106',
               'present': 6,

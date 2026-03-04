@@ -36,7 +36,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
         ),
         title: Text(
           "Student Surveys",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             color: const Color(0xFF0F172A),
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -69,7 +69,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
         children: [
           Text(
             "Available Surveys",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0F172A),
@@ -79,7 +79,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
           const SizedBox(height: 8),
           Text(
             "Your feedback helps us improve your learning experience.",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: const Color(0xFF64748B),
               fontWeight: FontWeight.w500,
@@ -206,18 +206,41 @@ class _SurveyScreenState extends State<SurveyScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: alreadySubmitted
-                        ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                        : const Color(0xFF001FF4).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    // Liquid glass: frosted clear background
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withOpacity(0.80),
+                        Colors.white.withOpacity(0.40),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.90),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.40),
+                        blurRadius: 6,
+                        spreadRadius: -2,
+                        offset: const Offset(0, -1),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     alreadySubmitted
                         ? Icons.check_circle_rounded
                         : Icons.poll_rounded,
                     color: alreadySubmitted
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFF001FF4),
+                        ? const Color(0xFF10B981).withOpacity(0.8)
+                        : Colors.grey.shade700,
                     size: 24,
                   ),
                 ),
@@ -230,7 +253,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: alreadySubmitted
@@ -241,7 +264,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                       const SizedBox(height: 4),
                       Text(
                         "$subject • $type",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: const Color(0xFF94A3B8),
                           fontWeight: FontWeight.w600,
@@ -269,7 +292,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                         ),
                         child: Text(
                           "Submitted ✓",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF10B981),
@@ -285,7 +308,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                     const SizedBox(height: 8),
                     Text(
                       dateStr,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 10,
                         color: const Color(0xFF94A3B8),
                         fontWeight: FontWeight.w600,
@@ -353,7 +376,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
             const SizedBox(height: 24),
             Text(
               "Rate your experience",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0F172A),
@@ -362,7 +385,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
             const SizedBox(height: 4),
             Text(
               title,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: const Color(0xFF64748B),
                 fontWeight: FontWeight.w600,
@@ -372,7 +395,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
               const SizedBox(height: 2),
               Text(
                 subject,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   color: const Color(0xFF94A3B8),
                 ),
@@ -403,7 +426,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
             Center(
               child: Text(
                 "You can only submit once — choose carefully.",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   color: const Color(0xFF94A3B8),
                 ),
@@ -428,24 +451,48 @@ class _SurveyScreenState extends State<SurveyScreen> {
           onTap: _isSubmitting
               ? null
               : () => _submitFeedback(context, docId, label),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
           child: Container(
             width: 86,
             height: 86,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withValues(alpha: 0.25)),
+              // Liquid glass: frosted clear background
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withOpacity(0.70),
+                  Colors.white.withOpacity(0.30),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.90),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.40),
+                  blurRadius: 6,
+                  spreadRadius: -2,
+                  offset: const Offset(0, -1),
+                ),
+              ],
             ),
             child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 36)),
+              child: Text(emoji, style: const TextStyle(fontSize: 34)),
             ),
           ),
         ),
         const SizedBox(height: 12),
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: color,
@@ -564,7 +611,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
           const SizedBox(height: 24),
           Text(
             "No active surveys",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0F172A),
@@ -573,7 +620,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
           const SizedBox(height: 12),
           Text(
             "Check back later for new feedback forms.",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: const Color(0xFF64748B),
             ),
@@ -583,3 +630,4 @@ class _SurveyScreenState extends State<SurveyScreen> {
     );
   }
 }
+

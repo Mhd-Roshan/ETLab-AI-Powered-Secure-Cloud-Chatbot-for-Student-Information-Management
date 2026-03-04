@@ -63,4 +63,15 @@ class AdminService {
         .limit(5)
         .snapshots();
   }
+
+  // --- PROFILE ---
+  Stream<DocumentSnapshot> getProfile(String userId) {
+    return _db.collection('users').doc(userId).snapshots();
+  }
+
+  Future<void> updateProfile(String userId, Map<String, dynamic> data) async {
+    // If updating username, also update session?
+    // Usually we just update the doc.
+    await _db.collection('users').doc(userId).update(data);
+  }
 }

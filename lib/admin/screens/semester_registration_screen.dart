@@ -96,7 +96,7 @@ class _SemesterRegistrationScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Semester Registration",
-                style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
             const SizedBox(height: 4),
             Text("Spring 2026 • Approval Workflow",
                 style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500)),
@@ -243,7 +243,7 @@ class _SemesterRegistrationScreenState
             const SizedBox(width: 16),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade500)),
-              Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(value, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
             ]),
           ],
         ),
@@ -261,6 +261,6 @@ class _SemesterRegistrationScreenState
   }
 
   Widget _buildEmptyState() {
-    return Container(width: double.infinity, padding: const EdgeInsets.all(60), child: Column(children: [Icon(Icons.assignment_turned_in_outlined, size: 48, color: Colors.grey.shade300), const SizedBox(height: 16), Text("No registrations to show", style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600))]));
+    return Container(width: double.infinity, padding: const EdgeInsets.all(60), child: Column(children: [Icon(Icons.assignment_turned_in_outlined, size: 48, color: Colors.grey.shade300), const SizedBox(height: 16), Text("No registrations to show", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600))]));
   }
 }

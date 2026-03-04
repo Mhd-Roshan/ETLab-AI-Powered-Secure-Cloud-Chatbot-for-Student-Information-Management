@@ -641,7 +641,7 @@ class _LibraryScreenState extends State<LibraryScreen>
           const SizedBox(height: 24),
           Text(
             title,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF0F172A),
@@ -733,7 +733,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         children: [
                           Text(
                             transaction['bookTitle'] ?? 'Unknown Book',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
@@ -817,7 +817,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                       icon: const Icon(Icons.check_circle_outline, size: 18),
                       label: Text(
                         'Return',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -942,7 +942,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                               Expanded(
                                 child: Text(
                                   transaction['bookTitle'] ?? 'Unknown Book',
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.inter(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF0F172A),
@@ -1044,7 +1044,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                       ),
                       label: Text(
                         'Return Now',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1128,7 +1128,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         children: [
                           Text(
                             'Add New Book',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -1258,7 +1258,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                       ),
                       child: Text(
                         'Cancel',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.inter(
                           color: Colors.grey.shade600,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1284,7 +1284,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                       icon: const Icon(Icons.check_circle_outline, size: 20),
                       label: Text(
                         'Add Book',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1500,7 +1500,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         children: [
                           Text(
                             'Borrow Book',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -1597,7 +1597,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                       ),
                       child: Text(
                         'Cancel',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.inter(
                           color: Colors.grey.shade600,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1613,7 +1613,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                       icon: const Icon(Icons.check_circle_outline, size: 20),
                       label: Text(
                         'Confirm Borrow',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1784,3 +1784,4 @@ class _LibraryScreenState extends State<LibraryScreen>
     }
   }
 }
+

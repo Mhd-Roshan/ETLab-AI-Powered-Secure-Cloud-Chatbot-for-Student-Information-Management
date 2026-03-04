@@ -48,7 +48,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 children: [
                   Text(
                     "Create Broadcast",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF0F172A),
@@ -58,7 +58,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     "Send a new system-wide notification",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       color: const Color(0xFF64748B),
                     ),
@@ -114,7 +114,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         ),
                         child: Text(
                           "CANCEL",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1,
                             color: const Color(0xFF94A3B8),
@@ -153,7 +153,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         ),
                         child: Text(
                           "DISPATCH",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1,
                           ),
@@ -181,7 +181,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       children: [
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF94A3B8),
@@ -192,13 +192,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
         TextField(
           controller: controller,
           maxLines: maxLines,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
             color: const Color(0xFF1E293B),
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.plusJakartaSans(
+            hintStyle: GoogleFonts.inter(
               color: const Color(0xFFCBD5E1),
               fontWeight: FontWeight.w500,
             ),
@@ -226,7 +226,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       children: [
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF94A3B8),
@@ -254,7 +254,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       value: item,
                       child: Text(
                         item.toString(),
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF1E293B),
                         ),
@@ -304,7 +304,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         children: [
                           Text(
                             "Communication Hub",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 28,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF0F172A),
@@ -314,7 +314,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           const SizedBox(height: 4),
                           Text(
                             "Dispatch critical broadcasts and system updates",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                               color: const Color(0xFF64748B),
@@ -343,7 +343,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          textStyle: GoogleFonts.plusJakartaSans(
+                          textStyle: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1,
                           ),
@@ -461,7 +461,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                 children: [
                                   Text(
                                     data['title'] ?? "System Alert",
-                                    style: GoogleFonts.plusJakartaSans(
+                                    style: GoogleFonts.inter(
                                       fontSize: 17,
                                       fontWeight: FontWeight.w800,
                                       color: const Color(0xFF0F172A),
@@ -469,7 +469,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                   ),
                                   Text(
                                     timeStr,
-                                    style: GoogleFonts.plusJakartaSans(
+                                    style: GoogleFonts.inter(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       color: const Color(0xFF94A3B8),
@@ -485,7 +485,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       const SizedBox(height: 20),
                       Text(
                         data['message'] ?? "",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           color: const Color(0xFF475569),
                           height: 1.6,
@@ -524,7 +524,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  textStyle: GoogleFonts.plusJakartaSans(
+                                  textStyle: GoogleFonts.inter(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 10,
                                     letterSpacing: 0.5,
@@ -541,7 +541,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                             label: const Text("REVOKE"),
                             style: TextButton.styleFrom(
                               foregroundColor: const Color(0xFF94A3B8),
-                              textStyle: GoogleFonts.plusJakartaSans(
+                              textStyle: GoogleFonts.inter(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 11,
                                 letterSpacing: 0.5,
@@ -570,7 +570,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       ),
       child: Text(
         text.toUpperCase(),
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 10,
           fontWeight: FontWeight.w800,
           color: color,
@@ -598,7 +598,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
           const SizedBox(width: 8),
           Text(
             text,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF64748B),
@@ -623,7 +623,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
           const SizedBox(height: 16),
           Text(
             "No active alerts",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade400,
@@ -634,3 +634,4 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
+

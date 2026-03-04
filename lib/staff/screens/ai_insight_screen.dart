@@ -193,7 +193,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             children: [
               Text(
                 "Student Intelligence",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF0F172A),
@@ -213,7 +213,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
                   const SizedBox(width: 8),
                   Text(
                     "Real-time Class Stability Analytics",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF64748B),
@@ -323,7 +323,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF64748B),
@@ -335,7 +335,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             const SizedBox(height: 12),
             Text(
               value,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 36,
                 fontWeight: FontWeight.w900,
                 color: const Color(0xFF0F172A),
@@ -345,7 +345,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             const SizedBox(height: 4),
             Text(
               sub,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF94A3B8),
@@ -380,7 +380,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             children: [
               Text(
                 "Engagement Continuity",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF0F172A),
@@ -406,7 +406,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             children: ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN'].map((w) {
               return Text(
                 w,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: const Color(0xFF94A3B8),
                   fontWeight: FontWeight.w700,
@@ -438,7 +438,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
           const SizedBox(width: 4),
           Text(
             "+4.2%",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               color: const Color(0xFF10B981),
               fontWeight: FontWeight.w800,
               fontSize: 12,
@@ -490,7 +490,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
               const SizedBox(width: 12),
               Text(
                 "Predictions",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF0F172A),
@@ -547,7 +547,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   color: const Color(0xFF0F172A),
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
@@ -555,7 +555,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
               ),
               Text(
                 desc,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   color: const Color(0xFF64748B),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -612,7 +612,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             const SizedBox(width: 12),
             Text(
               title.toUpperCase(),
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0F172A),
@@ -622,7 +622,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             const SizedBox(width: 8),
             Text(
               "(${students.length})",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF94A3B8),
@@ -666,7 +666,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             alignment: Alignment.center,
             child: Text(
               student['name'][0],
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: accent,
                 fontWeight: FontWeight.w800,
                 fontSize: 18,
@@ -680,7 +680,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
               children: [
                 Text(
                   student['name'],
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF0F172A),
                     fontSize: 16,
@@ -688,7 +688,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
                 ),
                 Text(
                   "ID: ${student['id']}",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     color: const Color(0xFF94A3B8),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -702,7 +702,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
             children: [
               Text(
                 "$pct%",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w900,
                   color: accent,
                   fontSize: 22,
@@ -710,7 +710,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
               ),
               Text(
                 "STABILITY",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   color: const Color(0xFF94A3B8),
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -730,7 +730,7 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
       alignment: Alignment.center,
       child: Text(
         msg,
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           color: const Color(0xFF94A3B8),
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -739,3 +739,4 @@ class _AiInsightScreenState extends State<AiInsightScreen> {
     );
   }
 }
+

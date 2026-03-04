@@ -148,7 +148,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         children: [
                           Text(
                             "Alerts & Notifications",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
@@ -286,7 +286,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   children: [
                     Text(
                       data['title'] ?? "No Subject",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF0F172A),
@@ -377,7 +377,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
           const SizedBox(height: 16),
           Text(
             "No active alerts",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade400,
@@ -388,3 +388,4 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 }
+

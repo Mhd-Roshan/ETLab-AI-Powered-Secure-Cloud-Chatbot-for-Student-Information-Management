@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 import '../login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'widgets/liquid_glass_button.dart';
 
 class StudentProfilePage extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -223,15 +224,17 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             const SizedBox(height: 12),
 
             // Gallery Option
-            _buildImageOption(
-              icon: Icons.photo_library_rounded,
-              title: 'Choose from Gallery',
-              subtitle: 'Select an existing photo',
-              color: const Color(0xFF8B5CF6),
-              onTap: () {
+            LiquidGlassButton(
+              isFullWidth: true,
+              onPressed: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
               },
+              icon: const Icon(Icons.photo_library, color: Color(0xFF001FF4)),
+              label: const Text(
+                "Choose from Gallery",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
 
             const SizedBox(height: 12),
@@ -251,18 +254,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             const SizedBox(height: 12),
 
             // Cancel Button
-            TextButton(
+            LiquidGlassButton(
+              isFullWidth: true,
               onPressed: () => Navigator.pop(context),
-              style: TextButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
-                ),
+              label: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.grey.shade600),
               ),
             ),
           ],
@@ -360,58 +357,124 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  // Show loading
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (context) =>
-                        const Center(child: CircularProgressIndicator()),
-                  );
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                LiquidGlassButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  label: Text(
+                    "Cancel",
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                LiquidGlassButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  onPressed: () async {
+                    try {
+                      // Show loading
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) =>
+                            const Center(child: CircularProgressIndicator()),
+                      );
 
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(widget.studentId)
-                      .update({
-                        'phone': phoneController.text.trim(),
-                        'batch': batchController.text.trim(),
-                        'updatedAt': FieldValue.serverTimestamp(),
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(widget.studentId)
+                          .update({
+                            'phone': phoneController.text.trim(),
+                            'batch': batchController.text.trim(),
+                            'updatedAt':
+                                FieldValue.serverTimestamp(), // Keep this line
+                          });
+
+                      // Update local state
+                      setState(() {
+                        _currentPhone = phoneController.text.trim();
+                        _currentBatch = batchController.text.trim();
                       });
 
-                  // Update local state
-                  setState(() {
-                    _currentPhone = phoneController.text.trim();
-                    _currentBatch = batchController.text.trim();
-                  });
-
-                  // Close loading
-                  if (context.mounted) Navigator.pop(context);
-                  // Close dialog
-                  if (context.mounted) Navigator.pop(context);
-
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Profile updated successfully!"),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) Navigator.pop(context); // Close loading
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text("Error: $e")));
-                  }
-                }
-              },
-              child: const Text("Save"),
+                      if (mounted) {
+                        Navigator.pop(context); // Pop loading indicator
+                        Navigator.pop(context); // Pop dialog
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'Profile updated successfully!',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFF22C55E),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            margin: const EdgeInsets.all(16),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint('Error updating profile: $e');
+                      if (mounted) {
+                        Navigator.pop(context); // Pop loading indicator
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Error updating profile: ${e.toString()}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFFEF4444),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            margin: const EdgeInsets.all(16),
+                            duration: const Duration(seconds: 4),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  label: const Text(
+                    "Save",
+                    style: TextStyle(
+                      color: Color(0xFF001FF4),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         );
@@ -632,17 +695,67 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   label: "Logout",
                   icon: Icons.logout_rounded,
                   color: Colors.redAccent,
-                  onPressed: () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.clear();
-                    if (context.mounted) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                        (route) => false,
-                      );
-                    }
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text("Confirm Logout"),
+                          content: const Text(
+                            "Are you sure you want to log out?",
+                          ),
+                          actions: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                LiquidGlassButton(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  onPressed: () => Navigator.pop(context),
+                                  label: Text(
+                                    "Cancel",
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                LiquidGlassButton(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  onPressed: () async {
+                                    final prefs =
+                                        await SharedPreferences.getInstance();
+                                    await prefs.clear();
+                                    if (mounted) {
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const LoginPage(),
+                                        ),
+                                        (route) => false,
+                                      );
+                                    }
+                                  },
+                                  label: const Text(
+                                    "Logout",
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    );
                   },
                   isOutlined: true,
                 ),
@@ -870,47 +983,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     required VoidCallback onPressed,
     bool isOutlined = false,
   }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: isOutlined
-          ? OutlinedButton.icon(
-              onPressed: onPressed,
-              icon: Icon(icon, color: color),
-              label: Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: color, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-            )
-          : ElevatedButton.icon(
-              onPressed: onPressed,
-              icon: Icon(icon, color: Colors.white),
-              label: Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-            ),
+    return LiquidGlassButton(
+      isFullWidth: true,
+      onPressed: onPressed,
+      icon: Icon(icon, color: color, size: 20),
+      label: Text(
+        label,
+        style: TextStyle(color: color, fontWeight: FontWeight.bold),
+      ),
     );
   }
 }
+

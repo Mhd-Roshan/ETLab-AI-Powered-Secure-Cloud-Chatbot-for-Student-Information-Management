@@ -41,7 +41,7 @@ class FeeReportsScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Financial Reports",
-                              style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                              style: GoogleFonts.inter(fontSize: 26, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                           Text("Real-time revenue analytics and collection insights", style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
                         ],
                       ),
@@ -160,7 +160,7 @@ class FeeReportsScreen extends StatelessWidget {
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 20),
-            Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+            Text(value, style: GoogleFonts.inter(fontSize: 26, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
             Text(title, style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500)),
           ],
         ),
@@ -175,7 +175,7 @@ class FeeReportsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Collection by Category", style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text("Collection by Category", style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
           if (breakdown.isEmpty) const Text("No data available", style: TextStyle(color: Colors.grey)),
           ...breakdown.entries.map((e) => Padding(
@@ -221,7 +221,7 @@ class FeeReportsScreen extends StatelessWidget {
             children: [
               const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 30),
               const SizedBox(height: 20),
-              Text("$studentCount", style: GoogleFonts.plusJakartaSans(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text("$studentCount", style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
               Text("Students with pending dues", style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
               const SizedBox(height: 24),
               const Divider(color: Colors.white24),

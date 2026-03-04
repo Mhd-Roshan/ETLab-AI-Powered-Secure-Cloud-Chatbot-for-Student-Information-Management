@@ -48,7 +48,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                 const SizedBox(width: 12),
                 Text(
                   isEdit ? "Edit Department" : "Add New Department",
-                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -307,7 +307,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Departments",
-                              style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                              style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                           const SizedBox(height: 4),
                           Text("Manage faculties and HODs", style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500)),
                         ],
@@ -479,7 +479,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                     name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF0F172A),
@@ -572,7 +572,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                   children: [
                     Text(
                       staff.toString(),
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF0F172A),
@@ -605,7 +605,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
         children: [
           Icon(Icons.apartment_rounded, size: 48, color: Colors.grey.shade300),
           const SizedBox(height: 16),
-          Text("No departments found", style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
+          Text("No departments found", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
           const SizedBox(height: 8),
           Text("Add a department to get started.", style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500)),
         ],

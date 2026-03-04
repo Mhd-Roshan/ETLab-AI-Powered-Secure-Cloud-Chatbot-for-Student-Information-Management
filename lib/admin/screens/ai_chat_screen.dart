@@ -114,7 +114,10 @@ I can suggest charts, graphs, and data visualizations based on your queries!
     _promptController.clear();
 
     try {
-      final response = await EdLabAIService().sendMessage(_currentUserId, prompt);
+      final response = await EdLabAIService().sendMessage(
+        _currentUserId,
+        prompt,
+      );
       if (mounted) {
         setState(() {
           _currentResponse = response;
@@ -123,7 +126,8 @@ I can suggest charts, graphs, and data visualizations based on your queries!
     } catch (e) {
       if (mounted) {
         setState(() {
-          _currentResponse = "**Error Processing Request**\\n\\nThere was an issue: $e\\n\\n**Try asking:**\\n- Show me student attendance summary\\n- What's the total fee collection this month?\\n- List all staff in MCA department";
+          _currentResponse =
+              "**Error Processing Request**\\n\\nThere was an issue: $e\\n\\n**Try asking:**\\n- Show me student attendance summary\\n- What's the total fee collection this month?\\n- List all staff in MCA department";
         });
       }
     } finally {
@@ -159,15 +163,15 @@ I can suggest charts, graphs, and data visualizations based on your queries!
     setState(() {
       _isVoiceMode = !_isVoiceMode;
     });
-    
+
     if (!_isVoiceMode) {
       _voiceService.stopListening();
     }
-    
+
     _showSnackBar(
-      _isVoiceMode 
-        ? "Voice mode enabled - Click microphone to speak"
-        : "Voice mode disabled - Using text input"
+      _isVoiceMode
+          ? "Voice mode enabled - Click microphone to speak"
+          : "Voice mode disabled - Using text input",
     );
   }
 
@@ -212,9 +216,11 @@ I can suggest charts, graphs, and data visualizations based on your queries!
             _isVoiceMode ? Icons.keyboard : Icons.mic,
             color: _isVoiceMode ? const Color(0xFF6366F1) : Colors.grey,
           ),
-          tooltip: _isVoiceMode ? 'Switch to text input' : 'Switch to voice input',
+          tooltip: _isVoiceMode
+              ? 'Switch to text input'
+              : 'Switch to voice input',
         ),
-        
+
         if (_isVoiceMode) ...[
           const SizedBox(width: 8),
           // Listening indicator or voice input button
@@ -245,12 +251,15 @@ I can suggest charts, graphs, and data visualizations based on your queries!
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6366F1),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
             ),
-          
+
           const SizedBox(width: 8),
-          
+
           // Stop listening button
           if (_isListening)
             IconButton(
@@ -298,7 +307,7 @@ I can suggest charts, graphs, and data visualizations based on your queries!
       backgroundColor: const Color(0xFFF8FAFC),
       body: Row(
         children: [
-          const SizedBox(width: 90, child: AdminSidebar(activeIndex: 3)),
+          const AdminSidebar(activeIndex: 3),
           Expanded(
             child: Row(
               children: [
@@ -320,13 +329,21 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: const BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                          border: Border(
+                            bottom: BorderSide(color: Color(0xFFF1F5F9)),
+                          ),
                         ),
                         child: const Row(
                           children: [
                             Icon(Icons.history, color: Color(0xFF6366F1)),
                             SizedBox(width: 12),
-                            Text("Chat History", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text(
+                              "Chat History",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -335,20 +352,39 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                           future: _aiService.getChatHistory(_currentUserId),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData) {
-                              return const Center(child: CircularProgressIndicator());
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
                             }
                             final docs = snapshot.data!.docs;
                             if (docs.isEmpty) {
-                              return const Center(child: Text("No history yet", style: TextStyle(color: Colors.grey)));
+                              return const Center(
+                                child: Text(
+                                  "No history yet",
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              );
                             }
                             return ListView.builder(
                               itemCount: docs.length,
                               itemBuilder: (context, index) {
-                                final data = docs[index].data() as Map<String, dynamic>;
+                                final data =
+                                    docs[index].data() as Map<String, dynamic>;
                                 return ListTile(
-                                  title: Text(data['prompt'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
-                                  leading: const Icon(Icons.chat_bubble_outline, size: 18, color: Color(0xFF6366F1)),
-                                  onTap: () => _loadHistoryItem(data['prompt'], data['response']),
+                                  title: Text(
+                                    data['prompt'] ?? '',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  leading: const Icon(
+                                    Icons.chat_bubble_outline,
+                                    size: 18,
+                                    color: Color(0xFF6366F1),
+                                  ),
+                                  onTap: () => _loadHistoryItem(
+                                    data['prompt'],
+                                    data['response'],
+                                  ),
                                 );
                               },
                             );
@@ -376,26 +412,45 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: const BoxDecoration(
-                            border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                            border: Border(
+                              bottom: BorderSide(color: Color(0xFFF1F5F9)),
+                            ),
                           ),
                           child: Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFFEC4899)]),
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF6366F1),
+                                      Color(0xFFEC4899),
+                                    ],
+                                  ),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: const Icon(Icons.auto_awesome, color: Colors.white),
+                                child: const Icon(
+                                  Icons.auto_awesome,
+                                  color: Colors.white,
+                                ),
                               ),
                               const SizedBox(width: 16),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text("EdLab Intelligence", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  const Text(
+                                    "EdLab Intelligence",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   Text(
                                     "Firebase AI • Real-time Data Access • Voice Enabled",
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -425,7 +480,10 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       const CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Color(0xFF6366F1),
+                                            ),
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
@@ -441,10 +499,23 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                                     data: _currentResponse,
                                     selectable: true,
                                     styleSheet: MarkdownStyleSheet(
-                                      p: const TextStyle(fontSize: 15, height: 1.6, color: Color(0xFF1E293B)),
-                                      h1: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                                      h2: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                      code: TextStyle(backgroundColor: Colors.grey.shade100, color: const Color(0xFF6366F1)),
+                                      p: const TextStyle(
+                                        fontSize: 15,
+                                        height: 1.6,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                      h1: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      h2: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      code: TextStyle(
+                                        backgroundColor: Colors.grey.shade100,
+                                        color: const Color(0xFF6366F1),
+                                      ),
                                     ),
                                   ),
                           ),
@@ -452,7 +523,9 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: const BoxDecoration(
-                            border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                            border: Border(
+                              top: BorderSide(color: Color(0xFFF1F5F9)),
+                            ),
                           ),
                           child: Column(
                             children: [
@@ -465,22 +538,30 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                                   decoration: BoxDecoration(
                                     color: Colors.blue.shade50,
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.blue.shade200),
+                                    border: Border.all(
+                                      color: Colors.blue.shade200,
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.mic, color: Colors.blue, size: 16),
+                                      const Icon(
+                                        Icons.mic,
+                                        color: Colors.blue,
+                                        size: 16,
+                                      ),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
                                           _voiceInputText,
-                                          style: const TextStyle(fontStyle: FontStyle.italic),
+                                          style: const TextStyle(
+                                            fontStyle: FontStyle.italic,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              
+
                               Row(
                                 children: [
                                   Expanded(
@@ -488,27 +569,46 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                                       controller: _promptController,
                                       onSubmitted: (_) => _sendMessage(),
                                       decoration: InputDecoration(
-                                        hintText: _isVoiceMode 
-                                          ? "Voice input enabled - Click microphone to speak..."
-                                          : "Ask anything about university data...",
+                                        hintText: _isVoiceMode
+                                            ? "Voice input enabled - Click microphone to speak..."
+                                            : "Ask anything about university data...",
                                         filled: true,
                                         fillColor: const Color(0xFFF8FAFC),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFFE2E8F0),
+                                          ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFFE2E8F0),
+                                          ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                          borderSide: const BorderSide(color: Color(0xFF6366F1)),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFF6366F1),
+                                          ),
                                         ),
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                        prefixIcon: _isVoiceMode 
-                                          ? const Icon(Icons.mic, color: Color(0xFF6366F1))
-                                          : null,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 20,
+                                              vertical: 16,
+                                            ),
+                                        prefixIcon: _isVoiceMode
+                                            ? const Icon(
+                                                Icons.mic,
+                                                color: Color(0xFF6366F1),
+                                              )
+                                            : null,
                                       ),
                                     ),
                                   ),
@@ -524,7 +624,11 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                                       borderRadius: BorderRadius.circular(16),
                                       child: Container(
                                         padding: const EdgeInsets.all(16),
-                                        child: const Icon(Icons.send_rounded, color: Colors.white, size: 24),
+                                        child: const Icon(
+                                          Icons.send_rounded,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -535,12 +639,30 @@ I can suggest charts, graphs, and data visualizations based on your queries!
                                 spacing: 8,
                                 runSpacing: 8,
                                 children: [
-                                  _buildQuickActionButton("📊 Attendance Summary", "Show me attendance summary by department"),
-                                  _buildQuickActionButton("💰 Fee Collection", "What's the total fee collection this month?"),
-                                  _buildQuickActionButton("👥 Student Stats", "Give me student count by department"),
-                                  _buildQuickActionButton("📅 Upcoming Exams", "Show me upcoming exams this week"),
-                                  _buildQuickActionButton("🏫 Staff Overview", "List all staff by department"),
-                                  _buildQuickActionButton("📈 Performance Analytics", "Show me student performance analytics"),
+                                  _buildQuickActionButton(
+                                    "📊 Attendance Summary",
+                                    "Show me attendance summary by department",
+                                  ),
+                                  _buildQuickActionButton(
+                                    "💰 Fee Collection",
+                                    "What's the total fee collection this month?",
+                                  ),
+                                  _buildQuickActionButton(
+                                    "👥 Student Stats",
+                                    "Give me student count by department",
+                                  ),
+                                  _buildQuickActionButton(
+                                    "📅 Upcoming Exams",
+                                    "Show me upcoming exams this week",
+                                  ),
+                                  _buildQuickActionButton(
+                                    "🏫 Staff Overview",
+                                    "List all staff by department",
+                                  ),
+                                  _buildQuickActionButton(
+                                    "📈 Performance Analytics",
+                                    "Show me student performance analytics",
+                                  ),
                                 ],
                               ),
                             ],

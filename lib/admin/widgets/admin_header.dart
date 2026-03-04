@@ -7,11 +7,13 @@ import 'package:edlab/admin/screens/alerts_screen.dart'; // To navigate to full 
 class AdminHeader extends StatelessWidget {
   final String title;
   final bool showBackButton;
+  final bool isWhite;
 
   const AdminHeader({
     super.key,
     this.title = "Dashboard",
     this.showBackButton = false,
+    this.isWhite = false,
   });
 
   // --- HELPER: Mark Notification as Read ---
@@ -40,33 +42,41 @@ class AdminHeader extends StatelessWidget {
             IconButton(
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-              color: const Color(0xFF0F172A),
+              color: isWhite ? Colors.white : const Color(0xFF0F172A),
             ),
             const SizedBox(width: 8),
           ],
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFF0F172A),
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: isWhite ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
-                style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFF64748B),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: isWhite
+                        ? Colors.white.withOpacity(0.7)
+                        : const Color(0xFF64748B),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const Spacer(flex: 1),
 
@@ -92,7 +102,7 @@ class AdminHeader extends StatelessWidget {
                 decoration: InputDecoration(
                   isDense: true,
                   hintText: "Search students, staff, or courses...",
-                  hintStyle: GoogleFonts.plusJakartaSans(
+                  hintStyle: GoogleFonts.inter(
                     color: const Color(0xFF94A3B8),
                     fontSize: 14,
                   ),
@@ -225,7 +235,7 @@ class AdminHeader extends StatelessWidget {
                       children: [
                         Text(
                           "Notifications",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -309,7 +319,7 @@ class AdminHeader extends StatelessWidget {
                             children: [
                               Text(
                                 data['title'] ?? "Alert",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontSize: 13,
                                   fontWeight: isRead
                                       ? FontWeight.normal
@@ -354,7 +364,7 @@ class AdminHeader extends StatelessWidget {
                     Center(
                       child: Text(
                         "View All Alerts",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: Colors.blueAccent,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,

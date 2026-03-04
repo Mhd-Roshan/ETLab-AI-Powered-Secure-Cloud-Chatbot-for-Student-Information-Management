@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../services/student_service.dart';
+import 'widgets/liquid_glass_button.dart';
 
 class FeesScreen extends StatefulWidget {
   final String? studentId;
@@ -220,23 +221,16 @@ class _FeesScreenState extends State<FeesScreen>
                         color: Colors.black87,
                       ),
                     ),
-                    ElevatedButton(
+                    LiquidGlassButton(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 10,
+                      ),
                       onPressed: () {
                         final docId = isRealData ? fees[index].id : fee['id'];
                         _processPayment((isRealData ? fee : fee), docId);
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF001FF4),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 10,
-                        ),
-                      ),
-                      child: const Text("Pay Now"),
+                      label: const Text("Pay Now"),
                     ),
                   ],
                 ),
@@ -337,9 +331,13 @@ class _FeesScreenState extends State<FeesScreen>
                 ],
               ),
               actions: [
-                TextButton(
+                LiquidGlassButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("OK"),
+                  label: const Text("Close"),
                 ),
               ],
             ),
@@ -399,9 +397,13 @@ class _FeesScreenState extends State<FeesScreen>
               ],
             ),
             actions: [
-              TextButton(
+              LiquidGlassButton(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 onPressed: () => Navigator.pop(context),
-                child: const Text("OK"),
+                label: const Text("OK"),
               ),
             ],
           ),
@@ -420,3 +422,4 @@ class _FeesScreenState extends State<FeesScreen>
     }
   }
 }
+

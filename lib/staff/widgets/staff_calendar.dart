@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -94,14 +94,14 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                         children: [
                           Text(
                             'Task Completed',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
                           ),
                           Text(
                             data['title'] ?? 'Task',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               color: Colors.white70,
                             ),
@@ -113,7 +113,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                     ),
                     Text(
                       timeLabel,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -362,7 +362,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                 children: [
                   Text(
                     DateFormat('MMMM yyyy').format(DateTime.now()),
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 20,
                       color: const Color(0xFF1E293B),
@@ -418,7 +418,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
             children: [
               Text(
                 "TASKS",
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.0,
@@ -477,7 +477,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
           // 4. FIREBASE ACTIVITY
           Text(
             "RECENT ACTIVITY",
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
@@ -492,7 +492,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return Text(
                   "No recent activity",
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
                 );
               }
 
@@ -542,7 +542,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
           const SizedBox(height: 8),
           Text(
             "No tasks pending",
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.inter(
               color: Colors.grey.shade400,
               fontSize: 14,
             ),
@@ -601,7 +601,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       decoration: isDone ? TextDecoration.lineThrough : null,
@@ -612,7 +612,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   ),
                   Text(
                     time,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: const Color(0xFF94A3B8),
                     ),
@@ -688,7 +688,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF334155),
@@ -697,7 +697,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                 const SizedBox(height: 2),
                 Text(
                   time,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     color: const Color(0xFF94A3B8),
                   ),
@@ -755,7 +755,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     entry.value,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       // Highlight Sunday column
@@ -874,7 +874,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
                   Center(
                     child: Text(
                       date,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                         color: isToday
@@ -942,7 +942,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.inter(
             fontSize: 11,
             color: Colors.grey.shade600,
             fontWeight: FontWeight.w500,
@@ -990,7 +990,7 @@ class _LiveClockState extends State<_LiveClock> {
   Widget build(BuildContext context) {
     return Text(
       _currentTime,
-      style: GoogleFonts.poppins(
+      style: GoogleFonts.inter(
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: const Color(0xFF6366F1),
@@ -998,3 +998,4 @@ class _LiveClockState extends State<_LiveClock> {
     );
   }
 }
+

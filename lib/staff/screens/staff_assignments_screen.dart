@@ -66,7 +66,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
       appBar: AppBar(
         title: Text(
           "Manage Assignments",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1E293B),
           ),
@@ -135,7 +135,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
         icon: const Icon(Icons.add_task_rounded, color: Colors.white),
         label: Text(
           "Create Assignment",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -170,7 +170,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
           const SizedBox(height: 24),
           Text(
             "No Assignments Yet",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF475569),
@@ -180,7 +180,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
           Text(
             "Create your first assignment to share with students",
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(color: const Color(0xFF64748B)),
+            style: GoogleFonts.inter(color: const Color(0xFF64748B)),
           ),
         ],
       ),
@@ -238,7 +238,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
                   ),
                   child: Text(
                     (data['type'] == 2) ? "ONLINE" : "OFFLINE",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: (data['type'] == 2)
@@ -249,7 +249,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
                 ),
                 Text(
                   "Due: ${DateFormat('dd MMM').format(dueDate)}",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: const Color(0xFF64748B),
                     fontWeight: FontWeight.w600,
@@ -307,7 +307,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
             const SizedBox(height: 16),
             Text(
               title,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF1E293B),
@@ -316,7 +316,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
             const SizedBox(height: 4),
             Text(
               "$subject | $dept Sem $sem",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 color: const Color(0xFF64748B),
               ),
@@ -357,7 +357,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 13,
             color: const Color(0xFF64748B),
           ),
@@ -365,7 +365,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
         const Spacer(),
         Text(
           value,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: color,
@@ -400,7 +400,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
               children: [
                 Text(
                   "New Assignment",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
@@ -408,7 +408,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
                 const SizedBox(height: 12),
                 Text(
                   "Target: $_staffDept Department",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: const Color(0xFF001FF4),
                     fontWeight: FontWeight.w600,
@@ -428,7 +428,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
                   ),
                   child: Text(
                     "Semester 1 (Current)",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF475569),
                     ),
@@ -448,7 +448,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
                   ),
                   child: Text(
                     forcedSubject,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF1E293B),
                     ),
@@ -557,7 +557,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
                     ),
                     child: Text(
                       "Create Assignment",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -578,18 +578,18 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           "Delete Assignment",
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
         ),
         content: Text(
           "Are you sure you want to delete this assignment? This action cannot be undone.",
-          style: GoogleFonts.plusJakartaSans(),
+          style: GoogleFonts.inter(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               "Cancel",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: const Color(0xFF64748B),
               ),
             ),
@@ -612,7 +612,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
             ),
             child: Text(
               "Delete",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -658,7 +658,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
               children: [
                 Text(
                   "Edit Assignment",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
@@ -675,7 +675,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
                   ),
                   child: Text(
                     forcedSubject,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF1E293B),
                     ),
@@ -774,7 +774,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
                     ),
                     child: Text(
                       "Save Changes",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -794,7 +794,7 @@ class _StaffAssignmentsScreenState extends State<StaffAssignmentsScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         label,
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: const Color(0xFF64748B),
@@ -859,7 +859,7 @@ class SubmissionsListScreen extends StatelessWidget {
           children: [
             Text(
               "Submissions",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
                 color: const Color(0xFF1E293B),
@@ -867,7 +867,7 @@ class SubmissionsListScreen extends StatelessWidget {
             ),
             Text(
               assignmentTitle,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: const Color(0xFF64748B),
               ),
@@ -987,7 +987,7 @@ class SubmissionsListScreen extends StatelessWidget {
                         color: const Color(0xFFF8FAFC),
                         child: Text(
                           "CLASS ENROLLMENT",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1,
@@ -1109,7 +1109,7 @@ class SubmissionsListScreen extends StatelessWidget {
                                 color: const Color(0xFFF1F5F9),
                                 child: Text(
                                   "ONLINE SUBMISSIONS (ABSENT STUDENTS)",
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.inter(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 1,
@@ -1157,18 +1157,18 @@ class SubmissionsListScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: Text(
           "Delete Assignment?",
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
         ),
         content: Text(
           "This will permanently delete this assignment AND all student submissions. This action cannot be undone.",
-          style: GoogleFonts.plusJakartaSans(),
+          style: GoogleFonts.inter(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               "Cancel",
-              style: GoogleFonts.plusJakartaSans(color: Colors.grey),
+              style: GoogleFonts.inter(color: Colors.grey),
             ),
           ),
           ElevatedButton(
@@ -1194,7 +1194,7 @@ class SubmissionsListScreen extends StatelessWidget {
             },
             child: Text(
               "Delete Everything",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -1215,7 +1215,7 @@ class SubmissionsListScreen extends StatelessWidget {
       child: Text(
         title,
         textAlign: align,
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w800,
           color: const Color(0xFF64748B),
@@ -1270,7 +1270,7 @@ class SubmissionsListScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     studentName,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF1E293B),
                     ),
@@ -1284,7 +1284,7 @@ class SubmissionsListScreen extends StatelessWidget {
             flex: 2,
             child: Text(
               regNo,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: const Color(0xFF64748B),
                 fontSize: 13,
               ),
@@ -1297,7 +1297,7 @@ class SubmissionsListScreen extends StatelessWidget {
               fileName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: const Color(0xFF64748B),
                 fontSize: 12,
               ),
@@ -1308,7 +1308,7 @@ class SubmissionsListScreen extends StatelessWidget {
             flex: 2,
             child: Text(
               submittedAt,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: const Color(0xFF64748B),
                 fontSize: 12,
               ),
@@ -1346,7 +1346,7 @@ class SubmissionsListScreen extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     status.toUpperCase(),
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: status == 'marked'
@@ -1366,7 +1366,7 @@ class SubmissionsListScreen extends StatelessWidget {
             child: Center(
               child: Text(
                 grade,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   color: grade == 'Not Marked'
                       ? const Color(0xFFCBD5E1)
@@ -1489,19 +1489,19 @@ class SubmissionsListScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               "Mark Submission",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               "Student: $name (${isOnline ? 'Online' : 'Offline'})",
-              style: GoogleFonts.plusJakartaSans(color: Colors.grey[600]),
+              style: GoogleFonts.inter(color: Colors.grey[600]),
             ),
             const SizedBox(height: 32),
             Text(
               "GRADE / MARKS",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[500],
@@ -1523,7 +1523,7 @@ class SubmissionsListScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               "FEEDBACK / REPLY",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[500],
@@ -1583,7 +1583,7 @@ class SubmissionsListScreen extends StatelessWidget {
                 ),
                 child: Text(
                   "Save Marks & Feedback",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -1596,3 +1596,4 @@ class SubmissionsListScreen extends StatelessWidget {
     );
   }
 }
+

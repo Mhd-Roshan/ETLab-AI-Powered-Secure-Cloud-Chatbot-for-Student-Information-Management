@@ -396,7 +396,7 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
                               children: [
                                 Text(
                                   "Subject Pool",
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.inter(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF0F172A),
@@ -575,7 +575,7 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
             data['courseName'] ?? "Untitled",
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 15,
               color: const Color(0xFF0F172A),
@@ -634,7 +634,7 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
           const SizedBox(height: 16),
           Text(
             "No subjects found for $_selectedDept",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF0F172A),
@@ -645,3 +645,4 @@ class _SubjectPoolScreenState extends State<SubjectPoolScreen> {
     );
   }
 }
+

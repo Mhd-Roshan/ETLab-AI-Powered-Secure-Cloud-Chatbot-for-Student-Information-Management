@@ -4,6 +4,7 @@ import '../login.dart';
 import '../admin/admin_dashboard.dart';
 import '../hod/hod_dashboard.dart';
 import '../staff/staff_dashboard.dart';
+import '../staff_advisor/staff_advisor_dashboard.dart';
 import '../student/student_dashboard.dart';
 
 class AuthGate extends StatefulWidget {
@@ -54,7 +55,9 @@ class _AuthGateState extends State<AuthGate> {
       case 'student':
         return StudentDashboard(studentRegNo: _username!);
       case 'staff':
+        return StaffDashboard(user: _username);
       case 'staff_advisor':
+        return const StaffAdvisorDashboard();
       default:
         return StaffDashboard(user: _username);
     }

@@ -104,7 +104,7 @@ class _SuspendedUsersScreenState extends State<SuspendedUsersScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Suspended Users",
-                style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
             const SizedBox(height: 4),
             Text("Manage restricted access and disciplinary actions",
                 style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500)),
@@ -223,7 +223,7 @@ class _SuspendedUsersScreenState extends State<SuspendedUsersScreen> {
             child: Icon(Icons.verified_user_rounded, size: 60, color: Colors.green.shade400),
           ),
           const SizedBox(height: 24),
-          Text("No Suspended Users", style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+          Text("No Suspended Users", style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
           const SizedBox(height: 8),
           Text("All system users currently have active access.", style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade500)),
         ],

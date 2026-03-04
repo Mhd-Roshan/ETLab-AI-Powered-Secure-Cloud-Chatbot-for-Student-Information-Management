@@ -137,7 +137,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                 const SizedBox(width: 8),
                 Text(
                   "EDLAB WORKSPACE",
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.3,
@@ -156,7 +156,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           children: [
             Text(
               "Today",
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: Colors.grey.shade500,
@@ -164,7 +164,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             ),
             Text(
               "$weekDay, $month $day, $year",
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 fontSize:
                     20, // Increased size slightly to replace the clock's visual weight
                 fontWeight: FontWeight.w600,
@@ -192,7 +192,7 @@ class AiToolsSection extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 16, left: 4),
           child: Text(
             "INTELLIGENCE",
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
@@ -321,7 +321,7 @@ class AiToolsSection extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white : const Color(0xFF1E293B),
@@ -331,7 +331,7 @@ class AiToolsSection extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       subtitle,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         color: isDark ? Colors.white54 : Colors.black54,
                         height: 1.4,
@@ -398,3 +398,4 @@ class AiToolsSection extends StatelessWidget {
     );
   }
 }
+

@@ -41,7 +41,7 @@ class _FeesScreenState extends State<FeesScreen> {
 
                   Text(
                     "Fees & Accounts",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF0F172A),
@@ -60,7 +60,7 @@ class _FeesScreenState extends State<FeesScreen> {
                   // --- NAVIGATION GRID ---
                   Text(
                     "Management Modules",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -265,7 +265,7 @@ class _FeesScreenState extends State<FeesScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500)),
                   ],
@@ -302,7 +302,7 @@ class _FeesScreenState extends State<FeesScreen> {
             children: [
               Text(label, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500)),
               const SizedBox(height: 4),
-              Text(value, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text(value, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18)),
             ],
           ),
         ],

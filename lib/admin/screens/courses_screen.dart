@@ -50,7 +50,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
             ),
             title: Text(
               isEdit ? "Edit Course" : "Add New Course",
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -241,10 +241,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(
-            width: 90,
-            child: AdminSidebar(activeIndex: 2),
-          ), // Active index for Courses
+          const AdminSidebar(activeIndex: 2), // Active index for Courses
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(32),
@@ -263,7 +260,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                         children: [
                           Text(
                             "Course Directory",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
@@ -389,7 +386,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
           const SizedBox(height: 16),
           Text(
             data['courseName'] ?? "Untitled",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: const Color(0xFF0F172A),

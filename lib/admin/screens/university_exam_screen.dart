@@ -376,7 +376,7 @@ class _UniversityExamScreenState extends State<UniversityExamScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("University Examinations", style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                          Text("University Examinations", style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                           const SizedBox(height: 4),
                           Text("Manage schedules, halls, and invigilation", style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500)),
                         ],
@@ -504,14 +504,14 @@ class _UniversityExamScreenState extends State<UniversityExamScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           decoration: BoxDecoration(color: isSelected ? Colors.deepOrangeAccent : Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: isSelected ? Colors.deepOrangeAccent : const Color(0xFFE2E8F0))),
-          child: Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : const Color(0xFF64748B))),
+          child: Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : const Color(0xFF64748B))),
         ),
       ),
     );
   }
 
   Widget _buildStatCard(String title, String value, Color color, IconData icon) {
-    return Expanded(child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF1F5F9)), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 10, offset: const Offset(0, 4))]), child: Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 20)), const SizedBox(width: 16), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500)), const SizedBox(height: 4), Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)))])])));
+    return Expanded(child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF1F5F9)), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 10, offset: const Offset(0, 4))]), child: Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 20)), const SizedBox(width: 16), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500)), const SizedBox(height: 4), Text(value, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)))])])));
   }
 
   Widget _buildStatusBadge(DateTime date) {
@@ -524,6 +524,6 @@ class _UniversityExamScreenState extends State<UniversityExamScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Container(width: double.infinity, padding: const EdgeInsets.all(60), child: Column(children: [Icon(Icons.event_busy_rounded, size: 48, color: Colors.grey.shade300), const SizedBox(height: 16), Text("No exams scheduled", style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)))]));
+    return Container(width: double.infinity, padding: const EdgeInsets.all(60), child: Column(children: [Icon(Icons.event_busy_rounded, size: 48, color: Colors.grey.shade300), const SizedBox(height: 16), Text("No exams scheduled", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)))]));
   }
 }

@@ -129,7 +129,7 @@ class _PlacementScreenState extends State<PlacementScreen> {
                 const SizedBox(width: 12),
                 Text(
                   "Edit Placement Record",
-                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -430,7 +430,7 @@ class _PlacementScreenState extends State<PlacementScreen> {
             Expanded(
               child: Text(
                 drive['company'] ?? 'Company',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -490,7 +490,7 @@ class _PlacementScreenState extends State<PlacementScreen> {
                           const SizedBox(width: 8),
                           Text(
                             "Drive Information",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               color: Colors.grey.shade700,
@@ -603,7 +603,7 @@ class _PlacementScreenState extends State<PlacementScreen> {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF0F172A),
@@ -905,7 +905,7 @@ class _PlacementScreenState extends State<PlacementScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Placement Cell", style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                          Text("Placement Cell", style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                           const SizedBox(height: 4),
                           Text("Track recruitment drives and student offers", style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500)),
                         ],
@@ -1039,7 +1039,7 @@ class _PlacementScreenState extends State<PlacementScreen> {
   Widget _buildEmptyDrives() => const Center(child: Padding(padding: EdgeInsets.all(60), child: Text("No upcoming drives scheduled.")));
 
   Widget _buildStatCard(String title, String value, Color color, IconData icon) {
-    return Expanded(child: Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9)), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 10, offset: const Offset(0, 4))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 20)), const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey)]), const SizedBox(height: 20), Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))), const SizedBox(height: 4), Text(title, style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500))])));
+    return Expanded(child: Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9)), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 10, offset: const Offset(0, 4))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 20)), const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey)]), const SizedBox(height: 20), Text(value, style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))), const SizedBox(height: 4), Text(title, style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500))])));
   }
 
   Widget _buildTab(String title, String viewName) {
@@ -1126,7 +1126,7 @@ class _PlacementScreenState extends State<PlacementScreen> {
           const SizedBox(height: 20),
           Text(
             drive['role'] ?? 'Job Role',
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),

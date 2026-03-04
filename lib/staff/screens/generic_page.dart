@@ -11,7 +11,7 @@ class GenericPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           title,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
         ),
       ),
       body: Center(
@@ -22,7 +22,7 @@ class GenericPage extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               title,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[600],
@@ -31,7 +31,7 @@ class GenericPage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               "This module is under development.",
-              style: GoogleFonts.poppins(),
+              style: GoogleFonts.inter(),
             ),
           ],
         ),
@@ -39,3 +39,4 @@ class GenericPage extends StatelessWidget {
     );
   }
 }
+

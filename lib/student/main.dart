@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../firebase_options.dart';
-import '../widgets/auth_gate.dart';
+import 'splash_screen.dart';
 
 void main() async {
   // 1. Ensure widget binding is initialized
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       title: 'EdLab Student',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.indigo, useMaterial3: true),
-      home: const AuthGate(),
+      home: const StudentSplashScreen(),
     );
   }
 }

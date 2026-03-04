@@ -37,7 +37,7 @@ class _FeeStructureScreenState extends State<FeeStructureScreen> {
         builder: (context, setDialogState) {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text("Add Fee Category", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+            title: Text("Add Fee Category", style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -243,7 +243,7 @@ class _FeeStructureScreenState extends State<FeeStructureScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(data['title'] ?? "Unknown", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(data['title'] ?? "Unknown", style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15)),
                 Text("₹${data['amount']}", style: GoogleFonts.inter(color: Colors.green.shade700, fontWeight: FontWeight.bold, fontSize: 14)),
               ],
             ),
@@ -265,7 +265,7 @@ class _FeeStructureScreenState extends State<FeeStructureScreen> {
         children: [
           Icon(Icons.list_alt_rounded, size: 48, color: Colors.grey.shade300),
           const SizedBox(height: 16),
-          Text("No Fee Structures Found", style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
+          Text("No Fee Structures Found", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
           const SizedBox(height: 8),
           Text("Start by adding a new fee category above.", style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500)),
         ],

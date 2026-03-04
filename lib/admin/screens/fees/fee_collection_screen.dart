@@ -44,7 +44,7 @@ class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
             ),
             title: Text(
               "New Transaction",
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -246,7 +246,7 @@ class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
 
                   Text(
                     "Recent Transactions",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -530,7 +530,7 @@ class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
                 ),
                 Text(
                   val,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -564,3 +564,4 @@ class _FeeCollectionScreenState extends State<FeeCollectionScreen> {
     );
   }
 }
+

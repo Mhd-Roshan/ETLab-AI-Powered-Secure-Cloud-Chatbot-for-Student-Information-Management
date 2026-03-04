@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class TimetableScreen extends StatefulWidget {
   const TimetableScreen({super.key});
@@ -212,12 +213,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     color: isSelected ? const Color(0xFF001FF4) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
-                      if (!isSelected)
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
+                      BoxShadow(
+                        color: isSelected
+                            ? const Color(0xFF001FF4).withValues(alpha: 0.3)
+                            : Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
                   child: Column(
@@ -226,7 +228,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
                       Text(
                         DateFormat('E').format(date).toUpperCase(), // e.g., WED
                         style: TextStyle(
-                          color: isSelected ? Colors.white70 : Colors.grey,
+                          color: isSelected
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : Colors.grey,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
@@ -346,7 +350,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
+            child: const Text(
+              "Close",
+              style: TextStyle(
+                color: Color(0xFF001FF4),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -552,3 +562,4 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
   }
 }
+

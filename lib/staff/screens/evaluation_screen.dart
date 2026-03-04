@@ -111,7 +111,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                           ),
                           Text(
                             "My Classes",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               color: Colors.white.withOpacity(0.8),
                               fontSize: 11,
                             ),
@@ -123,7 +123,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                           ),
                           Text(
                             "MCA - 1st semester",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               color: Colors.white.withOpacity(0.8),
                               fontSize: 11,
                             ),
@@ -135,7 +135,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                           ),
                           Text(
                             "Series Exams",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -149,7 +149,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 40),
                       child: Text(
                         "Analyze and manage student performance data across all assessment types.",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           color: Colors.white.withOpacity(0.8),
                           fontWeight: FontWeight.w500,
@@ -205,11 +205,11 @@ class _EvaluationScreenState extends State<EvaluationScreen>
         labelColor: const Color(0xFF001FF4),
         unselectedLabelColor: Colors.white,
         dividerColor: Colors.transparent,
-        labelStyle: GoogleFonts.plusJakartaSans(
+        labelStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.bold,
         ),
-        unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+        unselectedLabelStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -301,7 +301,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                     children: [
                       Text(
                         "$tabTitle Management",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0F172A),
@@ -310,7 +310,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                       ),
                       Text(
                         "Configure and track results",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: const Color(0xFF64748B),
                           fontWeight: FontWeight.w500,
@@ -334,7 +334,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      textStyle: GoogleFonts.plusJakartaSans(
+                      textStyle: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -406,7 +406,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
           const SizedBox(height: 32),
           Text(
             "No $tabTitle Found",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0F172A),
@@ -419,7 +419,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
             child: Text(
               "Your ${tabTitle.toLowerCase()} list is currently empty for this semester. Click the button below to initialize your first assessment.",
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: const Color(0xFF94A3B8),
                 height: 1.6,
@@ -453,7 +453,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                   borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 0,
-                textStyle: GoogleFonts.plusJakartaSans(
+                textStyle: GoogleFonts.inter(
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
                 ),
@@ -515,7 +515,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                   children: [
                     Text(
                       item['name'],
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
                         color: const Color(0xFF0F172A),
@@ -575,7 +575,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                     flex: 2,
                     child: Text(
                       item['name'] ?? "Untitled",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         color: const Color(0xFF001FF4),
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -586,7 +586,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                   Expanded(
                     child: Text(
                       item['type'] ?? "OFFLINE EXAM",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         color: const Color(0xFF1E293B),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -611,7 +611,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                       },
                       child: Text(
                         "Download Report",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: const Color(0xFF3B82F6),
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -623,7 +623,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                   Expanded(
                     child: Text(
                       item['status'] ?? "Results published",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         color:
                             (item['status'] == "Unpublished" ||
                                 item['status'] == "Draft")
@@ -637,7 +637,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                   Expanded(
                     child: Text(
                       item['date'] ?? "N/A",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         color: const Color(0xFF64748B),
                         fontSize: 13,
                       ),
@@ -683,7 +683,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                             item['status'] == "Unpublished"
                                 ? "Publish result"
                                 : "Unpublish result",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               color: const Color(0xFF3B82F6),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -706,7 +706,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
     return Text(
       title,
       textAlign: align,
-      style: GoogleFonts.plusJakartaSans(
+      style: GoogleFonts.inter(
         fontSize: 13,
         fontWeight: FontWeight.w800,
         color: const Color(0xFF1E293B),
@@ -731,7 +731,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
           ),
           title: Text(
             "Create New $tabTitle",
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w800),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -800,7 +800,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
               onPressed: () => Navigator.pop(context),
               child: Text(
                 "Cancel",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w600,
                   color: Colors.grey,
                 ),
@@ -856,3 +856,4 @@ class _EvaluationScreenState extends State<EvaluationScreen>
     );
   }
 }
+

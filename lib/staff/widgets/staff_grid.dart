@@ -99,7 +99,7 @@ class StaffWorkspaceGrid extends StatelessWidget {
             Text(
               item['label'],
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: const Color(0xFF0F172A),
                 fontWeight: FontWeight.w600,
@@ -111,3 +111,4 @@ class StaffWorkspaceGrid extends StatelessWidget {
     );
   }
 }
+

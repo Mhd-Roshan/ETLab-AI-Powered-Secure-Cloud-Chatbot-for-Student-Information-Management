@@ -143,7 +143,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
   Widget _breadcrumbItem(String text, {bool isLast = false}) {
     return Text(
       text,
-      style: GoogleFonts.plusJakartaSans(
+      style: GoogleFonts.inter(
         fontSize: 11,
         fontWeight: isLast ? FontWeight.w800 : FontWeight.w600,
         color: isLast ? Colors.white : Colors.white.withOpacity(0.7),
@@ -233,7 +233,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
             const SizedBox(width: 10),
             Text(
               text,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 color: isSelected
@@ -261,7 +261,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
           const SizedBox(width: 10),
           Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: color,
@@ -371,7 +371,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                               const SizedBox(width: 8),
                               Text(
                                 "Drop topic to create a slot",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFF3B82F6),
@@ -409,7 +409,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF64748B),
@@ -433,7 +433,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
           const SizedBox(width: 8),
           Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF1E293B),
@@ -503,7 +503,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
             const SizedBox(height: 24),
             Text(
               "Course Delivery Status",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0F172A),
@@ -511,7 +511,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
             ),
             Text(
               "${widget.subjectCode} · ${widget.subjectName}",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF64748B),
@@ -589,7 +589,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
             const SizedBox(height: 12),
             Text(
               value,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
                 color: const Color(0xFF0F172A),
@@ -598,7 +598,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
             const SizedBox(height: 4),
             Text(
               label,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF64748B),
@@ -624,7 +624,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
           children: [
             Text(
               title,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF1E293B),
@@ -632,7 +632,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
             ),
             Text(
               "${(pct * 100).toStringAsFixed(0)}%",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 color: color,
@@ -653,7 +653,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
         const SizedBox(height: 6),
         Text(
           subtitle,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF94A3B8),
@@ -948,7 +948,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                     const SizedBox(width: 6),
                     Text(
                       DateFormat('EEE, MMM d yyyy').format(date).toUpperCase(),
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF94A3B8),
@@ -963,7 +963,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                   children: [
                     Text(
                       "Slot ${data['slot']}",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF1E293B),
@@ -982,7 +982,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                       ),
                       child: Text(
                         status.toUpperCase(),
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
                           color: accentColor,
@@ -1025,7 +1025,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                           const SizedBox(width: 6),
                           Text(
                             isCovered ? "TOPIC COVERED" : "TOPIC UNCOVERED",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                               color: isCovered
@@ -1038,7 +1038,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                       const SizedBox(height: 6),
                       Text(
                         data['topic'] ?? 'No topic set',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF0F172A),
@@ -1093,7 +1093,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                         const SizedBox(width: 8),
                         Text(
                           isCovered ? "Mark as Uncovered" : "Mark as Covered",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                             color: isCovered
@@ -1119,7 +1119,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
       children: [
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF94A3B8),
@@ -1127,7 +1127,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
         ),
         Text(
           value,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF1E293B),
@@ -1143,7 +1143,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
       children: [
         Text(
           "Type",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF94A3B8),
@@ -1155,7 +1155,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
             const SizedBox(width: 4),
             Text(
               type,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF1E293B),
@@ -1178,7 +1178,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.w700,
             color: isWarning
@@ -1229,7 +1229,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
             const SizedBox(height: 20),
             Text(
               "Add Next Slot",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
@@ -1277,7 +1277,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                 const SizedBox(width: 16),
                 Text(
                   "Course Outline",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0F172A),
@@ -1310,7 +1310,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                         size: 20,
                       ),
                       hintText: "Search topics...",
-                      hintStyle: GoogleFonts.plusJakartaSans(
+                      hintStyle: GoogleFonts.inter(
                         color: const Color(0xFF94A3B8),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -1378,7 +1378,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      textStyle: GoogleFonts.plusJakartaSans(
+                      textStyle: GoogleFonts.inter(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
                       ),
@@ -1402,7 +1402,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
       ),
       child: Text(
         text,
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.w800,
           color: const Color(0xFF64748B),
@@ -1442,7 +1442,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
               Expanded(
                 child: Text(
                   data['title'],
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -1511,7 +1511,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                       ),
                       child: Text(
                         data['id'],
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           color: isCovered
@@ -1523,7 +1523,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                     const Spacer(),
                     Text(
                       data['duration'],
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF94A3B8),
@@ -1542,7 +1542,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                 const SizedBox(height: 10),
                 Text(
                   data['title'],
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: isCovered
@@ -1554,7 +1554,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                 const SizedBox(height: 4),
                 Text(
                   data['desc'],
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF64748B),
@@ -1584,7 +1584,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
           ),
           title: Text(
             "Add Delivery Record",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.w800,
               fontSize: 18,
             ),
@@ -1597,7 +1597,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                 // Date Picker
                 Text(
                   "Class Date",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                     color: const Color(0xFF64748B),
@@ -1636,7 +1636,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                         const SizedBox(width: 10),
                         Text(
                           DateFormat('EEEE, MMM d yyyy').format(selectedDate),
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                             color: const Color(0xFF001FF4),
@@ -1659,7 +1659,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     labelText: "Slot Number",
-                    labelStyle: GoogleFonts.plusJakartaSans(
+                    labelStyle: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                     ),
                     border: OutlineInputBorder(
@@ -1674,7 +1674,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                   controller: topicController,
                   decoration: InputDecoration(
                     labelText: "Topic Covered",
-                    labelStyle: GoogleFonts.plusJakartaSans(
+                    labelStyle: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                     ),
                     border: OutlineInputBorder(
@@ -1690,7 +1690,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     labelText: "Hours",
-                    labelStyle: GoogleFonts.plusJakartaSans(
+                    labelStyle: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                     ),
                     border: OutlineInputBorder(
@@ -1707,7 +1707,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
               onPressed: () => Navigator.pop(context),
               child: Text(
                 "Cancel",
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
               ),
             ),
             ElevatedButton(
@@ -1743,7 +1743,7 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
               },
               child: Text(
                 "Save",
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w800),
               ),
             ),
           ],
@@ -1798,3 +1798,4 @@ class _CoursePlanScreenState extends State<CoursePlanScreen>
     );
   }
 }
+

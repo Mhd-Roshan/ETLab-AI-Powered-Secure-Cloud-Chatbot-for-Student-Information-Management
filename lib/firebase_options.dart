@@ -67,3 +67,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'edlab-7993e.firebasestorage.app',
   );
 }
+

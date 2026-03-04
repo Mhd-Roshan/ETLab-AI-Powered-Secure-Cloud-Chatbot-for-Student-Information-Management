@@ -54,7 +54,7 @@ class _StaffCertScholarshipScreenState
       appBar: AppBar(
         title: Text(
           "Certificates & Scholarships",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1E293B),
           ),
@@ -160,7 +160,7 @@ class _StaffCertScholarshipScreenState
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: "Search students...",
-            hintStyle: GoogleFonts.plusJakartaSans(
+            hintStyle: GoogleFonts.inter(
               color: const Color(0xFF94A3B8),
               fontSize: 14,
             ),
@@ -191,7 +191,7 @@ class _StaffCertScholarshipScreenState
               if (val) setState(() => _selectedFilter = filters[index]);
             },
             selectedColor: const Color(0xFF001FF4),
-            labelStyle: GoogleFonts.plusJakartaSans(
+            labelStyle: GoogleFonts.inter(
               color: isSelected ? Colors.white : const Color(0xFF64748B),
               fontWeight: FontWeight.bold,
               fontSize: 13,
@@ -246,7 +246,7 @@ class _StaffCertScholarshipScreenState
                 ),
                 child: Text(
                   data['status']?.toUpperCase() ?? "PENDING",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: statusColor,
@@ -255,7 +255,7 @@ class _StaffCertScholarshipScreenState
               ),
               Text(
                 date,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: const Color(0xFF64748B),
                   fontWeight: FontWeight.w600,
@@ -305,7 +305,7 @@ class _StaffCertScholarshipScreenState
           const SizedBox(height: 16),
           Text(
             data['type'] ?? "Request",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1E293B),
@@ -314,7 +314,7 @@ class _StaffCertScholarshipScreenState
           const SizedBox(height: 4),
           Text(
             "${data['studentName']} | ${data['studentId']}",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 13,
               color: const Color(0xFF64748B),
             ),
@@ -394,7 +394,7 @@ class _StaffCertScholarshipScreenState
                       children: [
                         Text(
                           data['type'] ?? "Request Details",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             color: const Color(0xFF1E293B),
@@ -402,7 +402,7 @@ class _StaffCertScholarshipScreenState
                         ),
                         Text(
                           data['category'] ?? "Administration",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             color: const Color(0xFF64748B),
                           ),
@@ -435,7 +435,7 @@ class _StaffCertScholarshipScreenState
                   const SizedBox(height: 24),
                   Text(
                     "REASON/MESSAGE",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF94A3B8),
@@ -453,7 +453,7 @@ class _StaffCertScholarshipScreenState
                     ),
                     child: Text(
                       data['reason'] ?? "No reason provided.",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         color: const Color(0xFF475569),
                         height: 1.5,
@@ -483,7 +483,7 @@ class _StaffCertScholarshipScreenState
                   ),
                   child: Text(
                     "Close",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -503,7 +503,7 @@ class _StaffCertScholarshipScreenState
       children: [
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF94A3B8),
@@ -513,7 +513,7 @@ class _StaffCertScholarshipScreenState
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: valueColor ?? const Color(0xFF1E293B),
@@ -535,7 +535,7 @@ class _StaffCertScholarshipScreenState
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 13,
             color: const Color(0xFF64748B),
           ),
@@ -543,7 +543,7 @@ class _StaffCertScholarshipScreenState
         const Spacer(),
         Text(
           value,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: color,
@@ -580,7 +580,7 @@ class _StaffCertScholarshipScreenState
           const SizedBox(height: 24),
           Text(
             "No Requests Found",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF475569),
@@ -610,7 +610,7 @@ class _StaffCertScholarshipScreenState
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           "$newStatus Request",
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -618,14 +618,14 @@ class _StaffCertScholarshipScreenState
           children: [
             Text(
               "Are you sure you want to $newStatus this request?",
-              style: GoogleFonts.plusJakartaSans(),
+              style: GoogleFonts.inter(),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               decoration: InputDecoration(
                 hintText: "Add feedback (optional)...",
-                hintStyle: GoogleFonts.plusJakartaSans(fontSize: 14),
+                hintStyle: GoogleFonts.inter(fontSize: 14),
                 border: const OutlineInputBorder(),
               ),
               maxLines: 3,
@@ -637,7 +637,7 @@ class _StaffCertScholarshipScreenState
             onPressed: () => Navigator.pop(context),
             child: Text(
               "Cancel",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: const Color(0xFF64748B),
               ),
             ),
@@ -673,3 +673,4 @@ class _StaffCertScholarshipScreenState
     );
   }
 }
+

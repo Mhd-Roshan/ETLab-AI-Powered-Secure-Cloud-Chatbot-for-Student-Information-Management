@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../../services/student_service.dart';
+import 'widgets/liquid_glass_button.dart';
 
 class AssignmentsScreen extends StatefulWidget {
   final String? studentId;
@@ -190,17 +191,37 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF001FF4) : Colors.white,
+          // Liquid glass: frosted clear background on selection
+          gradient: isSelected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.80),
+                    Colors.white.withOpacity(0.40),
+                  ],
+                )
+              : null,
+          color: isSelected ? null : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF001FF4) : Colors.grey.shade200,
+            color: isSelected
+                ? Colors.white.withOpacity(0.8)
+                : Colors.grey.shade200,
+            width: isSelected ? 1.5 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF001FF4).withValues(alpha: 0.3),
-                    blurRadius: 8,
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 10,
                     offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.40),
+                    blurRadius: 6,
+                    spreadRadius: -2,
+                    offset: const Offset(0, -1),
                   ),
                 ]
               : null,
@@ -208,7 +229,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey.shade700,
+            color: isSelected ? Colors.grey.shade800 : Colors.grey.shade700,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             fontSize: 13,
           ),
@@ -514,32 +535,19 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                     ],
                   ),
                 ),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _handleUpload(
-                    context,
-                    assignmentId,
-                    data['subject'],
-                    data['staffId'],
-                  ),
-                  icon: const Icon(Icons.upload_file_outlined, size: 18),
-                  label: Text(
-                    data['type'] == 1
-                        ? "Upload Digital Copy"
-                        : "Upload Submission",
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: data['type'] == 1
-                        ? Colors.orange.shade700
-                        : Colors.black,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+              LiquidGlassButton(
+                isFullWidth: true,
+                onPressed: () => _handleUpload(
+                  context,
+                  assignmentId,
+                  data['subject'],
+                  data['staffId'],
+                ),
+                icon: const Icon(Icons.upload_file_outlined, size: 18),
+                label: Text(
+                  data['type'] == 1
+                      ? "Upload Digital Copy"
+                      : "Upload Submission",
                 ),
               ),
             ],
@@ -821,3 +829,4 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
     );
   }
 }
+

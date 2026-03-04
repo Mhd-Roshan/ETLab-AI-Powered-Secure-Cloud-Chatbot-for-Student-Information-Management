@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edlab/admin/admin_dashboard.dart';
 import 'package:edlab/hod/hod_dashboard.dart';
 import 'package:edlab/staff/staff_dashboard.dart';
+import 'package:edlab/staff_advisor/staff_advisor_dashboard.dart';
 import 'package:edlab/student/student_dashboard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -74,7 +75,7 @@ class _LoginPageState extends State<LoginPage>
         SnackBar(
           content: Text(
             'PLEASE FILL ALL FIELDS',
-            style: GoogleFonts.courierPrime(
+            style: GoogleFonts.inter(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
@@ -160,7 +161,7 @@ class _LoginPageState extends State<LoginPage>
             SnackBar(
               content: Text(
                 'USER NOT FOUND - Check Firebase Console',
-                style: GoogleFonts.courierPrime(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -194,7 +195,7 @@ class _LoginPageState extends State<LoginPage>
             SnackBar(
               content: Text(
                 'ACCOUNT SUSPENDED',
-                style: GoogleFonts.courierPrime(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -217,7 +218,7 @@ class _LoginPageState extends State<LoginPage>
             SnackBar(
               content: Text(
                 'INCORRECT PASSWORD',
-                style: GoogleFonts.courierPrime(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -257,7 +258,7 @@ class _LoginPageState extends State<LoginPage>
           SnackBar(
             content: Text(
               'ERROR: ${e.toString()}',
-              style: GoogleFonts.courierPrime(
+              style: GoogleFonts.inter(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -289,7 +290,11 @@ class _LoginPageState extends State<LoginPage>
         dashboard = StudentDashboard(studentRegNo: username);
         break;
       case 'staff':
+        dashboard = StaffDashboard(user: username);
+        break;
       case 'staff_advisor':
+        dashboard = const StaffAdvisorDashboard();
+        break;
       default:
         dashboard = StaffDashboard(user: username);
         break;
@@ -328,7 +333,7 @@ class _LoginPageState extends State<LoginPage>
               child: Text(
                 "EDLAB",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.silkscreen(
+                style: GoogleFonts.inter(
                   fontSize: isDesktop ? 200 : 100,
                   fontWeight: FontWeight.w900,
                   color: _textBlack,
@@ -394,7 +399,7 @@ class _LoginPageState extends State<LoginPage>
                   const SizedBox(height: 11),
                   Text(
                     "INITIALIZE SESSION...",
-                    style: GoogleFonts.courierPrime(
+                    style: GoogleFonts.inter(
                       color: Colors.grey[600],
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -436,7 +441,7 @@ class _LoginPageState extends State<LoginPage>
                               label: "User Identity",
                               child: TextFormField(
                                 controller: _usernameController,
-                                style: GoogleFonts.spaceMono(
+                                style: GoogleFonts.inter(
                                   color: _textBlack,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -453,7 +458,7 @@ class _LoginPageState extends State<LoginPage>
                               child: TextFormField(
                                 controller: _passwordController,
                                 obscureText: !_isPasswordVisible,
-                                style: GoogleFonts.spaceMono(
+                                style: GoogleFonts.inter(
                                   color: _textBlack,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -516,7 +521,7 @@ class _LoginPageState extends State<LoginPage>
                                         children: [
                                           Text(
                                             "LOGIN",
-                                            style: GoogleFonts.courierPrime(
+                                            style: GoogleFonts.inter(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                               letterSpacing: 1.0,
@@ -537,7 +542,7 @@ class _LoginPageState extends State<LoginPage>
                                   onPressed: () {},
                                   child: Text(
                                     "RESET KEY?",
-                                    style: GoogleFonts.spaceMono(
+                                    style: GoogleFonts.inter(
                                       color: _textBlack.withOpacity(0.6),
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
@@ -548,7 +553,7 @@ class _LoginPageState extends State<LoginPage>
                                   onPressed: () {},
                                   child: Text(
                                     "GET HELP",
-                                    style: GoogleFonts.spaceMono(
+                                    style: GoogleFonts.inter(
                                       color: _textBlack.withOpacity(0.6),
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
@@ -569,14 +574,14 @@ class _LoginPageState extends State<LoginPage>
                     children: [
                       Text(
                         "SYSTEM STATUS: ",
-                        style: GoogleFonts.spaceMono(
+                        style: GoogleFonts.inter(
                           color: Colors.grey[600],
                           fontSize: 11,
                         ),
                       ),
                       Text(
                         "ONLINE",
-                        style: GoogleFonts.spaceMono(
+                        style: GoogleFonts.inter(
                           color: Colors.green[700],
                           fontWeight: FontWeight.bold,
                           fontSize: 11,
@@ -648,7 +653,7 @@ class _LoginPageState extends State<LoginPage>
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             label.toUpperCase(),
-            style: GoogleFonts.spaceMono(
+            style: GoogleFonts.inter(
               color: _textBlack.withOpacity(0.6),
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -678,7 +683,7 @@ class _LoginPageState extends State<LoginPage>
   InputDecoration _buildInputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.spaceMono(color: Colors.grey[400], fontSize: 13),
+      hintStyle: GoogleFonts.inter(color: Colors.grey[400], fontSize: 13),
       prefixIcon: Icon(icon, color: _textBlack.withOpacity(0.7), size: 20),
       border: InputBorder.none,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -711,7 +716,7 @@ class _LoginPageState extends State<LoginPage>
                 return TextFormField(
                   controller: textController,
                   focusNode: focusNode,
-                  style: GoogleFonts.spaceMono(
+                  style: GoogleFonts.inter(
                     color: _textBlack,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
@@ -751,7 +756,7 @@ class _LoginPageState extends State<LoginPage>
                         dense: true,
                         title: Text(
                           option,
-                          style: GoogleFonts.spaceMono(
+                          style: GoogleFonts.inter(
                             color: _textBlack,
                             fontSize: 12,
                           ),

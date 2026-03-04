@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +25,7 @@ class StaffDashboard extends StatefulWidget {
 class _StaffDashboardState extends State<StaffDashboard> {
   final StaffService service = StaffService();
 
-  // âœ… Navigation Helper
+  // ✅ Navigation Helper
   void _navigateToAi(String prompt) {
     Navigator.push(
       context,
@@ -67,7 +67,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                   // --- SECTION 2: AI INTELLIGENCE HUB ---
                   Row(
                     children: [
-                      // âœ… INTERACTIVE AI CHAT (Main Assistant)
+                      // ✅ INTERACTIVE AI CHAT (Main Assistant)
                       Expanded(
                         flex: 3,
                         child: AiChatAssistantCard(
@@ -76,7 +76,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                       ),
                       const SizedBox(width: 20),
 
-                      // âœ… AI PREDICTIVE INSIGHT CARD
+                      // ✅ AI PREDICTIVE INSIGHT CARD
                       Expanded(
                         flex: 2,
                         child: GestureDetector(
@@ -99,7 +99,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                   // --- SECTION 3: WORKSPACE ---
                   Text(
                     "WORKSPACE",
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF64748B),
@@ -139,7 +139,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
 }
 
 // ------------------------------------------------------------------
-// âœ… 3. UPDATED AI CHAT CARD (Now Interactive!)
+// ✅ 3. UPDATED AI CHAT CARD (Now Interactive!)
 // ------------------------------------------------------------------
 class AiChatAssistantCard extends StatefulWidget {
   final Function(String) onSubmitted; // Callback for search
@@ -327,7 +327,7 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                           children: [
                             Text(
                               "EdLab AI Assistant",
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.inter(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
@@ -336,7 +336,7 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                             ),
                             Text(
                               "Powered by Gemini 2.0 Pro",
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.inter(
                                 color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -363,7 +363,7 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                           Expanded(
                             child: TextField(
                               controller: _controller,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.inter(
                                 color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -372,7 +372,7 @@ class _AiChatAssistantCardState extends State<AiChatAssistantCard> {
                                 hintText: _isListening
                                     ? "Listening..."
                                     : "Ask anything about your classes...",
-                                hintStyle: GoogleFonts.plusJakartaSans(
+                                hintStyle: GoogleFonts.inter(
                                   color: Colors.white.withValues(alpha: 0.5),
                                   fontSize: 15,
                                 ),
@@ -482,7 +482,7 @@ class _AiInsightCardState extends State<AiInsightCard> {
       final snapshot = await db.collection('attendance').get();
 
       if (snapshot.docs.isEmpty) {
-        // No real data â€” show sensible defaults
+        // No real data — show sensible defaults
         if (mounted) setState(() => _loading = false);
         return;
       }
@@ -621,7 +621,7 @@ class _AiInsightCardState extends State<AiInsightCard> {
                           const SizedBox(width: 10),
                           Text(
                             "AI PREDICTIVE INSIGHTS",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF94A3B8),
@@ -672,7 +672,7 @@ class _AiInsightCardState extends State<AiInsightCard> {
                                   children: [
                                     Text(
                                       "$pct%",
-                                      style: GoogleFonts.plusJakartaSans(
+                                      style: GoogleFonts.inter(
                                         color: const Color(0xFF0F172A),
                                         fontSize: 24,
                                         fontWeight: FontWeight.w900,
@@ -681,7 +681,7 @@ class _AiInsightCardState extends State<AiInsightCard> {
                                     ),
                                     Text(
                                       "Stability",
-                                      style: GoogleFonts.plusJakartaSans(
+                                      style: GoogleFonts.inter(
                                         color: const Color(0xFF94A3B8),
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
@@ -720,7 +720,7 @@ class _AiInsightCardState extends State<AiInsightCard> {
                                         const SizedBox(width: 6),
                                         Text(
                                           _riskLabel,
-                                          style: GoogleFonts.plusJakartaSans(
+                                          style: GoogleFonts.inter(
                                             color: _riskColor,
                                             fontSize: 11,
                                             fontWeight: FontWeight.w800,
@@ -784,7 +784,7 @@ class _AiInsightCardState extends State<AiInsightCard> {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               color: const Color(0xFF64748B),
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -797,3 +797,4 @@ class _AiInsightCardState extends State<AiInsightCard> {
     );
   }
 }
+

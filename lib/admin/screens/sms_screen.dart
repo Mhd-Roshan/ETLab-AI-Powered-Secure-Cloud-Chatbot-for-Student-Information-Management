@@ -87,7 +87,7 @@ class _SmsScreenState extends State<SmsScreen> {
                         children: [
                           Text(
                             "SMS Communication",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
@@ -162,7 +162,7 @@ class _SmsScreenState extends State<SmsScreen> {
                             children: [
                               Text(
                                 "Compose Message",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -290,7 +290,7 @@ class _SmsScreenState extends State<SmsScreen> {
                             children: [
                               Text(
                                 "Recent Logs",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -458,3 +458,4 @@ class _SmsScreenState extends State<SmsScreen> {
     );
   }
 }
+

@@ -18,6 +18,7 @@ import 'widgets/notification_bell.dart';
 import 'exams_screen.dart';
 import 'assignments_screen.dart';
 import '../login.dart';
+import 'widgets/liquid_glass_button.dart';
 
 class StudentDashboard extends StatefulWidget {
   final String studentRegNo;
@@ -115,7 +116,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     style: const TextStyle(fontSize: 12),
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton(
+                  LiquidGlassButton(
                     onPressed: () {
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(
@@ -124,7 +125,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         (route) => false,
                       );
                     },
-                    child: const Text('Go Back to Login'),
+                    label: const Text('Go Back to Login'),
                   ),
                 ],
               ),
@@ -277,7 +278,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 const SizedBox(width: 6),
                                 Text(
                                   "LIVE",
-                                  style: GoogleFonts.pressStart2p(
+                                  style: GoogleFonts.inter(
                                     color: Colors.green,
                                     fontWeight: FontWeight.bold,
                                     fontSize:
@@ -364,10 +365,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     _currentIndex = 1;
                   });
                 },
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 16,
-                  color: Color(0xFF001FF4),
+                  color: Colors.grey.shade500,
                 ),
               ),
             ],
@@ -465,11 +466,33 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 },
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF001FF4),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withOpacity(0.60),
+                        Colors.white.withOpacity(0.25),
+                      ],
+                    ),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.80),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.10),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.edit, color: Colors.white, size: 12),
+                  child: Icon(
+                    Icons.edit,
+                    color: Colors.grey.shade700,
+                    size: 12,
+                  ),
                 ),
               ),
             ),
@@ -485,7 +508,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     ? "Master Of Computer Application"
                     : (studentData['department'] ??
                           "Master Of Computer Application"),
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.inter(
                   color: Colors.grey,
                   fontSize: 12, // Slightly smaller to help it fit
                 ),
@@ -495,7 +518,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               const SizedBox(height: 2),
               Text(
                 "${studentData['firstName'] ?? 'ROSHAN'}".toUpperCase(),
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.inter(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
@@ -504,7 +527,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ),
               Text(
                 "Semester ${studentData['semester'] ?? '1'}",
-                style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12),
+                style: GoogleFonts.inter(color: Colors.grey, fontSize: 12),
                 overflow: TextOverflow.ellipsis,
               ),
             ],
@@ -581,7 +604,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
               "Today's Schedule",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            TextButton(
+            LiquidGlassButton(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -590,13 +614,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ),
                 );
               },
-              child: const Text(
+              label: const Text(
                 "See All",
-                style: TextStyle(
-                  color: Color(0xFF001FF4),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ),
           ],
@@ -890,17 +910,49 @@ class _StudentDashboardState extends State<StudentDashboard> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                // Liquid glass: clear frosted glass background
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.65),
+                    Colors.white.withOpacity(0.25),
+                  ],
+                ),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.85),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  // Soft outer shadow
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                  // Inner highlight shimmer
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.40),
+                    blurRadius: 6,
+                    spreadRadius: -2,
+                    offset: const Offset(0, -1),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: color, size: 30),
+              child: Icon(icon, color: color.withOpacity(0.8), size: 35),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               label,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+              ),
             ),
           ],
         ),
@@ -1022,15 +1074,28 @@ class _StudentDashboardState extends State<StudentDashboard> {
       duration: const Duration(milliseconds: 500),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF001FF4), Color(0xFF8C82FF)],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.55),
+            Colors.white.withOpacity(0.20),
+          ],
         ),
         borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: Colors.white.withOpacity(0.75), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF001FF4).withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.45),
+            blurRadius: 8,
+            spreadRadius: -2,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -1048,22 +1113,23 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         height: 12,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white70,
+                          color: Colors.grey,
                         ),
                       )
                     else
-                      const Icon(
+                      Icon(
                         Icons.auto_awesome,
-                        color: Colors.white,
+                        color: Colors.grey.shade600,
                         size: 16,
                       ),
                     const SizedBox(width: 5),
-                    const Text(
+                    Text(
                       "AI INSIGHT",
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: Colors.grey.shade500,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
                       ),
                     ),
                   ],
@@ -1081,16 +1147,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Colors.grey.shade800,
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         message,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
                           fontSize: 12,
                         ),
                       ),
@@ -1100,11 +1166,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ],
             ),
           ),
-          const Icon(Icons.auto_awesome, color: Colors.white, size: 30),
+          Icon(Icons.auto_awesome, color: Colors.grey.shade600, size: 30),
         ],
       ),
     );
   }
+
+  // Nav item data
+  static const List<_NavItemData> _navItems = [
+    _NavItemData(Icons.home_outlined, "Home"),
+    _NavItemData(Icons.business_center_outlined, "Acads"),
+    _NavItemData(Icons.chat_bubble_outline_rounded, "Chat"),
+    _NavItemData(Icons.person_outline_rounded, "Profile"),
+  ];
 
   Widget _buildBottomNavBar() {
     return Container(
@@ -1120,55 +1194,130 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ],
       ),
       child: SafeArea(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNavItem(0, Icons.home_outlined, "Home"),
-            _buildNavItem(1, Icons.business_center_outlined, "Acads"),
-            _buildNavItem(2, Icons.chat_bubble_outline_rounded, "Chat"),
-            _buildNavItem(3, Icons.person_outline_rounded, "Profile"),
-          ],
-        ),
-      ),
-    );
-  }
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final double totalWidth = constraints.maxWidth;
+            final int itemCount = _navItems.length;
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    bool isSelected = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 18 : 12,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF001FF4) : Colors.transparent,
-          borderRadius: BorderRadius.circular(25),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : Colors.grey.shade400,
-              size: 22,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+            // Width of the expanded (selected) pill
+            const double pillWidth = 122.0;
+            // Width of each unselected icon slot
+            final double unselectedSlotWidth =
+                (totalWidth - pillWidth) / (itemCount - 1);
+
+            // Compute left offset of the glass pill
+            double pillLeft = 0;
+            for (int i = 0; i < _currentIndex; i++) {
+              pillLeft += unselectedSlotWidth;
+            }
+            // Center the pill within its slot
+            pillLeft += (unselectedSlotWidth - pillWidth) / 2;
+            if (_currentIndex == 0) {
+              pillLeft = (unselectedSlotWidth - pillWidth) / 2;
+            }
+
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                // ── Sliding glass pill ──────────────────────────────
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 380),
+                  curve: Curves.easeInOutCubic,
+                  left: pillLeft,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Container(
+                      width: pillWidth,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white.withOpacity(0.55),
+                            Colors.white.withOpacity(0.20),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.75),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.09),
+                            blurRadius: 18,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 4),
+                          ),
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.40),
+                            blurRadius: 6,
+                            spreadRadius: -2,
+                            offset: const Offset(0, -1),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ],
+
+                // ── Nav items row ────────────────────────────────────
+                Row(
+                  children: List.generate(itemCount, (index) {
+                    final bool isSelected = _currentIndex == index;
+                    final data = _navItems[index];
+                    return GestureDetector(
+                      onTap: () => setState(() => _currentIndex = index),
+                      behavior: HitTestBehavior.opaque,
+                      child: SizedBox(
+                        width: isSelected ? pillWidth : unselectedSlotWidth,
+                        height: 70,
+                        child: Center(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                            child: isSelected
+                                ? Row(
+                                    key: ValueKey('sel_$index'),
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        data.icon,
+                                        color: Colors.grey.shade700,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 7),
+                                      Text(
+                                        data.label,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade800,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Icon(
+                                    key: ValueKey('unsel_$index'),
+                                    data.icon,
+                                    color: Colors.grey.shade400,
+                                    size: 26,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -1179,24 +1328,46 @@ class _StudentDashboardState extends State<StudentDashboard> {
       height: 48,
       width: 48,
       decoration: BoxDecoration(
-        color: const Color(0xFF001FF4),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.65),
+            Colors.white.withOpacity(0.25),
+          ],
+        ),
         shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withOpacity(0.80), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF001FF4).withValues(alpha: 0.3),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.10),
+            blurRadius: 18,
+            spreadRadius: 0,
             offset: const Offset(0, 5),
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.50),
+            blurRadius: 8,
+            spreadRadius: -2,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
       child: FloatingActionButton(
         onPressed: () => setState(() => _currentIndex = 2),
-        backgroundColor: const Color(0xFF001FF4),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         shape: const CircleBorder(),
         mini: true,
-        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+        child: Icon(Icons.auto_awesome, color: Colors.grey.shade700, size: 20),
       ),
     );
   }
+}
+
+/// Simple data class for bottom nav items.
+class _NavItemData {
+  final IconData icon;
+  final String label;
+  const _NavItemData(this.icon, this.label);
 }

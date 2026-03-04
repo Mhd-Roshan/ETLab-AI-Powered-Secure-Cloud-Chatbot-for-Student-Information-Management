@@ -51,7 +51,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
       appBar: AppBar(
         title: Text(
           "Staff Grievances",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1E293B),
           ),
@@ -104,7 +104,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
         icon: const Icon(Icons.add_comment_rounded, color: Colors.white),
         label: Text(
           "SUBMIT COMPLAINT",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -122,7 +122,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
         children: [
           Text(
             "SUBMIT A GRIEVANCE",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF94A3B8),
@@ -176,7 +176,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
                 ),
                 child: Text(
                   status.toUpperCase(),
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: statusColor,
@@ -185,7 +185,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
               ),
               Text(
                 date,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: const Color(0xFF94A3B8),
                   fontWeight: FontWeight.w600,
@@ -196,7 +196,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
           const SizedBox(height: 16),
           Text(
             data['subject'] ?? "No Subject",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1E293B),
@@ -205,7 +205,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
           const SizedBox(height: 4),
           Text(
             data['category'] ?? "General",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 12,
               color: const Color(0xFF64748B),
               fontWeight: FontWeight.w500,
@@ -216,7 +216,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
             data['description'] ?? "",
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: const Color(0xFF475569),
               height: 1.5,
@@ -229,7 +229,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
               children: [
                 Text(
                   "View Details",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF001FF4),
@@ -287,7 +287,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
               const SizedBox(height: 24),
               Text(
                 "Submit Grievance",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -387,7 +387,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
                   ),
                   child: Text(
                     "Submit to Admin",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -428,7 +428,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
                   Expanded(
                     child: Text(
                       "Grievance Detail",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
@@ -466,7 +466,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
                   onPressed: () => Navigator.pop(context),
                   child: Text(
                     "Dismiss",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -489,7 +489,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF94A3B8),
@@ -499,7 +499,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
         const SizedBox(height: 8),
         Text(
           value ?? "N/A",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
             color: isHighlight
@@ -525,7 +525,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
           const SizedBox(height: 24),
           Text(
             "No Grievances Found",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF475569),
@@ -534,7 +534,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
           const SizedBox(height: 8),
           Text(
             "Complaints you submit will appear here.",
-            style: GoogleFonts.plusJakartaSans(color: const Color(0xFF94A3B8)),
+            style: GoogleFonts.inter(color: const Color(0xFF94A3B8)),
           ),
         ],
       ),
@@ -546,7 +546,7 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         label.toUpperCase(),
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.bold,
           color: const Color(0xFF64748B),
@@ -569,3 +569,4 @@ class _StaffComplaintsScreenState extends State<StaffComplaintsScreen> {
     );
   }
 }
+

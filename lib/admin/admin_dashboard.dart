@@ -42,90 +42,95 @@ class _AdminDashboardState extends State<AdminDashboard> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Sidebar (Ensure your AdminSidebar has a button that calls _navigateToAi('') )
-          const SizedBox(width: 90, child: AdminSidebar(activeIndex: 0)),
+          // 1. Sidebar
+          const AdminSidebar(activeIndex: 0),
 
           // 2. Main Content Area
           Expanded(
             flex: 5,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 32, 32, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const AdminHeader(),
-                  const SizedBox(height: 32),
+            child: Scrollbar(
+              thumbVisibility: true,
+              thickness: 4,
+              radius: const Radius.circular(10),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 32, 32, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const AdminHeader(),
+                    const SizedBox(height: 32),
 
-                  // --- SECTION 1: LIVE METRIC CARDS ---
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildLiveCard(
-                          collection: 'students',
-                          title: 'Total Students',
-                          color: Colors.blueAccent,
+                    // --- SECTION 1: LIVE METRIC CARDS ---
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildLiveCard(
+                            collection: 'students',
+                            title: 'Total Students',
+                            color: Colors.blueAccent,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: _buildLiveCard(
-                          collection: 'staff',
-                          title: 'Total Staff',
-                          color: Colors.purpleAccent,
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: _buildLiveCard(
+                            collection: 'staff',
+                            title: 'Total Staff',
+                            color: Colors.purpleAccent,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: _buildLiveCard(
-                          collection: 'courses',
-                          title: 'Total Courses',
-                          color: Colors.orangeAccent,
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: _buildLiveCard(
+                            collection: 'courses',
+                            title: 'Total Courses',
+                            color: Colors.orangeAccent,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // --- SECTION 2: AI MODULES (UPDATED & INTERACTIVE) ---
-                  Row(
-                    children: [
-                      // ✅ INTERACTIVE AI CHAT
-                      Expanded(
-                        flex: 3,
-                        child: AiChatAssistantCard(
-                          onSubmitted: (text) => _navigateToAi(text),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-
-                      // ✅ STATIC INSIGHTS (3 Cards Layout)
-                      Expanded(
-                        flex: 2,
-                        child: StaticInsightsWidget(
-                          onInsightTap: (prompt) => _navigateToAi(prompt),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // --- SECTION 3: WORKSPACE TITLE ---
-                  Text(
-                    "WORKSPACE",
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF64748B),
-                      letterSpacing: 1.5,
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
 
-                  // --- SECTION 4: INTERACTIVE GRID ---
-                  const AdminWorkspaceGrid(),
-                ],
+                    const SizedBox(height: 24),
+
+                    // --- SECTION 2: AI MODULES (UPDATED & INTERACTIVE) ---
+                    Row(
+                      children: [
+                        // ✅ INTERACTIVE AI CHAT
+                        Expanded(
+                          flex: 3,
+                          child: AiChatAssistantCard(
+                            onSubmitted: (text) => _navigateToAi(text),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+
+                        // ✅ STATIC INSIGHTS (3 Cards Layout)
+                        Expanded(
+                          flex: 2,
+                          child: StaticInsightsWidget(
+                            onInsightTap: (prompt) => _navigateToAi(prompt),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // --- SECTION 3: WORKSPACE TITLE ---
+                    Text(
+                      "WORKSPACE",
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF64748B),
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // --- SECTION 4: INTERACTIVE GRID ---
+                    const AdminWorkspaceGrid(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -260,15 +265,20 @@ class _LiveMetricCarouselState extends State<LiveMetricCarousel> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        (currentData['title'] as String).toUpperCase(),
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFF94A3B8),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
+                      Expanded(
+                        child: Text(
+                          (currentData['title'] as String).toUpperCase(),
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFF94A3B8),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -294,7 +304,7 @@ class _LiveMetricCarouselState extends State<LiveMetricCarousel> {
                             const SizedBox(width: 4),
                             Text(
                               currentData['percent'],
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.inter(
                                 color: (currentData['isUp'] as bool)
                                     ? const Color(0xFF16A34A)
                                     : Colors.redAccent,
@@ -309,7 +319,7 @@ class _LiveMetricCarouselState extends State<LiveMetricCarousel> {
                   ),
                   Text(
                     currentData['count'],
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF0F172A),
@@ -863,7 +873,7 @@ class AiInsightCard extends StatelessWidget {
                   children: [
                     Text(
                       "85%",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         color: const Color(0xFF0F172A),
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -871,7 +881,7 @@ class AiInsightCard extends StatelessWidget {
                     ),
                     Text(
                       "Stability",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         color: Colors.grey,
                         fontSize: 11,
                       ),
@@ -893,7 +903,7 @@ class AiInsightCard extends StatelessWidget {
                   children: [
                     Text(
                       "Risk",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         color: const Color(0xFF0F172A),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
@@ -910,7 +920,7 @@ class AiInsightCard extends StatelessWidget {
                       ),
                       child: Text(
                         "LOW",
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.inter(
                           color: const Color(0xFF15803D),
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -933,7 +943,7 @@ class AiInsightCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       "12 At Risk",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         color: Colors.grey,
                         fontSize: 11,
                       ),
@@ -954,7 +964,7 @@ class AiInsightCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       "45 Improving",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         color: Colors.grey,
                         fontSize: 11,
                       ),

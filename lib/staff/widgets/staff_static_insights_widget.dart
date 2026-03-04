@@ -542,3 +542,4 @@ class _StaffStaticInsightsWidgetState extends State<StaffStaticInsightsWidget>
     super.dispose();
   }
 }
+

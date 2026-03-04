@@ -234,7 +234,7 @@ class MyClassesScreen extends StatelessWidget {
             Text(
               service['title'],
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF0F172A),
@@ -276,7 +276,7 @@ class MyClassesScreen extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               "Displaying 1-28",
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontStyle: FontStyle.italic,
                 color: Colors.grey.shade400,
@@ -293,7 +293,7 @@ class MyClassesScreen extends StatelessWidget {
       child: Text(
         title,
         textAlign: TextAlign.center,
-        style: GoogleFonts.poppins(
+        style: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF1E293B),
@@ -302,3 +302,4 @@ class MyClassesScreen extends StatelessWidget {
     );
   }
 }
+

@@ -40,7 +40,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
         builder: (context, setDialogState) {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text("Create $type Survey", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+            title: Text("Create $type Survey", style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -172,7 +172,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                   const AdminHeader(),
                   const SizedBox(height: 32),
                   Text("Survey Management",
-                      style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                      style: GoogleFonts.inter(fontSize: 26, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                   const SizedBox(height: 8),
                   Text("Publish and monitor institutional feedback forms", style: GoogleFonts.inter(color: Colors.grey)),
                   const SizedBox(height: 32),
@@ -203,7 +203,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
           children: [
             Icon(icon, color: const Color(0xFF475569), size: 22),
             const SizedBox(width: 10),
-            Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF475569))),
+            Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF475569))),
           ],
         ),
         ElevatedButton.icon(

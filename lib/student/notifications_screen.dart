@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'assignments_screen.dart';
+import 'widgets/liquid_glass_button.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final String? studentId;
@@ -70,14 +71,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
         actions: [
-          TextButton(
+          LiquidGlassButton(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             onPressed: _clearAll,
-            child: const Text(
+            label: const Text(
               "Clear All",
-              style: TextStyle(
-                color: Color(0xFF001FF4),
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
           const SizedBox(width: 8),
@@ -249,3 +248,4 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 }
+

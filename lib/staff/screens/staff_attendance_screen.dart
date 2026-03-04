@@ -175,7 +175,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
           isScrollable: true,
           labelColor: const Color(0xFF001FF4),
           unselectedLabelColor: const Color(0xFF64748B),
-          labelStyle: GoogleFonts.plusJakartaSans(
+          labelStyle: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),
@@ -249,7 +249,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                     children: [
                       Text(
                         _subject,
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF1E293B),
                           fontSize: 15,
@@ -258,7 +258,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                       const SizedBox(height: 2),
                       Text(
                         "MCA • ${DateFormat('EEEE').format(_selectedDate)} • ${scheduledPeriods.isEmpty ? 'No class today' : '${scheduledPeriods.length} period(s) scheduled'}",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: const Color(0xFF64748B),
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -306,7 +306,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
             const SizedBox(height: 14),
             Text(
               "No ${_subject.split(' ').take(2).join(' ')} class on ${DateFormat('EEEE').format(_selectedDate)}",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF94A3B8),
                 fontSize: 14,
@@ -315,7 +315,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
             const SizedBox(height: 6),
             Text(
               "Try Monday (Period 1) or Tuesday (Period 5)",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: const Color(0xFFCBD5E1),
                 fontSize: 12,
               ),
@@ -367,7 +367,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
               children: [
                 Text(
                   "DAILY",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                     fontSize: 12,
@@ -385,7 +385,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
               children: [
                 Text(
                   "Daily Attendance",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF1E293B),
                     fontSize: 16,
@@ -401,7 +401,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                     const SizedBox(width: 6),
                     Text(
                       "Full Day Session",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF64748B),
                         fontSize: 13,
@@ -454,7 +454,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                   ),
                   label: Text(
                     "Submitted",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF166534),
                       fontSize: 12,
@@ -484,7 +484,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                 icon: const Icon(Icons.edit_note_rounded, size: 18),
                 label: Text(
                   "Take Attendance",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -555,7 +555,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                     children: [
                       Text(
                         DateFormat('EEEE').format(_selectedDate),
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: Colors.white70,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -564,7 +564,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                       const SizedBox(height: 2),
                       Text(
                         DateFormat('dd MMM yyyy').format(_selectedDate),
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -670,7 +670,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
         ),
         child: Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
             fontSize: 13,
             color: isActive ? const Color(0xFF001FF4) : const Color(0xFF64748B),
@@ -711,7 +711,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                 const SizedBox(height: 12),
                 Text(
                   "No attendance recorded for ${DateFormat('dd MMM yyyy').format(_selectedDate)}",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     color: const Color(0xFF94A3B8),
                     fontSize: 14,
                   ),
@@ -719,7 +719,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                 const SizedBox(height: 8),
                 Text(
                   "Click \"Take Attendance\" to start marking",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     color: const Color(0xFFCBD5E1),
                     fontSize: 12,
                   ),
@@ -750,7 +750,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                 const SizedBox(height: 12),
                 Text(
                   "No attendance recorded for ${DateFormat('dd MMM yyyy').format(_selectedDate)}",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     color: const Color(0xFF94A3B8),
                     fontSize: 14,
                   ),
@@ -758,7 +758,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                 const SizedBox(height: 8),
                 Text(
                   "Click \"Take Attendance\" to start marking",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     color: const Color(0xFFCBD5E1),
                     fontSize: 12,
                   ),
@@ -825,7 +825,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                     child: Center(
                       child: Text(
                         "Daily",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF001FF4),
                           fontSize: 10,
@@ -840,7 +840,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                       children: [
                         Text(
                           group['subject'] as String,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF1E293B),
                             fontSize: 13,
@@ -879,7 +879,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                     children: [
                       Text(
                         "${percentage.toStringAsFixed(0)}%",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
                           color: percentage >= 75
                               ? const Color(0xFF10B981)
@@ -891,7 +891,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                       ),
                       Text(
                         "attendance",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: const Color(0xFF94A3B8),
                           fontSize: 10,
                         ),
@@ -942,7 +942,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                                 const SizedBox(width: 4),
                                 Text(
                                   "Edit",
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.w700,
                                     color: const Color(0xFF001FF4),
                                     fontSize: 11,
@@ -993,7 +993,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
         const SizedBox(width: 4),
         Text(
           "$value $label",
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             color: const Color(0xFF64748B),
             fontSize: 11,
             fontWeight: FontWeight.w500,
@@ -1054,7 +1054,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                   color: Color(0xFF64748B),
                 ),
                 hintText: "Search MCA Students by name or register number...",
-                hintStyle: GoogleFonts.plusJakartaSans(
+                hintStyle: GoogleFonts.inter(
                   color: const Color(0xFF94A3B8),
                 ),
                 border: InputBorder.none,
@@ -1084,7 +1084,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                       const SizedBox(height: 16),
                       Text(
                         "No students found in MCA",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 16,
                           color: const Color(0xFF94A3B8),
                           fontWeight: FontWeight.w600,
@@ -1196,7 +1196,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
             backgroundColor: const Color(0xFFF1F5F9),
             child: Text(
               name.isNotEmpty ? name[0].toUpperCase() : "?",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF001FF4),
                 fontSize: 16,
@@ -1210,7 +1210,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
               children: [
                 Text(
                   name,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF1E293B),
                     fontSize: 15,
@@ -1218,7 +1218,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                 ),
                 Text(
                   regNo,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF64748B),
                     fontSize: 12,
@@ -1273,7 +1273,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
           children: [
             Text(
               "${percentage.toStringAsFixed(1)}%",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w800,
                 color: color,
                 fontSize: 18,
@@ -1281,7 +1281,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
             ),
             Text(
               present != null ? "$present/$total Classes" : "$total Classes",
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF94A3B8),
                 fontSize: 11,
@@ -1386,7 +1386,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                       children: [
                         Text(
                           widget.subject,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0F172A),
@@ -1396,7 +1396,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                         ),
                         Text(
                           "${DateFormat('dd MMM yyyy').format(widget.date)} • Period ${widget.period} • ${widget.department}",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             color: const Color(0xFF64748B),
                             fontSize: 13,
                           ),
@@ -1524,7 +1524,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                     return Center(
                       child: Text(
                         "No students $_filter",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: const Color(0xFF94A3B8),
                         ),
                       ),
@@ -1561,7 +1561,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                               backgroundColor: const Color(0xFFF1F5F9),
                               child: Text(
                                 name.isNotEmpty ? name[0].toUpperCase() : "?",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFF64748B),
                                   fontSize: 14,
@@ -1575,7 +1575,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                                 children: [
                                   Text(
                                     name,
-                                    style: GoogleFonts.plusJakartaSans(
+                                    style: GoogleFonts.inter(
                                       fontWeight: FontWeight.w600,
                                       color: const Color(0xFF1E293B),
                                       fontSize: 14,
@@ -1583,7 +1583,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                                   ),
                                   Text(
                                     regNo,
-                                    style: GoogleFonts.plusJakartaSans(
+                                    style: GoogleFonts.inter(
                                       color: const Color(0xFF94A3B8),
                                       fontSize: 12,
                                     ),
@@ -1669,7 +1669,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                         setState(() => _attendance.updateAll((_, __) => true)),
                     child: Text(
                       "Mark All Present",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF3B82F6),
                       ),
@@ -1699,7 +1699,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                           )
                         : Text(
                             "Save Attendance",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1759,7 +1759,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
             color: textColor,
             fontSize: 12,
@@ -1850,3 +1850,4 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
     }
   }
 }
+

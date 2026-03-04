@@ -44,7 +44,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
             ),
             title: Text(
               "Create Ledger Account",
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -195,7 +195,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
                         children: [
                           Text(
                             "Accounts & Ledgers",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 26,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
@@ -237,7 +237,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
 
                   Text(
                     "Active Ledger Accounts",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -380,7 +380,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
           const SizedBox(height: 12),
           Text(
             data['name'] ?? "Untitled Ledger",
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -400,7 +400,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   ),
                   Text(
                     "₹${NumberFormat('#,##,###').format(data['balance'])}",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF0F172A),
@@ -477,7 +477,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 ),
                 Text(
                   val,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -511,3 +511,4 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
   }
 }
+

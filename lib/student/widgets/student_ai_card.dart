@@ -16,7 +16,8 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
   final List<Map<String, dynamic>> _messages = [
     {
       'isUser': false,
-      'text': "Hi Roshan! 🚀\nI'm your EdLab AI assistant. I can check your personal timetable, attendance trends, or upcoming assignments. How can I help?",
+      'text':
+          "Hi Roshan! 🚀\nI'm your EdLab AI assistant. I can check your personal timetable, attendance trends, or upcoming assignments. How can I help?",
       'time': DateTime.now(),
     },
   ];
@@ -37,7 +38,8 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
               padding: const EdgeInsets.all(20),
               itemCount: _messages.length + (_isTyping ? 1 : 0),
               itemBuilder: (context, index) {
-                if (_isTyping && index == _messages.length) return _buildTypingIndicator();
+                if (_isTyping && index == _messages.length)
+                  return _buildTypingIndicator();
                 return _buildMessageBubble(_messages[index]);
               },
             ),
@@ -58,21 +60,39 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
       backgroundColor: Colors.white,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.black54),
+        icon: const Icon(
+          Icons.arrow_back_ios_new,
+          size: 20,
+          color: Colors.black54,
+        ),
         onPressed: () => Navigator.pop(context),
       ),
       title: Row(
         children: [
           CircleAvatar(
             backgroundColor: Colors.blue.shade50,
-            child: const Icon(Icons.auto_awesome, color: Color(0xFF3D6AF2), size: 20),
+            child: const Icon(
+              Icons.auto_awesome,
+              color: Color(0xFF3D6AF2),
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("edbot", style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-              Text("Online • Student Assistant", style: TextStyle(color: Colors.green, fontSize: 12)),
+              Text(
+                "edbot",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                "Online • Student Assistant",
+                style: TextStyle(color: Colors.green, fontSize: 12),
+              ),
             ],
           ),
         ],
@@ -99,9 +119,18 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
           return ActionChip(
             backgroundColor: Colors.white,
             side: BorderSide(color: Colors.grey.shade200),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            avatar: Icon(actions[i]['icon'] as IconData, size: 16, color: const Color(0xFF3D6AF2)),
-            label: Text(actions[i]['label'] as String, style: const TextStyle(fontSize: 12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            avatar: Icon(
+              actions[i]['icon'] as IconData,
+              size: 16,
+              color: const Color(0xFF3D6AF2),
+            ),
+            label: Text(
+              actions[i]['label'] as String,
+              style: const TextStyle(fontSize: 12),
+            ),
             onPressed: () => _handleMessageSend(actions[i]['label'] as String),
           );
         },
@@ -117,7 +146,10 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
             child: const Icon(Icons.add, color: Colors.grey),
           ),
           const SizedBox(width: 12),
@@ -134,7 +166,10 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _textController,
-                      decoration: const InputDecoration(hintText: "Ask about your schedule...", border: InputBorder.none),
+                      decoration: const InputDecoration(
+                        hintText: "Ask about your schedule...",
+                        border: InputBorder.none,
+                      ),
                       onSubmitted: _handleMessageSend,
                     ),
                   ),
@@ -148,8 +183,39 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
             onTap: () => _handleMessageSend(_textController.text),
             child: Container(
               padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(color: Color(0xFF3D6AF2), shape: BoxShape.circle),
-              child: const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.65),
+                    Colors.white.withOpacity(0.25),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.85),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.40),
+                    blurRadius: 6,
+                    spreadRadius: -2,
+                    offset: const Offset(0, -1),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.arrow_upward,
+                color: Colors.grey.shade700,
+                size: 22,
+              ),
             ),
           ),
         ],
@@ -164,7 +230,9 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
         decoration: BoxDecoration(
           color: isUser ? const Color(0xFF3D6AF2) : Colors.white,
           borderRadius: BorderRadius.only(
@@ -173,11 +241,17 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
             bottomLeft: Radius.circular(isUser ? 20 : 4),
             bottomRight: Radius.circular(isUser ? 4 : 20),
           ),
-          boxShadow: [if (!isUser) BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)],
+          boxShadow: [
+            if (!isUser)
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5),
+          ],
         ),
         child: Text(
           msg['text'],
-          style: TextStyle(color: isUser ? Colors.white : Colors.black87, height: 1.4),
+          style: TextStyle(
+            color: isUser ? Colors.white : Colors.black87,
+            height: 1.4,
+          ),
         ),
       ),
     );
@@ -188,7 +262,14 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Text("edbot is thinking...", style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic)),
+        child: Text(
+          "edbot is thinking...",
+          style: TextStyle(
+            color: Colors.grey,
+            fontSize: 12,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
       ),
     );
   }
@@ -204,12 +285,16 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
     _scrollToBottom();
 
     // Calling your service with userId
-    String response = await _aiService.sendMessage('student_user', text); 
+    String response = await _aiService.sendMessage('student_user', text);
 
     if (mounted) {
       setState(() {
         _isTyping = false;
-        _messages.add({'isUser': false, 'text': response, 'time': DateTime.now()});
+        _messages.add({
+          'isUser': false,
+          'text': response,
+          'time': DateTime.now(),
+        });
       });
       _scrollToBottom();
     }
@@ -218,8 +303,13 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
 }
+

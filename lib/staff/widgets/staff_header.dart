@@ -66,7 +66,7 @@ class StaffHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   color: textColor,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
@@ -77,7 +77,7 @@ class StaffHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     color: subColor,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -108,14 +108,14 @@ class StaffHeader extends StatelessWidget {
               ),
               child: TextField(
                 textAlignVertical: TextAlignVertical.center,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   color: textColor,
                   fontSize: 15,
                 ),
                 decoration: InputDecoration(
                   isDense: true,
                   hintText: "Search students, staff, or courses...",
-                  hintStyle: GoogleFonts.plusJakartaSans(
+                  hintStyle: GoogleFonts.inter(
                     color: isWhite
                         ? Colors.white.withValues(alpha: 0.5)
                         : const Color(0xFF94A3B8),
@@ -252,7 +252,7 @@ class StaffHeader extends StatelessWidget {
                       children: [
                         Text(
                           "Notifications",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -336,7 +336,7 @@ class StaffHeader extends StatelessWidget {
                             children: [
                               Text(
                                 data['title'] ?? "Alert",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontSize: 14,
                                   fontWeight: isRead
                                       ? FontWeight.normal
@@ -381,7 +381,7 @@ class StaffHeader extends StatelessWidget {
                     Center(
                       child: Text(
                         "View All Alerts",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: const Color(0xFF001FF4),
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
@@ -398,3 +398,4 @@ class StaffHeader extends StatelessWidget {
     );
   }
 }
+

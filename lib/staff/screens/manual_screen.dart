@@ -161,7 +161,7 @@ class _ManualScreenState extends State<ManualScreen>
                               ),
                               Text(
                                 "Resources",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   color: Colors.white.withOpacity(0.8),
                                   fontSize: 11,
                                 ),
@@ -173,7 +173,7 @@ class _ManualScreenState extends State<ManualScreen>
                               ),
                               Text(
                                 "System Guide",
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   color: Colors.white,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -188,7 +188,7 @@ class _ManualScreenState extends State<ManualScreen>
                           padding: const EdgeInsets.symmetric(horizontal: 40),
                           child: Text(
                             "Master the EdLab ecosystem with our structured documentation and feature guides.",
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               color: Colors.white.withOpacity(0.8),
                               fontWeight: FontWeight.w500,
@@ -254,11 +254,11 @@ class _ManualScreenState extends State<ManualScreen>
         labelColor: const Color(0xFF001FF4),
         unselectedLabelColor: Colors.white,
         dividerColor: Colors.transparent,
-        labelStyle: GoogleFonts.plusJakartaSans(
+        labelStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.bold,
         ),
-        unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+        unselectedLabelStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -324,7 +324,7 @@ class _ManualScreenState extends State<ManualScreen>
               Expanded(
                 child: Text(
                   overviewData['intro'] ?? "No introduction available.",
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: const Color(0xFF475569),
                     height: 1.6,
@@ -385,7 +385,7 @@ class _ManualScreenState extends State<ManualScreen>
             child: Center(
               child: Text(
                 code,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   color: color,
@@ -417,7 +417,7 @@ class _ManualScreenState extends State<ManualScreen>
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF0F172A),
@@ -430,7 +430,7 @@ class _ManualScreenState extends State<ManualScreen>
                             const SizedBox(width: 8),
                             Text(
                               subtitle,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.inter(
                                 fontSize: 13,
                                 color: const Color(0xFF64748B),
                                 fontWeight: FontWeight.w500,
@@ -539,7 +539,7 @@ class _ManualScreenState extends State<ManualScreen>
             children: [
               Text(
                 "System Version",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: const Color(0xFF64748B),
                   fontWeight: FontWeight.w600,
@@ -548,7 +548,7 @@ class _ManualScreenState extends State<ManualScreen>
               const SizedBox(height: 4),
               Text(
                 supportData['version'] ?? "EdLab v2.4.0",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: const Color(0xFF0F172A),
                   fontWeight: FontWeight.w800,
@@ -578,7 +578,7 @@ class _ManualScreenState extends State<ManualScreen>
           children: [
             Text(
               title,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0F172A),
@@ -586,7 +586,7 @@ class _ManualScreenState extends State<ManualScreen>
             ),
             Text(
               subtitle,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: const Color(0xFF64748B),
               ),
@@ -634,7 +634,7 @@ class _ManualScreenState extends State<ManualScreen>
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0F172A),
@@ -642,7 +642,7 @@ class _ManualScreenState extends State<ManualScreen>
                 ),
                 Text(
                   subtitle,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: color,
                     fontWeight: FontWeight.w700,
@@ -651,7 +651,7 @@ class _ManualScreenState extends State<ManualScreen>
                 const SizedBox(height: 12),
                 Text(
                   desc,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     color: const Color(0xFF64748B),
                     height: 1.5,
@@ -682,7 +682,7 @@ class _ManualScreenState extends State<ManualScreen>
             children: [
               Text(
                 "Q:",
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: const Color(0xFF001FF4),
@@ -692,7 +692,7 @@ class _ManualScreenState extends State<ManualScreen>
               Expanded(
                 child: Text(
                   question,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF0F172A),
@@ -706,7 +706,7 @@ class _ManualScreenState extends State<ManualScreen>
             padding: const EdgeInsets.only(left: 30),
             child: Text(
               answer,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: const Color(0xFF64748B),
                 height: 1.6,
@@ -756,7 +756,7 @@ class _ManualScreenState extends State<ManualScreen>
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: const Color(0xFF64748B),
                     fontWeight: FontWeight.w600,
@@ -764,7 +764,7 @@ class _ManualScreenState extends State<ManualScreen>
                 ),
                 Text(
                   content,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     color: const Color(0xFF0F172A),
                     fontWeight: FontWeight.w800,
@@ -786,7 +786,7 @@ class _ManualScreenState extends State<ManualScreen>
             ),
             child: Text(
               buttonLabel,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
@@ -797,3 +797,4 @@ class _ManualScreenState extends State<ManualScreen>
     );
   }
 }
+

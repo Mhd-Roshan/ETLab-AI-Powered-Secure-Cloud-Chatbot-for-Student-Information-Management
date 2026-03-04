@@ -140,24 +140,35 @@ class StudentService {
   }
 
   // 9. Initialize Attendance Data if missing
-  // 9. Initialize Attendance Data if missing
-  Future<void> initializeAttendanceData(String regNo) async {
-    print(
-      "Initializing attendance for student: $regNo",
-    ); // Use print for debug console visibility
+  Future<void> initializeAttendanceData(
+    String regNo, {
+    List<Map<String, dynamic>>? syllabusSubjects,
+  }) async {
+    print("Initializing attendance for student: $regNo");
 
     try {
       final batch = _db.batch();
-      final List<Map<String, dynamic>> subjects =
-          []; // Should be fetched from subject master
+      final List<Map<String, dynamic>> subjects = syllabusSubjects ?? [];
+
+      if (subjects.isEmpty) {
+        // Fallback or fetch from master if needed
+        print("No subjects provided for initialization.");
+        return;
+      }
 
       for (var subject in subjects) {
-        final docRef = _db.collection('attendance').doc();
+        // Create a summary attendance record for the student-subject pair
+        final docRef = _db
+            .collection('attendance')
+            .doc("${regNo}_${subject['name'].replaceAll(' ', '_')}");
         batch.set(docRef, {
-          ...subject,
           'studentId': regNo,
+          'subject': subject['name'],
+          'subjectCode': subject['id'] ?? '-',
+          'present': subject['attended'] ?? 0,
+          'total': subject['totalClasses'] ?? 0,
           'lastUpdated': FieldValue.serverTimestamp(),
-        });
+        }, SetOptions(merge: true));
       }
 
       print("Committing batch of ${subjects.length} attendance records...");
@@ -550,7 +561,10 @@ class StudentService {
 
       for (var doc in docs) {
         final data = doc.data();
-        final subjectName = data['subjectName'] ?? data['subject'] ?? 'Unknown';
+        final subjectName =
+            (data['subjectName'] ?? data['subject'] ?? 'Unknown')
+                .toString()
+                .toUpperCase();
         final isRealRecord = data.containsKey('isPresent');
 
         // If we have individual isPresent records, skip summary records
@@ -632,7 +646,179 @@ class StudentService {
         .snapshots();
   }
 
-  // 18. Seed All Academics Data (Dev Tool)
+  // 26. Get Dynamic Events
+  Stream<QuerySnapshot> getEvents() {
+    return _db
+        .collection('events')
+        .orderBy('date', descending: false)
+        .snapshots();
+  }
+
+  // 27. Seed Events Data
+  Future<void> seedEventsData() async {
+    final now = DateTime.now();
+    final tomorrow = now.add(const Duration(days: 1));
+
+    final List<Map<String, dynamic>> events = [
+      {
+        'title': "Maha Shivratri Holiday",
+        'subtitle': "College Closed • State Holiday",
+        'type': 'holiday',
+        'date': Timestamp.fromDate(now),
+        'icon': 'beach_access',
+        'color': '0xFFFF5722', // deepOrange
+      },
+      {
+        'title': "Tech Fest Innovate '26",
+        'subtitle': "Main Campus • Annual Tech Event",
+        'type': 'event',
+        'date': Timestamp.fromDate(tomorrow),
+        'icon': 'emoji_events',
+        'color': '0xFFFFA000', // amber
+      },
+      {
+        'title': "Guest Lecture: Future of AI",
+        'subtitle': "Auditorium • Keynote Session",
+        'type': 'lecture',
+        'date': Timestamp.fromDate(now),
+        'icon': 'mic',
+        'color': '0xFF673AB7', // deepPurple
+      },
+      {
+        'title': "Mid-Term Exam (MCA101)",
+        'subtitle': "Exam Hall A • 10:00 AM",
+        'type': 'exam',
+        'date': Timestamp.fromDate(tomorrow),
+        'icon': 'edit_calendar',
+        'color': '0xFFF44336', // red
+      },
+    ];
+
+    final batch = _db.batch();
+    // Clear existing events first to avoid duplicates on multiple seeds
+    final existingEvents = await _db.collection('events').get();
+    for (var doc in existingEvents.docs) {
+      batch.delete(doc.reference);
+    }
+
+    for (var event in events) {
+      final docRef = _db.collection('events').doc();
+      batch.set(docRef, event);
+    }
+    await batch.commit();
+  }
+
+  // 28. Seed Syllabus Data with Enriched Info
+  Future<void> seedSyllabusData({String? studentId}) async {
+    try {
+      // Also seed events when seeding syllabus
+      await seedEventsData();
+
+      final List<Map<String, dynamic>> mcaSubjects = [
+        {
+          'id': 'MCA_201_ADS',
+          'name': 'ADVANCED DATA STRUCTURES',
+          'teacherName': 'Dr. Sarah Wilson',
+          'totalClasses': 8,
+          'attended': 6,
+          'subjectCoverage': 85,
+          'courseOutcomes': [
+            'Analyze time and space complexity of algorithms',
+            'Implement advanced tree and graph structures',
+            'Apply hashing techniques for information retrieval',
+          ],
+          'modules': [
+            'Module 1: Dynamic Programming & Greedy Approach',
+            'Module 2: Advanced Tree Structures (B-Trees, AVL)',
+            'Module 3: Graph Algorithms (Dijkstra, Floyd-Warshall)',
+            'Module 4: String Matching Algorithms',
+          ],
+        },
+        {
+          'id': 'MCA_203_ASE',
+          'name': 'ADVANCED SOFTWARE ENGINEERING',
+          'teacherName': 'Prof. Michael Chen',
+          'totalClasses': 8,
+          'attended': 6,
+          'subjectCoverage': 70,
+          'courseOutcomes': [
+            'Explain agile methodologies and DevOps practices',
+            'Design scalable software architectures',
+            'Implement automated testing frameworks',
+          ],
+          'modules': [
+            'Module 1: Agile Software Development Life Cycle',
+            'Module 2: Object-Oriented Design Patterns',
+            'Module 3: Software Testing & Quality Assurance',
+            'Module 4: Software Maintenance & Re-engineering',
+          ],
+        },
+        {
+          'id': 'MCA_205_DFCA',
+          'name': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
+          'teacherName': 'Dr. Robert Brown',
+          'totalClasses': 8,
+          'attended': 6,
+          'subjectCoverage': 90,
+          'courseOutcomes': [
+            'Analyze digital logic circuits and boolean algebra',
+            'Evaluate processor performance metrics',
+            'Design memory hierarchies for optimal cache usage',
+          ],
+          'modules': [
+            'Module 1: Number Systems & Boolean Algebra',
+            'Module 2: Combinational & Sequential Circuits',
+            'Module 3: Processor & Control Unit Design',
+            'Module 4: Input/Output & Memory Organization',
+          ],
+        },
+        {
+          'id': 'MCA_206_WPL',
+          'name': 'WEB PROGRAMMING LAB',
+          'teacherName': 'Dr. Robert Brown',
+          'totalClasses': 8,
+          'attended': 6,
+          'subjectCoverage': 100,
+          'courseOutcomes': [
+            'Build responsive websites using modern technologies',
+            'Implement server-side logic and database connectivity',
+            'Deploy full-stack web applications to cloud platforms',
+          ],
+          'modules': [
+            'Module 1: HTML5, CSS3, & Modern UI Frameworks',
+            'Module 2: Javascript (ES6+) & Frontend Architecture',
+            'Module 3: Server-side PHP & Database Integration',
+            'Module 4: Project Deployment & Cloud Infrastructure',
+          ],
+        },
+      ];
+
+      // 1. Seed Master Syllabus Data
+      const docId = "MCA_2020_S1";
+      await _db.collection('syllabus').doc(docId).set({
+        'department': 'MCA',
+        'semester': 1,
+        'scheme': '2020',
+        'subjects': mcaSubjects,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+
+      // 2. If studentId provided, also seed individual attendance records for them
+      if (studentId != null && studentId.isNotEmpty) {
+        await initializeAttendanceData(
+          studentId,
+          syllabusSubjects: mcaSubjects,
+        );
+      }
+
+      debugPrint("Syllabus and Attendance data seeded successfully!");
+    } catch (e) {
+      debugPrint("Error seeding syllabus: $e");
+      rethrow;
+    }
+  }
+
+  // 19. Seed All Academics Data (Dev Tool)
   Future<void> seedDevData(String regNo) async {
     // Methods for seeding data should pull from a configuration or be removed in production
   }

@@ -1,28 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:edlab/admin/admin_dashboard.dart';
 import 'package:edlab/admin/screens/students_screen.dart';
 import 'package:edlab/admin/screens/courses_screen.dart';
 import 'package:edlab/admin/screens/ai_chat_screen.dart';
-import 'package:edlab/admin/screens/settings_screen.dart';
+import 'package:edlab/admin/screens/admin_profile_screen.dart';
+import 'package:edlab/services/admin_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edlab/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AdminSidebar extends StatelessWidget {
+class AdminSidebar extends StatefulWidget {
   final int activeIndex;
+  final String? userId; // Optional override
+  final bool isShrinkOnly; // New: force shrunken state for inside pages
 
-  /// [activeIndex] mapping:
-  /// 0: Dashboard
-  /// 1: Students
-  /// 2: Courses
-  /// 3: AI Chats
-  /// 4: Univ. Schedules
-  /// 5: Settings (Profile)
-  /// -1: None (for sub-pages)
-  const AdminSidebar({super.key, this.activeIndex = -1});
+  static bool isExpanded = false; // Persists across navigations
+
+  const AdminSidebar({
+    super.key,
+    this.activeIndex = -1,
+    this.userId,
+    this.isShrinkOnly = false,
+  });
+
+  @override
+  State<AdminSidebar> createState() => _AdminSidebarState();
+}
+
+class _AdminSidebarState extends State<AdminSidebar> {
+  String? _userId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    if (widget.userId != null) {
+      setState(() => _userId = widget.userId);
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() => _userId = prefs.getString('username'));
+    }
+  }
+
+  void _toggleSidebar() {
+    setState(() {
+      AdminSidebar.isExpanded = !AdminSidebar.isExpanded;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Force shrunken state if requested for inside pages
+    final bool isExpanded = widget.isShrinkOnly
+        ? false
+        : AdminSidebar.isExpanded;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeInOut,
+      width: isExpanded ? 260 : 80,
       margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -36,189 +76,317 @@ class AdminSidebar extends StatelessWidget {
         ],
       ),
       child: Column(
+        crossAxisAlignment: isExpanded
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         children: [
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
-          // --- 1. BRAND LOGO (Home) ---
-          InkWell(
-            onTap: () {
-              if (activeIndex != 0) {
-                Navigator.pushReplacement(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder: (_, __, ___) => const AdminDashboard(),
-                    transitionDuration: Duration.zero,
+          // --- HEADER: LOGO & TOGGLE ---
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isExpanded ? 24 : 0),
+            child: Row(
+              mainAxisAlignment: isExpanded
+                  ? MainAxisAlignment.spaceBetween
+                  : MainAxisAlignment.center,
+              children: [
+                if (isExpanded)
+                  Image.asset(
+                    "assets/edlab.png",
+                    height: 32,
+                    errorBuilder: (context, error, stackTrace) => Text(
+                      "EdLab",
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF001FF4),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 20,
+                      ),
+                    ),
                   ),
-                );
-              }
-            },
-            child: Image.asset(
-              "assets/edlab.png",
-              height: 40,
-              width: 40,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.hub_rounded,
-                color: Colors.indigoAccent,
-                size: 28,
+                if (!widget.isShrinkOnly)
+                  IconButton(
+                    onPressed: _toggleSidebar,
+                    icon: Icon(
+                      isExpanded ? Icons.menu_open_rounded : Icons.menu_rounded,
+                      color: const Color(0xFF001FF4),
+                    ),
+                  )
+                else
+                  const SizedBox(height: 48), // Spacer to maintain alignment
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 40),
+
+          // --- MENU ITEMS ---
+          Expanded(
+            child: Scrollbar(
+              thumbVisibility: true,
+              thickness: 4,
+              radius: const Radius.circular(10),
+              child: ListView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isExpanded ? 16 : 4,
+                ), // Reduced from 8 to 4
+                children: [
+                  _buildModernNavItem(
+                    index: 0,
+                    icon: Icons.grid_view_outlined,
+                    label: "Dashboard",
+                    page: const AdminDashboard(),
+                    isSidebarExpanded: isExpanded,
+                  ),
+                  _buildModernNavItem(
+                    index: 1,
+                    icon: Icons.people_outline_rounded,
+                    label: "Students",
+                    page: const StudentsScreen(),
+                    isSidebarExpanded: isExpanded,
+                  ),
+                  _buildModernNavItem(
+                    index: 2,
+                    icon: Icons.menu_book_outlined,
+                    label: "Courses",
+                    page: const CoursesScreen(),
+                    isSidebarExpanded: isExpanded,
+                  ),
+                  _buildModernNavItem(
+                    index: 3,
+                    icon: Icons.auto_awesome_rounded,
+                    label: "EdLab AI",
+                    page: const AiChatScreen(),
+                    isSidebarExpanded: isExpanded,
+                  ),
+                ],
               ),
             ),
           ),
 
-          const SizedBox(height: 50),
+          // --- ADMIN PROFILE HUB ---
+          if (_userId != null) ...[
+            const Divider(
+              height: 1,
+              indent: 20,
+              endIndent: 20,
+              color: Color(0xFFF1F5F9),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: AdminService().getProfile(_userId!),
+                builder: (context, snapshot) {
+                  String displayName = _userId!.split('@')[0];
+                  String avatarName = _userId!;
 
-          // --- 2. MENU ITEMS ---
-          _buildModernNavItem(
-            context,
-            index: 0,
-            icon: Icons.dashboard_rounded,
-            tooltip: "Dashboard",
-            page: const AdminDashboard(),
-          ),
-          _buildModernNavItem(
-            context,
-            index: 1,
-            icon: Icons.people_alt_rounded,
-            tooltip: "Students",
-            page: const StudentsScreen(),
-          ),
-          _buildModernNavItem(
-            context,
-            index: 2,
-            icon: Icons.library_books_rounded,
-            tooltip: "Courses",
-            page: const CoursesScreen(),
-          ),
-          _buildModernNavItem(
-            context,
-            index: 3,
-            icon: Icons.auto_awesome_rounded,
-            tooltip: "AI Chats",
-            page: const AiChatScreen(),
-          ),
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    final fullName =
+                        data['fullName'] ?? data['username'] ?? "Admin User";
+                    avatarName = fullName;
+                    displayName = fullName.split(' ')[0];
+                  }
 
-          const Spacer(),
-
-          // --- 3. LOGOUT ---
-          IconButton(
-            onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
-                );
-              }
-            },
-            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-            tooltip: "Logout",
-          ),
-          const SizedBox(height: 16),
-
-          // --- 4. PROFILE (Linked to Settings - Index 5) ---
-          Tooltip(
-            message: "Settings & Profile",
-            child: InkWell(
-              onTap: () {
-                if (activeIndex != 5) {
-                  Navigator.pushReplacement(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (_, __, ___) => const SettingsScreen(),
-                      transitionDuration: Duration.zero,
+                  return InkWell(
+                    onTap: () {
+                      AdminSidebar.isExpanded = false;
+                      Navigator.pushReplacement(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, _, __) =>
+                              AdminProfileScreen(userId: _userId!),
+                          transitionDuration: Duration.zero,
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isExpanded ? 24 : 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: isExpanded
+                            ? MainAxisAlignment.start
+                            : MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFF001FF4).withOpacity(0.2),
+                                width: 2,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: const Color(0xFFF1F5F9),
+                              backgroundImage: NetworkImage(
+                                'https://ui-avatars.com/api/?name=$avatarName&background=random',
+                              ),
+                            ),
+                          ),
+                          if (isExpanded) ...[
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    displayName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                  Text(
+                                    "Administrator",
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
+                  );
+                },
+              ),
+            ),
+          ],
+
+          // --- LOGOUT ---
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: 32,
+              left: isExpanded ? 16 : 0,
+              right: isExpanded ? 16 : 0,
+            ),
+            child: InkWell(
+              onTap: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
                   );
                 }
               },
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(18),
               child: Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: activeIndex == 5
-                        ? Colors.blueAccent
-                        : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-                child: Stack(
-                  alignment: Alignment.bottomRight,
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisAlignment: isExpanded
+                      ? MainAxisAlignment.start
+                      : MainAxisAlignment.center,
                   children: [
-                    const CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Color(0xFFF1F5F9),
-                      backgroundImage: NetworkImage('assets/kmct.png'),
+                    const Icon(
+                      Icons.logout_rounded,
+                      color: Colors.redAccent,
+                      size: 24,
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
+                    if (isExpanded) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          "Logout",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.settings,
-                        size: 10,
-                        color: Colors.grey,
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildModernNavItem(
-    BuildContext context, {
+  Widget _buildModernNavItem({
     required int index,
     required IconData icon,
-    required String tooltip,
+    required String label,
     required Widget page,
+    required bool isSidebarExpanded,
   }) {
-    bool isActive = activeIndex == index;
+    bool isActive = widget.activeIndex == index;
+    bool isExpanded = isSidebarExpanded;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Tooltip(
-        message: tooltip,
-        child: InkWell(
-          onTap: () {
-            if (!isActive) {
-              Navigator.pushReplacement(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (_, __, ___) => page,
-                  transitionDuration: Duration.zero,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
+        onTap: () {
+          if (!isActive) {
+            AdminSidebar.isExpanded = false;
+            Navigator.pushReplacement(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, _, __) => page,
+                transitionDuration: Duration.zero,
+              ),
+            );
+          }
+        },
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: isActive
+              ? BoxDecoration(
+                  color: const Color(0xFF001FF4),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF001FF4).withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                )
+              : const BoxDecoration(color: Colors.transparent),
+          child: Row(
+            mainAxisSize: MainAxisSize.min, // Added for safety
+            mainAxisAlignment: isExpanded
+                ? MainAxisAlignment.start
+                : MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 28,
+                color: isActive ? Colors.white : const Color(0xFF94A3B8),
+              ),
+              if (isExpanded) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                      color: isActive ? Colors.white : const Color(0xFF64748B),
+                    ),
+                  ),
                 ),
-              );
-            }
-          },
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: isActive
-                ? BoxDecoration(
-                    color: Colors.blueAccent,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blueAccent.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  )
-                : const BoxDecoration(color: Colors.transparent),
-            child: Icon(
-              icon,
-              size: 24,
-              color: isActive ? Colors.white : const Color(0xFF94A3B8),
-            ),
+              ],
+            ],
           ),
         ),
       ),

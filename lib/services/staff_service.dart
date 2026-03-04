@@ -65,6 +65,31 @@ class StaffService {
         .snapshots();
   }
 
+  // --- HOD ACTIVITIES (dedicated feed) ---
+  Stream<QuerySnapshot> getHodActivities({String department = 'MCA'}) {
+    return _db
+        .collection('hod_activities')
+        .where('department', isEqualTo: department)
+        .orderBy('timestamp', descending: true)
+        .limit(10)
+        .snapshots();
+  }
+
+  Future<void> logHodActivity({
+    required String title,
+    required String subtitle,
+    required String icon, // e.g. 'assignment', 'people', 'check_circle'
+    String department = 'MCA',
+  }) async {
+    await _db.collection('hod_activities').add({
+      'title': title,
+      'subtitle': subtitle,
+      'icon': icon,
+      'department': department,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
   // --- PROFILE ---
   Stream<DocumentSnapshot> getProfile(String userId) {
     return _db.collection('users').doc(userId).snapshots();
@@ -103,6 +128,13 @@ class StaffService {
       'department': assignmentData['department'] ?? 'MCA',
       'semester': assignmentData['semester']?.toString() ?? '1',
     });
+
+    // 3. Log for HOD dashboard
+    await logHodActivity(
+      title: 'New Assignment Created',
+      subtitle: '${assignmentData['title']} - ${assignmentData['subject']}',
+      icon: 'assignment',
+    );
   }
 
   Stream<List<DocumentSnapshot<Map<String, dynamic>>>> getStaffAssignments(

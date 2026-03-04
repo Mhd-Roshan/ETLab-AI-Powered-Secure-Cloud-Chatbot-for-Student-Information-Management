@@ -134,3 +134,4 @@ class User {
   String toString() =>
       'User(username: $username, role: $role, college: $collegeName)';
 }
+

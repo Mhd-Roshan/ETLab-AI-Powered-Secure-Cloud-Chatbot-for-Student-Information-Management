@@ -78,7 +78,7 @@ class _StaffSidebarState extends State<StaffSidebar> {
                     height: 32,
                     errorBuilder: (context, error, stackTrace) => Text(
                       "EdLab",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         color: const Color(0xFF001FF4),
                         fontWeight: FontWeight.w800,
                         fontSize: 20,
@@ -203,7 +203,7 @@ class _StaffSidebarState extends State<StaffSidebar> {
                               displayName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.inter(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFF1E293B),
@@ -254,7 +254,7 @@ class _StaffSidebarState extends State<StaffSidebar> {
                       const SizedBox(width: 12),
                       Text(
                         "Logout",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: Colors.redAccent,
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
@@ -325,7 +325,7 @@ class _StaffSidebarState extends State<StaffSidebar> {
                 const SizedBox(width: 12),
                 Text(
                   label,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
@@ -339,3 +339,4 @@ class _StaffSidebarState extends State<StaffSidebar> {
     );
   }
 }
+
