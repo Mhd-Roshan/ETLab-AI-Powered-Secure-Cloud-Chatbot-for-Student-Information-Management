@@ -446,7 +446,7 @@ class _HodRightPanelState extends State<HodRightPanel> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "RECENT ACTIVITY",
+                  "TODAY'S ACTIVITY",
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -492,14 +492,8 @@ class _HodRightPanelState extends State<HodRightPanel> {
             StreamBuilder<QuerySnapshot>(
               stream: service.getHodActivities(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  );
-                }
+                final now = DateTime.now();
+                final startOfToday = DateTime(now.year, now.month, now.day);
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return StreamBuilder<QuerySnapshot>(
@@ -508,12 +502,55 @@ class _HodRightPanelState extends State<HodRightPanel> {
                       if (!annSnap.hasData || annSnap.data!.docs.isEmpty) {
                         return _buildEmptyState();
                       }
-                      return _buildActivityTimeline(annSnap.data!.docs);
+                      // Filter for today's announcements
+                      final todayAnns = annSnap.data!.docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final ts = data['postedDate'] as Timestamp?;
+                        return ts != null && ts.toDate().isAfter(startOfToday);
+                      }).toList();
+
+                      if (todayAnns.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: Text(
+                              "No activity today",
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: const Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      return _buildActivityTimeline(todayAnns);
                     },
                   );
                 }
 
-                return _buildActivityTimeline(snapshot.data!.docs);
+                // Filter HOD activities for today
+                final todayActs = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final ts = data['timestamp'] as Timestamp?;
+                  return ts != null && ts.toDate().isAfter(startOfToday);
+                }).toList();
+
+                if (todayActs.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Text(
+                        "No activity today",
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return _buildActivityTimeline(todayActs);
               },
             ),
           ],

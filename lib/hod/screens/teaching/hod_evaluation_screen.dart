@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../widgets/staff_sidebar.dart';
-import '../widgets/staff_header.dart';
+import '../../widgets/hod_sidebar.dart';
+import '../../widgets/hod_header.dart';
 
-class EvaluationScreen extends StatefulWidget {
+class HodEvaluationScreen extends StatefulWidget {
   final String userId;
-  const EvaluationScreen({super.key, required this.userId});
+  const HodEvaluationScreen({super.key, required this.userId});
 
   @override
-  State<EvaluationScreen> createState() => _EvaluationScreenState();
+  State<HodEvaluationScreen> createState() => _HodEvaluationScreenState();
 }
 
-class _EvaluationScreenState extends State<EvaluationScreen>
+class _HodEvaluationScreenState extends State<HodEvaluationScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -30,7 +30,6 @@ class _EvaluationScreenState extends State<EvaluationScreen>
     "CAD",
   ];
 
-  // Firestore instance
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
@@ -52,7 +51,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StaffSidebar(activeIndex: 2, userId: widget.userId),
+          HodSidebar(activeIndex: 2, userId: widget.userId),
           Expanded(
             child: Stack(
               children: [
@@ -68,9 +67,9 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Color(0xFF001FF4),
+                          Color(0xFF6366F1),
                           Color(0xFF4F46E5),
-                          Color(0xFF7C3AED),
+                          Color(0xFF4338CA),
                         ],
                       ),
                     ),
@@ -83,7 +82,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                   children: [
                     Padding(
                       padding: const EdgeInsets.fromLTRB(40, 32, 40, 0),
-                      child: StaffHeader(
+                      child: HodHeader(
                         title: "Evaluations",
                         userId: widget.userId,
                         showBackButton: true,
@@ -91,7 +90,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                         showDate: false,
                       ),
                     ),
-                    // Breadcrumbs matching the image
+                    // Breadcrumbs
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 40,
@@ -99,48 +98,11 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.home_outlined,
-                            color: Colors.white.withOpacity(0.8),
-                            size: 14,
-                          ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Colors.white.withOpacity(0.5),
-                            size: 14,
-                          ),
-                          Text(
-                            "My Classes",
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 11,
-                            ),
-                          ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Colors.white.withOpacity(0.5),
-                            size: 14,
-                          ),
-                          Text(
-                            "MCA - 1st semester",
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 11,
-                            ),
-                          ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Colors.white.withOpacity(0.5),
-                            size: 14,
-                          ),
-                          Text(
-                            "Series Exams",
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          _bc('Home'),
+                          _bcSep(),
+                          _bc('My Classes'),
+                          _bcSep(),
+                          _bc('Evaluations', isLast: true),
                         ],
                       ),
                     ),
@@ -179,6 +141,25 @@ class _EvaluationScreenState extends State<EvaluationScreen>
     );
   }
 
+  Widget _bc(String label, {bool isLast = false}) {
+    return Text(
+      label,
+      style: GoogleFonts.inter(
+        color: isLast ? Colors.white : Colors.white.withOpacity(0.8),
+        fontSize: 11,
+        fontWeight: isLast ? FontWeight.bold : FontWeight.normal,
+      ),
+    );
+  }
+
+  Widget _bcSep() {
+    return Icon(
+      Icons.chevron_right,
+      color: Colors.white.withOpacity(0.5),
+      size: 14,
+    );
+  }
+
   Widget _buildModernTabBar() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 40),
@@ -202,7 +183,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
             ),
           ],
         ),
-        labelColor: const Color(0xFF001FF4),
+        labelColor: const Color(0xFF6366F1),
         unselectedLabelColor: Colors.white,
         dividerColor: Colors.transparent,
         labelStyle: GoogleFonts.inter(
@@ -237,7 +218,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF001FF4).withOpacity(0.1),
+                          color: const Color(0xFF6366F1).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -292,7 +273,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                     ),
                     child: const Icon(
                       Icons.auto_graph_rounded,
-                      color: Color(0xFF4F46E5),
+                      color: Color(0xFF6366F1),
                       size: 22,
                     ),
                   ),
@@ -326,7 +307,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                     label: const Text("Create New"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF1F5F9),
-                      foregroundColor: const Color(0xFF001FF4),
+                      foregroundColor: const Color(0xFF6366F1),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -359,7 +340,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                     padding: EdgeInsets.all(80),
                     child: Center(
                       child: CircularProgressIndicator(
-                        color: Color(0xFF001FF4),
+                        color: Color(0xFF6366F1),
                       ),
                     ),
                   );
@@ -419,7 +400,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: Text(
-              "Your ${tabTitle.toLowerCase()} list is currently empty for this semester. Click the button below to initialize your first assessment.",
+              "Your ${tabTitle.toLowerCase()} list is currently empty. Click the button below to initialize your first assessment.",
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 14,
@@ -434,7 +415,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
             decoration: BoxDecoration(
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF001FF4).withOpacity(0.25),
+                  color: const Color(0xFF6366F1).withOpacity(0.25),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -445,7 +426,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
               icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
               label: Text("Compute My First $tabTitle"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF001FF4),
+                backgroundColor: const Color(0xFF6366F1),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
@@ -483,7 +464,6 @@ class _EvaluationScreenState extends State<EvaluationScreen>
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final item = docs[index].data() as Map<String, dynamic>;
-        final docId = docs[index].id;
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -507,7 +487,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                 ),
                 child: const Icon(
                   Icons.description_outlined,
-                  color: Color(0xFF001FF4),
+                  color: Color(0xFF6366F1),
                 ),
               ),
               const SizedBox(width: 20),
@@ -515,13 +495,46 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item['name'],
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        color: const Color(0xFF0F172A),
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          item['name'],
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        if (item['timestamp'] != null &&
+                            DateTime.now()
+                                    .difference(
+                                      (item['timestamp'] as Timestamp).toDate(),
+                                    )
+                                    .inHours <
+                                24)
+                          Container(
+                            margin: const EdgeInsets.only(left: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFACC15).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFFFACC15).withOpacity(0.5),
+                              ),
+                            ),
+                            child: const Text(
+                              "NEW",
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF854D0E),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                   ],
@@ -575,14 +588,44 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                 children: [
                   Expanded(
                     flex: 2,
-                    child: Text(
-                      item['name'] ?? "Untitled",
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF001FF4),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        decoration: TextDecoration.underline,
-                      ),
+                    child: Row(
+                      children: [
+                        Text(
+                          item['name'] ?? "Untitled",
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFF6366F1),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                        if (item['timestamp'] != null &&
+                            DateTime.now()
+                                    .difference(
+                                      (item['timestamp'] as Timestamp).toDate(),
+                                    )
+                                    .inHours <
+                                24)
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFACC15).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              "NEW",
+                              style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF854D0E),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   Expanded(
@@ -820,6 +863,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                     'status': 'Results published',
                     'timestamp': FieldValue.serverTimestamp(),
                     'staffId': widget.userId,
+                    'markedBy': 'HOD',
                   });
 
                   if (context.mounted) {
@@ -840,7 +884,7 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF001FF4),
+                backgroundColor: const Color(0xFF6366F1),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

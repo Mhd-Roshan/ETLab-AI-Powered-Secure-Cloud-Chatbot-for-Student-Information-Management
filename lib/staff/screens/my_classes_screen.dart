@@ -302,4 +302,3 @@ class MyClassesScreen extends StatelessWidget {
     );
   }
 }
-

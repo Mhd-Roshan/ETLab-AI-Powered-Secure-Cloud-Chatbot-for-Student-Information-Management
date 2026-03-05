@@ -729,10 +729,14 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
           );
         }
 
-        // Filter by date client-side
+        // Filter by date and exclude HOD records client-side
         final filteredDocs = snapshot.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           if (data['date'] == null) return false;
+
+          // Exclude HOD records from staff view
+          if (data['markedBy'] == 'HOD') return false;
+
           final docDate = (data['date'] as Timestamp).toDate();
           return !docDate.isBefore(startOfDay) && docDate.isBefore(endOfDay);
         }).toList();
@@ -1054,9 +1058,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                   color: Color(0xFF64748B),
                 ),
                 hintText: "Search MCA Students by name or register number...",
-                hintStyle: GoogleFonts.inter(
-                  color: const Color(0xFF94A3B8),
-                ),
+                hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8)),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -1850,4 +1852,3 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
     }
   }
 }
-

@@ -13,8 +13,22 @@ class StaffSurveyScreen extends StatefulWidget {
   State<StaffSurveyScreen> createState() => _StaffSurveyScreenState();
 }
 
-class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
+class _StaffSurveyScreenState extends State<StaffSurveyScreen>
+    with SingleTickerProviderStateMixin {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,69 +67,55 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.fromLTRB(40, 32, 40, 0),
-                      child: StaffHeader(
-                        title: "Student Surveys",
-                        userId: widget.userId,
-                        showBackButton: true,
-                        isWhite: true,
-                        showDate: false,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(40, 0, 40, 0),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Evaluation Surveys",
-                                style: GoogleFonts.inter(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Surveys you've sent to your students",
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  color: Colors.white.withOpacity(0.75),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+                          Expanded(
+                            child: StaffHeader(
+                              title: "Surveys",
+                              userId: widget.userId,
+                              showBackButton: true,
+                              isWhite: true,
+                              showDate: false,
+                            ),
                           ),
-                          ElevatedButton.icon(
-                            onPressed: _showSendSurveyDialog,
-                            icon: const Icon(Icons.send_rounded, size: 18),
-                            label: const Text("Send New Survey"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF001FF4),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 22,
-                                vertical: 14,
+                          Container(
+                            height: 48,
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: TabBar(
+                              controller: _tabController,
+                              isScrollable: true,
+                              indicator: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                              labelColor: const Color(0xFF001FF4),
+                              unselectedLabelColor: Colors.white.withOpacity(
+                                0.7,
                               ),
-                              elevation: 0,
-                              textStyle: GoogleFonts.inter(
+                              labelStyle: GoogleFonts.inter(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
                               ),
+                              tabs: const [
+                                Tab(text: "Evaluations Outgoing"),
+                                Tab(text: "Incoming Feedback"),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 32),
-                    Expanded(child: _buildSurveyList()),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [_buildOutgoingList(), _buildIncomingList()],
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -128,45 +128,327 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
 
   // ─── Survey List ──────────────────────────────────────────────────────────
 
-  Widget _buildSurveyList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _db
-          .collection('surveys')
-          .where('type', isEqualTo: 'Teacher Evaluation')
-          .where('createdBy', isEqualTo: widget.userId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final docs = snapshot.data!.docs;
-        if (docs.isEmpty) return _buildEmptyState();
+  // ─── Outgoing List (Sent to Students) ───────────────────────────────────────
 
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(40, 16, 40, 40),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final data = docs[index].data() as Map<String, dynamic>;
-            final createdAt = data['createdAt'] != null
-                ? DateFormat(
-                    'MMM dd, yyyy',
-                  ).format((data['createdAt'] as Timestamp).toDate())
-                : 'Pending';
-            return _buildEvalCard(
-              docId: docs[index].id,
-              title: data['name'] ?? 'Untitled Survey',
-              subject: data['subject'] ?? '—',
-              semester: data['semester'] ?? '—',
-              department: data['department'] ?? '—',
-              batch: data['batch'] ?? '—',
-              createdAt: createdAt,
-              responses: data['responseCount'] ?? 0,
-              status: data['status'] ?? 'Active',
-              ratings: data['ratings'] as Map<String, dynamic>? ?? {},
-            );
-          },
+  Widget _buildOutgoingList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(40, 32, 40, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _sectionHeader(
+                "Student Evaluations",
+                "Manage and monitor the surveys you've published to your students",
+              ),
+              ElevatedButton.icon(
+                onPressed: _showSendSurveyDialog,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text("New Evaluation"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF001FF4),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _db
+                .collection('surveys')
+                .where('type', isEqualTo: 'Teacher Evaluation')
+                .where('createdBy', isEqualTo: widget.userId)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return const Center(child: CircularProgressIndicator());
+              final docs = snapshot.data!.docs;
+              if (docs.isEmpty)
+                return _buildEmptyState(
+                  "No Evaluations Published",
+                  "Start collecting feedback by sending a new survey to your students.",
+                );
+              return _listView(docs, isIncoming: false);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Incoming List (Sent from HOD/Admin) ───────────────────────────────────
+
+  Widget _buildIncomingList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(40, 32, 40, 0),
+          child: _sectionHeader(
+            "Departmental Feedback",
+            "Responsive to surveys and feedback requested by your HOD or Admin",
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _db
+                .collection('surveys')
+                .where('targetRole', isEqualTo: 'Staff')
+                .where('status', isEqualTo: 'Active')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return const Center(child: CircularProgressIndicator());
+              final docs = snapshot.data!.docs;
+              if (docs.isEmpty)
+                return _buildEmptyState(
+                  "No Incoming Surveys",
+                  "You're all caught up! No active surveys from the department.",
+                );
+              return _listView(docs, isIncoming: true);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionHeader(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.inter(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            color: const Color(0xFF64748B),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _listView(List<DocumentSnapshot> docs, {required bool isIncoming}) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(40, 16, 40, 40),
+      itemCount: docs.length,
+      itemBuilder: (context, index) {
+        final data = docs[index].data() as Map<String, dynamic>;
+        final createdAt = data['createdAt'] != null
+            ? DateFormat(
+                'MMM dd, yyyy',
+              ).format((data['createdAt'] as Timestamp).toDate())
+            : 'Pending';
+
+        if (isIncoming) {
+          return _buildIncomingCard(docs[index].id, data, createdAt);
+        }
+
+        return _buildEvalCard(
+          docId: docs[index].id,
+          title: data['name'] ?? 'Untitled Survey',
+          subject: data['subject'] ?? '—',
+          semester: data['semester'] ?? '—',
+          department: data['department'] ?? '—',
+          batch: data['batch'] ?? '—',
+          createdAt: createdAt,
+          responses: data['responseCount'] ?? 0,
+          status: data['status'] ?? 'Active',
+          ratings: data['ratings'] as Map<String, dynamic>? ?? {},
         );
       },
+    );
+  }
+
+  // ─── Incoming Survey Card ───────────────────────────────────────────────────
+
+  Widget _buildIncomingCard(
+    String docId,
+    Map<String, dynamic> data,
+    String date,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () =>
+              _showVotingSheet(docId, data['name'] ?? "Department Feedback"),
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    Icons.assignment_rounded,
+                    color: Color(0xFF6366F1),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data['name'] ?? "Unnamed Survey",
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          _chip(
+                            Icons.person_pin_rounded,
+                            data['creatorRole'] ?? "HOD",
+                            const Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 12),
+                          _chip(
+                            Icons.calendar_today_rounded,
+                            date,
+                            const Color(0xFF94A3B8),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: Color(0xFF94A3B8),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showVotingSheet(String docId, String title) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.fromLTRB(32, 16, 32, 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              "How would you rate this?",
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 40),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _voteOption(docId, "Excellent", "🤩", const Color(0xFF10B981)),
+                _voteOption(docId, "Good", "😊", const Color(0xFF001FF4)),
+                _voteOption(docId, "Bad", "☹️", Colors.redAccent),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _voteOption(String docId, String label, String emoji, Color color) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () async {
+            Navigator.pop(context);
+            await _db.collection('surveys').doc(docId).update({
+              'ratings.$label': FieldValue.increment(1),
+              'responseCount': FieldValue.increment(1),
+            });
+            _showMsg("Feedback submitted for $label!");
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.05),
+              border: Border.all(color: color.withOpacity(0.1)),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: Text(emoji, style: const TextStyle(fontSize: 32)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 
@@ -384,7 +666,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
 
   // ─── Empty State ──────────────────────────────────────────────────────────
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(String title, String subtitle) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -403,7 +685,7 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            "No Surveys Sent Yet",
+            title,
             style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -411,30 +693,14 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            "Click 'Send New Survey' to request feedback from your students.",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: const Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: _showSendSurveyDialog,
-            icon: const Icon(Icons.send_rounded, size: 18),
-            label: const Text("Send New Survey"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF001FF4),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              elevation: 0,
-              textStyle: GoogleFonts.inter(
-                fontWeight: FontWeight.w800,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
                 fontSize: 14,
+                color: const Color(0xFF64748B),
               ),
             ),
           ),
@@ -645,6 +911,18 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
     );
   }
 
+  void _showMsg(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF10B981),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   Widget _resultIndicator(String label, dynamic count, int total, Color color) {
     final int c = count is int ? count : 0;
     final double percent = total > 0 ? (c / total) * 100 : 0;
@@ -690,4 +968,3 @@ class _StaffSurveyScreenState extends State<StaffSurveyScreen> {
     );
   }
 }
-

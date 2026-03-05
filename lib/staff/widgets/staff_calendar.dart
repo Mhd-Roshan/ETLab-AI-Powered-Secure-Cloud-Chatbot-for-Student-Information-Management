@@ -353,169 +353,201 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          // 1. Calendar Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    DateFormat('MMMM yyyy').format(DateTime.now()),
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 20,
-                      color: const Color(0xFF1E293B),
+            // 1. Calendar Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('MMMM yyyy').format(DateTime.now()),
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: Color(0xFF001FF4),
+                        ),
+                        SizedBox(width: 6),
+                        _LiveClock(),
+                      ],
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    _buildNavIcon(Icons.chevron_left_rounded),
+                    const SizedBox(width: 8),
+                    _buildNavIcon(Icons.chevron_right_rounded),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // 2. Calendar Grid
+            _buildModernCalendar(),
+
+            const SizedBox(height: 20),
+            // Legends
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                _buildLegend('Today', const Color(0xFF001FF4), isBox: true),
+                _buildLegend('Sunday', const Color(0xFFEF4444)),
+                _buildLegend('Festival', const Color(0xFFF59E0B)),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+            const SizedBox(height: 24),
+
+            // 3. FIREBASE TASKS
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "TASKS",
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                ),
+                InkWell(
+                  onTap: _promptAddTask,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      size: 20,
+                      color: Color(0xFF64748B),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 16,
-                        color: Color(0xFF001FF4),
-                      ),
-                      SizedBox(width: 6),
-                      _LiveClock(),
-                    ],
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  _buildNavIcon(Icons.chevron_left_rounded),
-                  const SizedBox(width: 8),
-                  _buildNavIcon(Icons.chevron_right_rounded),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // 2. Calendar Grid
-          _buildModernCalendar(),
-
-          const SizedBox(height: 20),
-          // Legends
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: [
-              _buildLegend('Today', const Color(0xFF001FF4), isBox: true),
-              _buildLegend('Sunday', const Color(0xFFEF4444)),
-              _buildLegend('Festival', const Color(0xFFF59E0B)),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 24),
-
-          // 3. FIREBASE TASKS
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "TASKS",
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                  color: const Color(0xFF94A3B8),
                 ),
-              ),
-              InkWell(
-                onTap: _promptAddTask,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    size: 20,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Task Stream
-          StreamBuilder<QuerySnapshot>(
-            stream: service.getTasks(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                );
-              }
-
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return _buildEmptyState();
-              }
-
-              return Column(
-                children: snapshot.data!.docs.map((doc) {
-                  return _buildTaskItem(doc);
-                }).toList(),
-              );
-            },
-          ),
-
-          const SizedBox(height: 24),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 24),
-
-          // 4. FIREBASE ACTIVITY
-          Text(
-            "RECENT ACTIVITY",
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.0,
-              color: const Color(0xFF94A3B8),
+              ],
             ),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-          StreamBuilder<QuerySnapshot>(
-            stream: service.getRecentActivities(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Text(
-                  "No recent activity",
-                  style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
-                );
-              }
-
-              return Column(
-                children: snapshot.data!.docs.map((doc) {
-                  var data = doc.data() as Map<String, dynamic>;
-                  String timeAgo = "Just now";
-                  if (data['postedDate'] != null) {
-                    Timestamp ts = data['postedDate'];
-                    timeAgo = DateFormat('MMM d, h:mm a').format(ts.toDate());
-                  }
-
-                  return _buildActivityItem(
-                    data['title'] ?? 'New Announcement',
-                    timeAgo,
-                    const Color(0xFF001FF4),
-                    Icons.notifications_none_outlined,
+            // Task Stream
+            StreamBuilder<QuerySnapshot>(
+              stream: service.getTasks(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   );
-                }).toList(),
-              );
-            },
-          ),
-        ],
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return _buildEmptyState();
+                }
+
+                return Column(
+                  children: snapshot.data!.docs.map((doc) {
+                    return _buildTaskItem(doc);
+                  }).toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+            const SizedBox(height: 24),
+
+            // 4. FIREBASE ACTIVITY
+            Text(
+              "TODAY'S ACTIVITY",
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
+                color: const Color(0xFF94A3B8),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            StreamBuilder<QuerySnapshot>(
+              stream: service.getRecentActivities(),
+              builder: (context, snapshot) {
+                final now = DateTime.now();
+                final startOfToday = DateTime(now.year, now.month, now.day);
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Text(
+                        "No activity today",
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                final todayAnns = snapshot.data!.docs.where((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  final ts = data['postedDate'] as Timestamp?;
+                  return ts != null && ts.toDate().isAfter(startOfToday);
+                }).toList();
+
+                if (todayAnns.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Text(
+                        "No activity today",
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: todayAnns.map((doc) {
+                    var data = doc.data() as Map<String, dynamic>;
+                    String timeAgo = "Just now";
+                    if (data['postedDate'] != null) {
+                      Timestamp ts = data['postedDate'];
+                      timeAgo = DateFormat('h:mm a').format(ts.toDate());
+                    }
+
+                    return _buildActivityItem(
+                      data['title'] ?? 'New Announcement',
+                      timeAgo,
+                      const Color(0xFF001FF4),
+                      Icons.notifications_none_outlined,
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -542,10 +574,7 @@ class _StaffRightPanelState extends State<StaffRightPanel> {
           const SizedBox(height: 8),
           Text(
             "No tasks pending",
-            style: GoogleFonts.inter(
-              color: Colors.grey.shade400,
-              fontSize: 14,
-            ),
+            style: GoogleFonts.inter(color: Colors.grey.shade400, fontSize: 14),
           ),
         ],
       ),
@@ -998,4 +1027,3 @@ class _LiveClockState extends State<_LiveClock> {
     );
   }
 }
-

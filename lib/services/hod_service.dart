@@ -15,6 +15,17 @@ class HodService {
     await _db.collection('users').doc(userId).update(data);
   }
 
+  /// Adds a new staff member to the users collection
+  Future<void> addStaff(Map<String, dynamic> staffData) async {
+    final String email = staffData['email'];
+    await _db.collection('users').doc(email).set({
+      ...staffData,
+      'id': email,
+      'role': 'staff',
+      'department': 'MCA', // Default for now
+    }, SetOptions(merge: true));
+  }
+
   // --- DEPARTMENT MANAGEMENT ---
 
   /// Fetches all batches for a specific department (e.g., 'MCA')
@@ -269,19 +280,23 @@ class HodService {
   Future<void> seedStaff() async {
     final List<Map<String, dynamic>> staffList = [
       {
-        'id': 'staff1@gmail.com',
+        'id': 'sarah.wilson@edlab.com',
         'name': 'Dr. Sarah Wilson',
         'email': 'sarah.wilson@edlab.com',
         'role': 'staff',
-        'designation': 'Associate Professor',
+        'designation': 'Assistant Professor',
         'department': 'MCA',
-        'specialization': 'Machine Learning',
+        'specialization': 'Machine Learning & AI',
         'status': 'Active',
-        'phone': '+91 9876543210',
-        'avatar': 'https://i.pravatar.cc/150?u=sarah',
+        'phone': '+91 98765 43210',
+        'initials': 'SW',
+        'colorHex': 0xFF6366F1,
+        'batches': ['MCA 2023-25', 'MCA 2024-26'],
+        'subjects': 4,
+        'experience': '8 yrs',
       },
       {
-        'id': 'staff2@gmail.com',
+        'id': 'james.bond@edlab.com',
         'name': 'Prof. James Bond',
         'email': 'james.bond@edlab.com',
         'role': 'staff',
@@ -289,32 +304,76 @@ class HodService {
         'department': 'MCA',
         'specialization': 'Cyber Security',
         'status': 'In Class',
-        'phone': '+91 9876543211',
-        'avatar': 'https://i.pravatar.cc/150?u=james',
+        'phone': '+91 98765 43211',
+        'initials': 'JB',
+        'colorHex': 0xFF10B981,
+        'batches': ['MCA 2023-25'],
+        'subjects': 5,
+        'experience': '5 yrs',
       },
       {
-        'id': 'staff3@gmail.com',
+        'id': 'robert.fox@edlab.com',
         'name': 'Dr. Robert Fox',
         'email': 'robert.fox@edlab.com',
         'role': 'staff',
-        'designation': 'Professor',
+        'designation': 'Assistant Professor',
         'department': 'MCA',
         'specialization': 'Cloud Computing',
         'status': 'On Leave',
-        'phone': '+91 9876543212',
-        'avatar': 'https://i.pravatar.cc/150?u=robert',
+        'phone': '+91 98765 43212',
+        'initials': 'RF',
+        'colorHex': 0xFF8B5CF6,
+        'batches': ['MCA 2022-24'],
+        'subjects': 6,
+        'experience': '14 yrs',
       },
       {
-        'id': 'staff4@gmail.com',
+        'id': 'emily.blunt@edlab.com',
         'name': 'Ms. Emily Blunt',
         'email': 'emily.blunt@edlab.com',
         'role': 'staff',
         'designation': 'Assistant Professor',
         'department': 'MCA',
-        'specialization': 'Data Structures',
+        'specialization': 'Data Structures & Algorithms',
         'status': 'Active',
-        'phone': '+91 9876543213',
-        'avatar': 'https://i.pravatar.cc/150?u=emily',
+        'phone': '+91 98765 43213',
+        'initials': 'EB',
+        'colorHex': 0xFFF59E0B,
+        'batches': ['MCA 2024-26'],
+        'subjects': 4,
+        'experience': '3 yrs',
+      },
+      {
+        'id': 'kavitha.s@edlab.com',
+        'name': 'Dr. Kavitha Suresh',
+        'email': 'kavitha.s@edlab.com',
+        'role': 'staff',
+        'designation': 'Assistant Professor',
+        'department': 'MCA',
+        'specialization': 'Software Engineering',
+        'status': 'Active',
+        'phone': '+91 98765 43214',
+        'initials': 'KS',
+        'colorHex': 0xFFEC4899,
+        'batches': ['MCA 2023-25', 'MCA 2024-26'],
+        'subjects': 5,
+        'experience': '10 yrs',
+      },
+      {
+        'id': 'arjun.nair@edlab.com',
+        'name': 'Mr. Arjun Nair',
+        'email': 'arjun.nair@edlab.com',
+        'role': 'staff',
+        'designation': 'Assistant Professor',
+        'department': 'MCA',
+        'specialization': 'Database Systems',
+        'status': 'In Class',
+        'phone': '+91 98765 43215',
+        'initials': 'AN',
+        'colorHex': 0xFF0EA5E9,
+        'batches': ['MCA 2024-26'],
+        'subjects': 3,
+        'experience': '2 yrs',
       },
     ];
 
@@ -324,6 +383,265 @@ class HodService {
           .doc(staff['id'] as String)
           .set(staff, SetOptions(merge: true));
     }
+  }
+
+  // --- STAFF SUBJECTS / WORKLOAD ---
+
+  /// Live stream of subjects for a single staff member.
+  /// Collection: staff_subjects / {email} / subjects (sub-collection)
+  Stream<QuerySnapshot> getStaffSubjects(String email) {
+    return _db
+        .collection('staff_subjects')
+        .doc(email)
+        .collection('subjects')
+        .orderBy('order')
+        .snapshots();
+  }
+
+  /// Returns true if the staff_subjects sub-collections need seeding.
+  /// Checks actual subject docs inside a known staff member's sub-collection.
+  Future<bool> _needsSubjectSeed() async {
+    final snap = await _db
+        .collection('staff_subjects')
+        .doc('arjun.nair@edlab.com')
+        .collection('subjects')
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return true;
+
+    // Check if the documents have the new 'modules' field
+    final data = snap.docs.first.data();
+    return !data.containsKey('modules');
+  }
+
+  /// Seeds subject data for all staff into Firestore.
+  /// Document path: staff_subjects/{email}/subjects/{subjectDocId}
+  Future<void> seedStaffSubjectsIfNeeded() async {
+    if (!await _needsSubjectSeed()) return;
+    await seedStaffSubjects();
+  }
+
+  Future<void> seedStaffSubjects() async {
+    final Map<String, List<Map<String, dynamic>>> subjectsByEmail = {
+      'sarah.wilson@edlab.com': [
+        {
+          'name': 'Machine Learning',
+          'coverage': 0.82,
+          'completion': 0.78,
+          'order': 0,
+          'modules': [
+            {
+              'name': 'Module 1: Introduction',
+              'progress': 1.0,
+              'topics': [
+                {'name': 'Supervised Learning', 'status': 'completed'},
+                {'name': 'Unsupervised Learning', 'status': 'completed'},
+                {'name': 'Cost Functions', 'status': 'completed'},
+              ],
+            },
+            {
+              'name': 'Module 2: Regression',
+              'progress': 0.65,
+              'topics': [
+                {'name': 'Linear Regression', 'status': 'completed'},
+                {'name': 'Gradient Descent', 'status': 'in_progress'},
+                {'name': 'Polynominal Regression', 'status': 'pending'},
+              ],
+            },
+          ],
+        },
+        {
+          'name': 'Deep Learning',
+          'coverage': 0.65,
+          'completion': 0.70,
+          'order': 1,
+          'modules': [
+            {
+              'name': 'Module 1: Neural Networks',
+              'progress': 0.80,
+              'topics': [
+                {'name': 'Forward Propagation', 'status': 'completed'},
+                {'name': 'Backpropagation', 'status': 'completed'},
+                {'name': 'Activation Functions', 'status': 'in_progress'},
+              ],
+            },
+          ],
+        },
+      ],
+      'james.bond@edlab.com': [
+        {
+          'name': 'Network Security',
+          'coverage': 0.75,
+          'completion': 0.80,
+          'order': 0,
+          'modules': [
+            {
+              'name': 'Module 1: Basics',
+              'progress': 0.90,
+              'topics': [
+                {'name': 'OSI Model Security', 'status': 'completed'},
+                {'name': 'Threat Analysis', 'status': 'completed'},
+                {'name': 'Risk Management', 'status': 'in_progress'},
+              ],
+            },
+          ],
+        },
+      ],
+      'robert.fox@edlab.com': [
+        {
+          'name': 'Cloud Architecture',
+          'coverage': 0.88,
+          'completion': 0.84,
+          'order': 0,
+          'modules': [
+            {
+              'name': 'Module 1: Virtualization',
+              'progress': 1.0,
+              'topics': [
+                {'name': 'Hypervisors', 'status': 'completed'},
+                {'name': 'Containers', 'status': 'completed'},
+              ],
+            },
+          ],
+        },
+      ],
+      'emily.blunt@edlab.com': [
+        {
+          'name': 'Data Structures',
+          'coverage': 0.92,
+          'completion': 0.90,
+          'order': 0,
+          'modules': [
+            {
+              'name': 'Module 1: Linear',
+              'progress': 1.0,
+              'topics': [
+                {'name': 'Arrays', 'status': 'completed'},
+                {'name': 'Linked Lists', 'status': 'completed'},
+              ],
+            },
+          ],
+        },
+      ],
+      'kavitha.s@edlab.com': [
+        {
+          'name': 'Software Design Patterns',
+          'coverage': 0.85,
+          'completion': 0.88,
+          'order': 0,
+          'modules': [
+            {
+              'name': 'Module 1: Creational',
+              'progress': 0.85,
+              'topics': [
+                {'name': 'Singleton', 'status': 'completed'},
+                {'name': 'Factory', 'status': 'completed'},
+                {'name': 'Abstract Factory', 'status': 'in_progress'},
+              ],
+            },
+          ],
+        },
+      ],
+      'arjun.nair@edlab.com': [
+        {
+          'name': 'Database Systems',
+          'coverage': 0.85,
+          'completion': 0.82,
+          'order': 0,
+          'modules': [
+            {
+              'name': 'Module 1',
+              'progress': 1.0,
+              'topics': [
+                {
+                  'name': 'Database Users and Administrators',
+                  'status': 'completed',
+                },
+                {'name': 'Database Architecture', 'status': 'completed'},
+                {
+                  'name': 'The Entity-Relationship model',
+                  'status': 'completed',
+                },
+              ],
+            },
+            {
+              'name': 'Module 2',
+              'progress': 0.65,
+              'topics': [
+                {
+                  'name': 'Improving the Design - Surrogate Key',
+                  'status': 'completed',
+                },
+                {'name': 'Tutorial', 'status': 'in_progress'},
+                {
+                  'name': 'Normalization and Database Design',
+                  'status': 'pending',
+                },
+                {'name': 'Join dependencies and 5NF', 'status': 'in_progress'},
+                {'name': 'Fourth Normal Form', 'status': 'pending'},
+                {'name': 'Higher Level Normal Forms', 'status': 'pending'},
+                {
+                  'name': 'Conversion to Third Normal Form',
+                  'status': 'pending',
+                },
+                {'name': 'The Normalization Process', 'status': 'pending'},
+                {
+                  'name': 'Database Tables and Normalization',
+                  'status': 'pending',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    final batch = _db.batch();
+
+    for (final entry in subjectsByEmail.entries) {
+      final email = entry.key;
+      final subjects = entry.value;
+
+      // Ensure parent document exists
+      final parentRef = _db.collection('staff_subjects').doc(email);
+      batch.set(parentRef, {
+        'staffEmail': email,
+        'seeded': true,
+      }, SetOptions(merge: true));
+
+      for (final subject in subjects) {
+        final subRef = parentRef
+            .collection('subjects')
+            .doc(
+              subject['name']
+                  .toString()
+                  .toLowerCase()
+                  .replaceAll(' ', '_')
+                  .replaceAll('&', 'and'),
+            );
+        batch.set(subRef, subject, SetOptions(merge: true));
+      }
+    }
+
+    await batch.commit();
+  }
+
+  /// Updates a single subject's coverage/completion for a staff member.
+  Future<void> updateSubjectProgress(
+    String email,
+    String subjectDocId, {
+    double? coverage,
+    double? completion,
+  }) async {
+    final ref = _db
+        .collection('staff_subjects')
+        .doc(email)
+        .collection('subjects')
+        .doc(subjectDocId);
+    final data = <String, dynamic>{};
+    if (coverage != null) data['coverage'] = coverage;
+    if (completion != null) data['completion'] = completion;
+    if (data.isNotEmpty) await ref.update(data);
   }
 
   // --- ACADEMIC OPERATIONS ---

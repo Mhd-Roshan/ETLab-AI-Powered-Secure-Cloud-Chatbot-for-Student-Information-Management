@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:edlab/hod/hod_dashboard.dart';
-import 'package:edlab/hod/screens/generic_page.dart';
 import 'package:edlab/hod/screens/hod_profile_screen.dart';
 import 'package:edlab/hod/screens/ai_chat_screen.dart';
-import 'package:edlab/services/staff_service.dart'; 
+import 'package:edlab/hod/screens/hod_timetable_screen.dart';
+import 'package:edlab/hod/screens/hod_surveys_screen.dart';
+import 'package:edlab/hod/screens/teaching/hod_hour_requests_screen.dart';
+import 'package:edlab/hod/screens/hod_classes_screen.dart';
+import 'package:edlab/services/staff_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edlab/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -110,12 +113,31 @@ class _HodSidebarState extends State<HodSidebar> {
                   label: "EdLab AI",
                   page: AiChatScreen(userId: widget.userId),
                 ),
+                _buildModernNavItem(
+                  index: 2,
+                  icon: Icons.school_outlined,
+                  label: "My Classes",
+                  page: HodClassesScreen(userId: widget.userId),
+                ),
+                _buildModernNavItem(
+                  index: 3,
+                  icon: Icons.calendar_today_rounded,
+                  label: "My Timetable",
+                  page: HodTimetableScreen(userId: widget.userId),
+                ),
+
+                _buildModernNavItem(
+                  index: 4,
+                  icon: Icons.assignment_outlined,
+                  label: "Surveys",
+                  page: HodSurveysScreen(userId: widget.userId),
+                ),
 
                 _buildModernNavItem(
                   index: 5,
                   icon: Icons.access_time_outlined,
                   label: "Hour Request",
-                  page: GenericPage(title: "Hour Request"),
+                  page: HodHourRequestsScreen(userId: widget.userId),
                 ),
               ],
             ),

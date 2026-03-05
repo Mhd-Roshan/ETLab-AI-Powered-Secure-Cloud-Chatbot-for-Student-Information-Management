@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:edlab/hod/screens/hod_batches_screen.dart';
 import 'package:edlab/hod/screens/hod_staff_screen.dart';
+import 'package:edlab/hod/screens/hod_surveys_screen.dart';
 
 class HodWorkspaceGrid extends StatelessWidget {
   final String userId;
@@ -53,10 +54,10 @@ class HodWorkspaceGrid extends StatelessWidget {
         'route': null,
       },
       {
-        'icon': Icons.school_rounded,
-        'label': 'Faculty',
+        'icon': Icons.assignment_rounded,
+        'label': 'Surveys',
         'color': const Color(0xFFF59E0B),
-        'route': null,
+        'route': HodSurveysScreen(userId: userId),
       },
     ];
 

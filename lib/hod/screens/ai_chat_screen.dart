@@ -28,17 +28,17 @@ class _AiChatScreenState extends State<AiChatScreen> {
 I'm your dedicated Assistant for **Departmental Administration & Management**. I have real-time access to staff metrics, student performance data, and institutional schedules.
 
 ## 🎤 **Departmental Voice Tools**
-- **Voice Commands**: Ask about department status or faculty progress
+- **Voice Commands**: Ask about department status or staff progress
 - **Instant TTS**: Response playback for hands-free management
 
 ## 📊 **Admin-Centric Data**
-- **Faculty**: Performance tracking and class scheduling
+- **Staff**: Performance tracking and class scheduling
 - **Students**: Department-wide attendance and grade analytics
 - **Batches**: Resource allocation and batch status monitoring
 - **Circulars**: Fast access to KTU university updates
 
 ## 💡 **Try These HOD Queries**
-- *"Show me faculty members with pending syllabus coverage"*
+- *"Show me staff members with pending syllabus coverage"*
 - *"Identify students across all batches with attendance below 75%"*
 - *"Summarize department performance trends for the last semester"*
 - *"What are the latest KTU circulars regarding semester exams?"*
@@ -118,7 +118,7 @@ I'm your dedicated Assistant for **Departmental Administration & Management**. I
       if (mounted) {
         setState(() {
           _currentResponse =
-              "**Error Processing Admin Request**\n\nThere was an issue: $e\n\n**Try asking:**\n- Show department-wide low attendance\n- List faculty with pending assignments\n- Summarize batch performance trends";
+              "**Error Processing Admin Request**\n\nThere was an issue: $e\n\n**Try asking:**\n- Show department-wide low attendance\n- List staff with pending assignments\n- Summarize batch performance trends";
         });
       }
     } finally {
@@ -554,7 +554,7 @@ I'm your dedicated Assistant for **Departmental Administration & Management**. I
                                       decoration: InputDecoration(
                                         hintText: _isVoiceMode
                                             ? "Voice input active - Speak now..."
-                                            : "Ask about faculty, students, or department metrics...",
+                                            : "Ask about staff, students, or department metrics...",
                                         filled: true,
                                         fillColor: const Color(0xFFF8FAFC),
                                         border: OutlineInputBorder(
@@ -626,8 +626,8 @@ I'm your dedicated Assistant for **Departmental Administration & Management**. I
                                     "Show departmental low attendance report",
                                   ),
                                   _buildQuickActionButton(
-                                    "👨‍🏫 Faculty Syllabus",
-                                    "Check faculty syllabus coverage status",
+                                    "👨‍🏫 Staff Syllabus",
+                                    "Check staff syllabus coverage status",
                                   ),
                                   _buildQuickActionButton(
                                     "📈 Batch Metrics",

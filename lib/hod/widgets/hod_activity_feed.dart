@@ -39,16 +39,63 @@ class HodActivityFeed extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return _buildLoading();
             }
+
+            final now = DateTime.now();
+            final startOfToday = DateTime(now.year, now.month, now.day);
+
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
               return _buildEmptyState();
+            }
+
+            // Filter for today's activities
+            final todayDocs = snapshot.data!.docs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final ts = data['timestamp'] as Timestamp?;
+              return ts != null && ts.toDate().isAfter(startOfToday);
+            }).toList();
+
+            if (todayDocs.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(40),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 48,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "No activities for today yet",
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF94A3B8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      "New activities will appear here as they happen.",
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF94A3B8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              );
             }
 
             return ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: snapshot.data!.docs.length,
+              itemCount: todayDocs.length,
               itemBuilder: (context, index) {
-                final doc = snapshot.data!.docs[index];
+                final doc = todayDocs[index];
                 final data = doc.data() as Map<String, dynamic>;
                 return _buildActivityCard(context, data);
               },
@@ -104,7 +151,7 @@ class HodActivityFeed extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           _buildMiniStat(
-            'Faculty Active',
+            'Staff Active',
             '85%',
             const Color(0xFF10B981),
             Icons.people_rounded,
@@ -367,7 +414,7 @@ class HodActivityFeed extends StatelessWidget {
       case 'check_circle':
         return 'COMPLETED';
       case 'school':
-        return 'FACULTY NEWS';
+        return 'STAFF NEWS';
       case 'announcement':
         return 'URGENT';
       default:
