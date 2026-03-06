@@ -7,6 +7,7 @@ import 'evaluation_screen.dart';
 import 'internal_marks_screen.dart';
 import 'course_plan_screen.dart';
 import 'staff_survey_screen.dart';
+import '../../hod/screens/teaching/hod_hour_requests_screen.dart';
 
 class MyClassesScreen extends StatelessWidget {
   final String userId;
@@ -203,6 +204,16 @@ class MyClassesScreen extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (context) => StaffSurveyScreen(userId: userId),
+            ),
+          );
+          return;
+        }
+
+        if (service['title'] == 'Hour Request') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HodHourRequestsScreen(userId: userId),
             ),
           );
           return;

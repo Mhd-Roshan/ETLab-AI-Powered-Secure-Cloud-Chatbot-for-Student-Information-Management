@@ -717,4 +717,113 @@ class HodService {
           return {'studentCount': students, 'staffCount': staff};
         });
   }
+
+  // --- HOUR REQUESTS ---
+
+  /// Fetches hour requests with optional filtering
+  Stream<QuerySnapshot> getHourRequests(
+    String department, {
+    String? status,
+    String? batch,
+  }) {
+    Query query = _db
+        .collection('hour_requests')
+        .where('department', isEqualTo: department);
+
+    if (status != null && status != 'select') {
+      query = query.where('status', isEqualTo: status);
+    }
+    if (batch != null && batch != 'select') {
+      query = query.where('batch', isEqualTo: batch);
+    }
+
+    // Order by timestamp to show newest first. Note: requires composite index.
+    return query.snapshots();
+  }
+
+  /// Fetches hour requests made BY a specific user
+  Stream<QuerySnapshot> getHourRequestsByUser(String userId) {
+    return _db
+        .collection('hour_requests')
+        .where('requesterId', isEqualTo: userId)
+        .snapshots();
+  }
+
+  /// Creates a new hour request
+  Future<void> createHourRequest(Map<String, dynamic> requestData) async {
+    await _db.collection('hour_requests').add({
+      ...requestData,
+      'timestamp': FieldValue.serverTimestamp(),
+      'status': 'Pending',
+    });
+  }
+
+  /// Updates the status of an hour request
+  Future<void> updateHourRequestStatus(String requestId, String status) async {
+    await _db.collection('hour_requests').doc(requestId).update({
+      'status': status,
+    });
+  }
+
+  /// Updates the entire content of an hour request
+  Future<void> updateHourRequest(
+    String requestId,
+    Map<String, dynamic> data,
+  ) async {
+    await _db.collection('hour_requests').doc(requestId).update(data);
+  }
+
+  /// Deletes an hour request
+  Future<void> deleteHourRequest(String requestId) async {
+    await _db.collection('hour_requests').doc(requestId).delete();
+  }
+
+  /// Seeds demo hour requests
+  Future<void> seedHourRequests() async {
+    final List<Map<String, dynamic>> requests = [
+      {
+        'requesterId': 'sarah.wilson@edlab.com',
+        'requesterName': 'Dr. Sarah Wilson',
+        'targetStaffId': 'james.bond@edlab.com',
+        'targetStaffName': 'Prof. James Bond',
+        'date': Timestamp.fromDate(DateTime(2026, 3, 10)),
+        'period': '2nd Period',
+        'batch': 'MCA 2023-2025',
+        'subject': 'Machine Learning',
+        'status': 'Pending',
+        'department': 'MCA',
+        'timestamp': FieldValue.serverTimestamp(),
+      },
+      {
+        'requesterId': 'james.bond@edlab.com',
+        'requesterName': 'Prof. James Bond',
+        'targetStaffId': 'hod@gmail.com',
+        'targetStaffName': 'HOD User',
+        'date': Timestamp.fromDate(DateTime(2026, 3, 11)),
+        'period': '4th Period',
+        'batch': 'MCA 2024-2026',
+        'subject': 'Network Security',
+        'status': 'Approved',
+        'department': 'MCA',
+        'timestamp': FieldValue.serverTimestamp(),
+      },
+      {
+        'requesterId': 'hod@gmail.com',
+        'requesterName': 'HOD User',
+        'targetStaffId': 'emily.blunt@edlab.com',
+        'targetStaffName': 'Ms. Emily Blunt',
+        'date': Timestamp.fromDate(DateTime(2026, 3, 12)),
+        'period': '1st Period',
+        'batch': 'MCA 2023-2025',
+        'subject': 'Cloud Computing',
+        'status': 'Pending',
+        'department': 'MCA',
+        'timestamp': FieldValue.serverTimestamp(),
+      },
+    ];
+
+    for (final request in requests) {
+      await _db.collection('hour_requests').add(request);
+    }
+  }
 }

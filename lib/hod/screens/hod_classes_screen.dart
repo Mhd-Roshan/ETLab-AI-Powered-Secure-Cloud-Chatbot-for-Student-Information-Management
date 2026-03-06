@@ -6,6 +6,7 @@ import 'teaching/hod_internal_marks_screen.dart';
 import 'teaching/hod_attendance_screen.dart';
 import 'teaching/hod_evaluation_screen.dart';
 import 'teaching/hod_course_plan_screen.dart';
+import 'teaching/hod_hour_requests_screen.dart';
 
 class HodClassesScreen extends StatefulWidget {
   final String userId;
@@ -175,6 +176,13 @@ class _HodClassesScreenState extends State<HodClassesScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => HodCoursePlanScreen(userId: widget.userId),
+                ),
+              );
+            } else if (s['title'] == 'Hour Request') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HodHourRequestsScreen(userId: widget.userId),
                 ),
               );
             }
