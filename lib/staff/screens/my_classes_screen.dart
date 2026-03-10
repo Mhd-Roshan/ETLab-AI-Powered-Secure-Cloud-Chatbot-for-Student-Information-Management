@@ -66,7 +66,7 @@ class MyClassesScreen extends StatelessWidget {
         'color': const Color(0xFF001FF4),
       },
       {
-        'title': 'Evaluations',
+        'title': 'OBE',
         'icon': Icons.bar_chart_outlined,
         'color': const Color(0xFF001FF4),
       },
@@ -179,7 +179,7 @@ class MyClassesScreen extends StatelessWidget {
           return;
         }
 
-        if (service['title'] == 'Evaluations') {
+        if (service['title'] == 'OBE') {
           Navigator.push(
             context,
             MaterialPageRoute(

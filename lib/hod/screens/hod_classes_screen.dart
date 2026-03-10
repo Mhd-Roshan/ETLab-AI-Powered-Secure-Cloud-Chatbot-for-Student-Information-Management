@@ -7,6 +7,7 @@ import 'teaching/hod_attendance_screen.dart';
 import 'teaching/hod_evaluation_screen.dart';
 import 'teaching/hod_course_plan_screen.dart';
 import 'teaching/hod_hour_requests_screen.dart';
+import 'hod_surveys_screen.dart';
 
 class HodClassesScreen extends StatefulWidget {
   final String userId;
@@ -62,7 +63,7 @@ class _HodClassesScreenState extends State<HodClassesScreen> {
         'color': const Color(0xFF6366F1),
       },
       {
-        'title': 'Evaluations',
+        'title': 'OBE',
         'icon': Icons.bar_chart_outlined,
         'color': const Color(0xFF10B981),
       },
@@ -164,11 +165,16 @@ class _HodClassesScreenState extends State<HodClassesScreen> {
                   builder: (_) => HodAttendanceScreen(userId: widget.userId),
                 ),
               );
-            } else if (s['title'] == 'Evaluations') {
+            } else if (s['title'] == 'OBE') {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => HodEvaluationScreen(userId: widget.userId),
+                  builder: (_) => HodEvaluationScreen(
+                    userId: widget.userId,
+                    subjectCode: '20MCA205',
+                    subjectName: 'Advanced Data Structure',
+                    batchName: 'MCA 2023-25',
+                  ),
                 ),
               );
             } else if (s['title'] == 'Course Plan') {
@@ -183,6 +189,13 @@ class _HodClassesScreenState extends State<HodClassesScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => HodHourRequestsScreen(userId: widget.userId),
+                ),
+              );
+            } else if (s['title'] == 'Surveys') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HodSurveysScreen(userId: widget.userId),
                 ),
               );
             }
