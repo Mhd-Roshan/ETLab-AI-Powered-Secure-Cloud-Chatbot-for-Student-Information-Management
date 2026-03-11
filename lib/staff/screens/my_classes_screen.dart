@@ -7,7 +7,7 @@ import 'evaluation_screen.dart';
 import 'internal_marks_screen.dart';
 import 'course_plan_screen.dart';
 import 'staff_survey_screen.dart';
-import '../../hod/screens/teaching/hod_hour_requests_screen.dart';
+import 'staff_hour_request_screen.dart';
 
 class MyClassesScreen extends StatelessWidget {
   final String userId;
@@ -213,7 +213,7 @@ class MyClassesScreen extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => HodHourRequestsScreen(userId: userId),
+              builder: (context) => StaffHourRequestScreen(userId: userId),
             ),
           );
           return;
