@@ -323,7 +323,7 @@ I'm your dedicated Assistant for **Departmental Administration & Management**. I
                             Icon(Icons.history, color: Color(0xFF001FF4)),
                             SizedBox(width: 12),
                             Text(
-                              "Admin Insights",
+                              "History",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,

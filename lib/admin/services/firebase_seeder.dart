@@ -9,6 +9,7 @@ class FirebaseSeeder {
     await seedStaff();
     await seedStudents();
     await seedFeeStructures();
+    await seedAdminActivities();
   }
 
   static Future<void> seedDepartments() async {
@@ -128,5 +129,44 @@ class FirebaseSeeder {
       await _db.collection('fee_structures').add(fee);
     }
   }
-}
 
+  static Future<void> seedAdminActivities() async {
+    final now = DateTime.now();
+    final List<Map<String, dynamic>> activities = [
+      {
+        'title': 'New Staff Added',
+        'subtitle': 'Dr. Rajesh Kumar joined CSE',
+        'type': 'user_added',
+        'timestamp': Timestamp.fromDate(now),
+      },
+      {
+        'title': 'System Maintenence',
+        'subtitle': 'Cleared temporary cache files',
+        'type': 'system',
+        'timestamp': Timestamp.fromDate(now.subtract(const Duration(hours: 1))),
+      },
+      {
+        'title': 'Batch Fees Updated',
+        'subtitle': 'Updated Semester 4 fees for MCA',
+        'type': 'fees_updated',
+        'timestamp': Timestamp.fromDate(now.subtract(const Duration(hours: 5))),
+      },
+      {
+        'title': 'Department Modified',
+        'subtitle': 'Added 2 new subjects to CE',
+        'type': 'department_updated',
+        'timestamp': Timestamp.fromDate(now.subtract(const Duration(days: 1))),
+      },
+      {
+        'title': 'Database Seeded',
+        'subtitle': 'Initial dummy data populated',
+        'type': 'data_seeded',
+        'timestamp': Timestamp.fromDate(now.subtract(const Duration(days: 2))),
+      },
+    ];
+
+    for (var doc in activities) {
+      await _db.collection('admin_activities').add(doc);
+    }
+  }
+}

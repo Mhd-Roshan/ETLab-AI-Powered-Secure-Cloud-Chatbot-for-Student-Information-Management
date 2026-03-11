@@ -56,11 +56,33 @@ class AdminService {
   }
 
   // --- ACTIVITIES ---
+  Stream<QuerySnapshot> getAdminActivities() {
+    return _db
+        .collection('admin_activities')
+        .orderBy('timestamp', descending: true)
+        .limit(20)
+        .snapshots();
+  }
+
+  Future<void> logAdminActivity({
+    required String title,
+    required String subtitle,
+    required String type, // e.g. 'user_added', 'department_updated', 'system'
+  }) async {
+    await _db.collection('admin_activities').add({
+      'title': title,
+      'subtitle': subtitle,
+      'type': type,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Legacy fallback or other uses
   Stream<QuerySnapshot> getRecentActivities() {
     return _db
         .collection('announcements')
         .orderBy('postedDate', descending: true)
-        .limit(5)
+        .limit(20)
         .snapshots();
   }
 

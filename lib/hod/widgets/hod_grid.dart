@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:edlab/hod/screens/hod_batches_screen.dart';
 import 'package:edlab/hod/screens/hod_staff_screen.dart';
 import 'package:edlab/hod/screens/hod_surveys_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HodWorkspaceGrid extends StatelessWidget {
   final String userId;
@@ -23,12 +24,7 @@ class HodWorkspaceGrid extends StatelessWidget {
         'color': const Color(0xFFA855F7),
         'route': null,
       },
-      {
-        'icon': Icons.view_list_rounded,
-        'label': 'My Subjects',
-        'color': const Color(0xFFFCD34D),
-        'route': null,
-      },
+
       {
         'icon': Icons.forum_rounded,
         'label': 'Chat Room',
@@ -45,6 +41,7 @@ class HodWorkspaceGrid extends StatelessWidget {
         'icon': Icons.public_rounded,
         'label': 'Website',
         'color': const Color(0xFF3B82F6),
+        'url': 'https://ktu.edu.in/eu/acd/academicRegulation.htm',
         'route': null,
       },
       {
@@ -74,8 +71,25 @@ class HodWorkspaceGrid extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          if (item['route'] != null) {
+        onTap: () async {
+          if (item['url'] != null) {
+            final uri = Uri.parse(item['url']);
+            try {
+              if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Could not launch website.')),
+                  );
+                }
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
+            }
+          } else if (item['route'] != null) {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => item['route']),

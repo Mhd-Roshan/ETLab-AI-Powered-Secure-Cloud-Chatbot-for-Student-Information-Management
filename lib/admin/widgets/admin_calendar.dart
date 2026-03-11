@@ -484,8 +484,15 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
               const SizedBox(height: 20),
 
               StreamBuilder<QuerySnapshot>(
-                stream: _adminService.getRecentActivities(),
+                stream: _adminService.getAdminActivities(),
                 builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return Text(
                       "No recent activity",
@@ -496,22 +503,47 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                     );
                   }
 
-                  return Column(
-                    children: snapshot.data!.docs.map((doc) {
-                      var data = doc.data() as Map<String, dynamic>;
-                      String timeAgo = "Just now";
-                      if (data['postedDate'] != null) {
-                        Timestamp ts = data['postedDate'];
-                        timeAgo = DateFormat(
-                          'MMM d, h:mm a',
-                        ).format(ts.toDate());
-                      }
+                  // Group activities by day
+                  final Map<String, List<DocumentSnapshot>> groupedItems = {};
+                  for (var doc in snapshot.data!.docs) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    if (data['timestamp'] != null) {
+                      final date = (data['timestamp'] as Timestamp).toDate();
+                      final dayKey = _getGroupDayKey(date);
+                      groupedItems.putIfAbsent(dayKey, () => []).add(doc);
+                    } else {
+                      // Fallback for docs being posted (pending server timestamp)
+                      groupedItems.putIfAbsent('Today', () => []).add(doc);
+                    }
+                  }
 
-                      return _buildActivityItem(
-                        data['title'] ?? 'New Announcement',
-                        timeAgo,
-                        Colors.blueAccent,
-                        Icons.notifications_none_outlined,
+                  final keys = groupedItems.keys.toList();
+
+                  return Column(
+                    children: keys.map((key) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDateDivider(key),
+                          const SizedBox(height: 8),
+                          ...groupedItems[key]!.map((doc) {
+                            var data = doc.data() as Map<String, dynamic>;
+                            Timestamp? ts = data['timestamp'];
+                            String timeStr = ts != null
+                                ? DateFormat('h:mm a').format(ts.toDate())
+                                : "Just now";
+
+                            return _buildActivityItem(
+                              data['title'] ?? 'Action Logged',
+                              data['subtitle'],
+                              timeStr,
+                              _getAdminActivityIconColor(data['type']),
+                              _getAdminActivityIcon(data['type']),
+                              isLast: groupedItems[key]!.last == doc,
+                            );
+                          }),
+                          const SizedBox(height: 12),
+                        ],
                       );
                     }).toList(),
                   );
@@ -659,12 +691,13 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
 
   Widget _buildActivityItem(
     String title,
+    String? subtitle,
     String time,
     Color color,
-    IconData icon,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20.0),
+    IconData icon, {
+    bool isLast = false,
+  }) {
+    return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -678,7 +711,16 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                 ),
                 child: Icon(icon, size: 14, color: color),
               ),
-              Container(width: 2, height: 20, color: const Color(0xFFF1F5F9)),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: const Color(0xFFF1F5F9),
+                  ),
+                )
+              else
+                const SizedBox(height: 20),
             ],
           ),
           const SizedBox(width: 12),
@@ -690,11 +732,21 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                   title,
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: const Color(0xFF334155),
                   ),
                 ),
-                const SizedBox(height: 2),
+                if (subtitle != null && subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
                 Text(
                   time,
                   style: GoogleFonts.inter(
@@ -702,9 +754,93 @@ class _AdminRightPanelState extends State<AdminRightPanel> {
                     color: const Color(0xFF94A3B8),
                   ),
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // --- ACTIVITY HELPERS ---
+
+  String _getGroupDayKey(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final checkDate = DateTime(date.year, date.month, date.day);
+
+    if (checkDate == today) {
+      return 'Today';
+    } else if (checkDate == yesterday) {
+      return 'Yesterday';
+    } else {
+      return DateFormat('MMMM d, yyyy').format(date);
+    }
+  }
+
+  IconData _getAdminActivityIcon(String? type) {
+    switch (type) {
+      case 'user_added':
+      case 'user_updated':
+        return Icons.person_add_outlined;
+      case 'department_updated':
+        return Icons.apartment_outlined;
+      case 'fees_updated':
+      case 'fee_collected':
+        return Icons.payments_outlined;
+      case 'system':
+        return Icons.dns_outlined;
+      case 'data_seeded':
+        return Icons.cloud_upload_outlined;
+      default:
+        return Icons.history_edu_outlined;
+    }
+  }
+
+  Color _getAdminActivityIconColor(String? type) {
+    switch (type) {
+      case 'user_added':
+      case 'user_updated':
+        return const Color(0xFF6366F1); // Indigo
+      case 'department_updated':
+        return const Color(0xFFF59E0B); // Amber
+      case 'fees_updated':
+      case 'fee_collected':
+        return const Color(0xFF10B981); // Emerald
+      case 'system':
+      case 'data_seeded':
+        return const Color(0xFF8B5CF6); // Violet
+      default:
+        return const Color(0xFF64748B); // Slate Blue
+    }
+  }
+
+  Widget _buildDateDivider(String dateText) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFF1F5F9)),
+            ),
+            child: Text(
+              dateText.toUpperCase(),
+              style: GoogleFonts.inter(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: const Color(0xFF64748B),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Container(height: 1, color: const Color(0xFFF1F5F9))),
         ],
       ),
     );
