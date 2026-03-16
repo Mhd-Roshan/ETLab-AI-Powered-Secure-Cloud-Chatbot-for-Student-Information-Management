@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:edlab/services/student_service.dart';
+
 import 'package:edlab/staff/widgets/staff_sidebar.dart';
 import 'package:edlab/staff/widgets/staff_header.dart';
 
@@ -21,7 +21,7 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
 
   static const String _subject = 'DIGITAL FUNDAMENTALS & COMP. ARCH.';
 
-  final StudentService _studentService = StudentService();
+
 
   // MCA Timetable: weekday -> list of subjects per period (7 periods)
   // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun
@@ -51,74 +51,9 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _seedAttendanceData();
   }
 
-  Future<void> _seedAttendanceData() async {
-    final db = FirebaseFirestore.instance;
 
-    // Check if seeding already done
-    final existing = await db
-        .collection('attendance')
-        .where('studentId', isEqualTo: 'MCA001')
-        .limit(2)
-        .get();
-    if (existing.docs.length >= 2) return; // Already seeded
-
-    final students = [
-      {'id': 'MCA001', 'name': 'Roshan'},
-      {'id': 'MCA002', 'name': 'Abhidev'},
-      {'id': 'MCA003', 'name': 'Sruthi'},
-      {'id': 'MCA004', 'name': 'Adithyan'},
-      {'id': 'MCA005', 'name': 'Anjali'},
-    ];
-
-    // Randomly assign ~40 present out of 50 classes for each student
-    // Each student gets a slightly different attendance pattern
-    final Map<String, int> presentCounts = {
-      'MCA001': 42, // Roshan  - 84%
-      'MCA002': 38, // Abhidev - 76%
-      'MCA003': 45, // Sruthi  - 90%
-      'MCA004': 36, // Adithyan- 72%
-      'MCA005': 40, // Anjali  - 80%
-    };
-
-    final batch = db.batch();
-    final now = DateTime.now();
-
-    for (var student in students) {
-      final regNo = student['id']!;
-      final totalPresent = presentCounts[regNo] ?? 40;
-
-      // Generate 50 class days going back from today
-      for (int i = 0; i < 50; i++) {
-        final classDate = DateTime(
-          now.year,
-          now.month,
-          now.day,
-        ).subtract(Duration(days: i));
-        // Skip Sundays
-        if (classDate.weekday == 7) continue;
-
-        final bool isPresent = i < totalPresent; // First N days are present
-
-        final docRef = db.collection('attendance').doc('${regNo}_day_$i');
-        batch.set(docRef, {
-          'date': Timestamp.fromDate(classDate),
-          'period': 1,
-          'subject': _subject,
-          'subjectName': _subject,
-          'department': 'MCA',
-          'studentId': regNo,
-          'isPresent': isPresent,
-          'markedBy': 'Staff',
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-      }
-    }
-
-    await batch.commit();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1067,7 +1002,10 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: _studentService.getStudentsByDept("MCA"),
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .where('role', isEqualTo: 'student')
+                .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -1119,36 +1057,20 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
               List<Map<String, dynamic>> finalDisplayList = filteredStudents
                   .map(
                     (doc) => <String, dynamic>{
-                      'id': doc.id,
+                      'id': (doc.data() as Map<String, dynamic>)['username']?.toString() ?? doc.id,
                       'data': doc.data() as Map<String, dynamic>,
                     },
                   )
                   .toList();
 
-              // Manual Roshan injection
-              bool roshanFound = finalDisplayList.any((item) {
-                final d = item['data'] as Map<String, dynamic>;
-                String name = (d['name'] ?? "").toString();
-                if (name.isEmpty) {
-                  name = "${d['firstName'] ?? ''} ${d['lastName'] ?? ''}";
-                }
-                return name.toLowerCase().contains("roshan");
+              // Sort by name for better arrangement
+              finalDisplayList.sort((a, b) {
+                final nameA = (a['data'] as Map<String, dynamic>)['name']?.toString() ?? 
+                            (a['data'] as Map<String, dynamic>)['fullName']?.toString() ?? '';
+                final nameB = (b['data'] as Map<String, dynamic>)['name']?.toString() ?? 
+                            (b['data'] as Map<String, dynamic>)['fullName']?.toString() ?? '';
+                return nameA.toLowerCase().compareTo(nameB.toLowerCase());
               });
-
-              if (!roshanFound &&
-                  ("roshan".contains(_searchQuery.toLowerCase()) ||
-                      _searchQuery.isEmpty)) {
-                finalDisplayList.add(<String, dynamic>{
-                  'id': 'roshan_manual_id',
-                  'data': <String, dynamic>{
-                    'name': 'Roshan',
-                    'firstName': 'Roshan',
-                    'lastName': '',
-                    'regNo': 'MCA001',
-                    'department': 'MCA',
-                  },
-                });
-              }
 
               return ListView.separated(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -1159,17 +1081,16 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
                   final student = item['data'] as Map<String, dynamic>;
                   final docId = item['id'] as String;
 
-                  String name = student['name'] ?? '';
-                  if (name.isEmpty) {
-                    final fName =
-                        student['firstName'] ?? student['firstname'] ?? '';
-                    final lName =
-                        student['lastName'] ?? student['lastname'] ?? '';
-                    name = "$fName $lName".trim();
-                  }
+                  final firstName = student['firstname']?.toString() ??
+                      student['firstName']?.toString() ?? '';
+                  final lName = student['lastname']?.toString() ??
+                      student['lastName']?.toString() ?? '';
+                  String name = student['fullName']?.toString() ??
+                      student['name']?.toString() ??
+                      '$firstName $lName'.trim();
                   if (name.isEmpty) name = 'Unknown';
 
-                  final regNo = student['regNo'] ?? docId;
+                  final regNo = student['username']?.toString() ?? docId;
 
                   return _buildStudentAttendanceCard(docId, name, regNo);
                 },
@@ -1182,79 +1103,219 @@ class _StaffAttendanceScreenState extends State<StaffAttendanceScreen>
   }
 
   Widget _buildStudentAttendanceCard(String docId, String name, String regNo) {
-    const int totalClasses = 50;
+    const int targetClasses = 50;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: const Color(0xFFF1F5F9),
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : "?",
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF001FF4),
-                fontSize: 16,
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('attendance')
+          .where('studentId', isEqualTo: regNo)
+          .where('subject', isEqualTo: _subject)
+          .snapshots(),
+      builder: (context, snapshot) {
+        int presentCount = 0;
+        int totalConducted = 0;
+
+        if (snapshot.hasData) {
+          final docs = snapshot.data!.docs;
+          totalConducted = docs.length;
+          presentCount = docs
+              .where((d) =>
+                  (d.data() as Map<String, dynamic>)['isPresent'] == true)
+              .length;
+        }
+
+        final double attendancePct =
+            totalConducted > 0 ? (presentCount / totalConducted) * 100 : 0;
+
+        final Color pctColor = attendancePct >= 85
+            ? const Color(0xFF10B981)
+            : attendancePct >= 75
+                ? const Color(0xFFF59E0B)
+                : const Color(0xFFEF4444);
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1E293B),
-                    fontSize: 15,
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: pctColor.withValues(alpha: 0.1),
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : "?",
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w800,
+                        color: pctColor,
+                        fontSize: 18,
+                      ),
+                    ),
                   ),
-                ),
-                Text(
-                  regNo,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF64748B),
-                    fontSize: 12,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1E293B),
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                regNo,
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF64748B),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        "${attendancePct.toStringAsFixed(1)}%",
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w900,
+                          color: pctColor,
+                          fontSize: 22,
+                        ),
+                      ),
+                      Text(
+                        "$presentCount / $totalConducted sessions",
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF94A3B8),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Progress bars
+              Row(
+                children: [
+                  Expanded(
+                    flex: 7,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Attendance",
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF64748B),
+                                fontSize: 11,
+                              ),
+                            ),
+                            Text(
+                              "${attendancePct.toStringAsFixed(0)}%",
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                color: pctColor,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: attendancePct / 100,
+                            minHeight: 6,
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            valueColor: AlwaysStoppedAnimation<Color>(pctColor),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Course Progress",
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF64748B),
+                                fontSize: 11,
+                              ),
+                            ),
+                            Text(
+                              "$totalConducted / $targetClasses",
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1E293B),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: totalConducted / targetClasses,
+                            minHeight: 6,
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF001FF4),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('attendance')
-                .where('studentId', isEqualTo: regNo)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) return const SizedBox.shrink();
-
-              final docs = snapshot.data!.docs;
-              int presentCount = docs
-                  .where(
-                    (d) =>
-                        (d.data() as Map<String, dynamic>)['isPresent'] == true,
-                  )
-                  .length;
-
-              final percentage = (presentCount / totalClasses) * 100;
-              return _buildPercentageData(
-                percentage,
-                totalClasses,
-                presentCount,
-              );
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1347,7 +1408,6 @@ class _AttendanceMarkingDialog extends StatefulWidget {
 }
 
 class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
-  final StudentService _studentService = StudentService();
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   final Map<String, bool> _attendance = {};
@@ -1428,7 +1488,10 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
             // Student List
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: _studentService.getStudentsByDept(widget.department),
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .where('role', isEqualTo: 'student')
+                    .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -1446,7 +1509,7 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            "No students found in ${widget.department}",
+                            "No students found",
                             style: TextStyle(color: Colors.grey[500]),
                           ),
                         ],
@@ -1456,70 +1519,28 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
 
                   final allStudents = snapshot.data!.docs;
 
+                  // Use username as the key for attendance tracking
                   if (_attendance.isEmpty) {
                     for (var s in allStudents) {
-                      _attendance[s.id] = true;
+                      final data = s.data() as Map<String, dynamic>;
+                      final username = data['username']?.toString() ?? s.id;
+                      _attendance[username] = true;
                     }
                   }
 
                   List<Map<String, dynamic>> finalDisplayList = [];
 
                   for (var doc in allStudents) {
-                    final isPresent = _attendance[doc.id] ?? true;
+                    final data = doc.data() as Map<String, dynamic>;
+                    final username = data['username']?.toString() ?? doc.id;
+                    final isPresent = _attendance[username] ?? true;
                     if (_filter == "Present" && !isPresent) continue;
                     if (_filter == "Absent" && isPresent) continue;
 
                     finalDisplayList.add(<String, dynamic>{
-                      'id': doc.id,
-                      'data': doc.data() as Map<String, dynamic>,
+                      'id': username,
+                      'data': data,
                     });
-                  }
-
-                  // Manual Roshan injection
-                  bool roshanFound = finalDisplayList.any((item) {
-                    final d = item['data'] as Map<String, dynamic>;
-                    String name = (d['name'] ?? "").toString();
-                    if (name.isEmpty) {
-                      name = "${d['firstName'] ?? ''} ${d['lastName'] ?? ''}";
-                    }
-                    return name.toLowerCase().contains("roshan");
-                  });
-
-                  if (!roshanFound) {
-                    bool roshanInAll = allStudents.any((doc) {
-                      final d = doc.data() as Map<String, dynamic>;
-                      String name = (d['name'] ?? "").toString();
-                      if (name.isEmpty) {
-                        name = "${d['firstName'] ?? ''} ${d['lastName'] ?? ''}";
-                      }
-                      return name.toLowerCase().contains("roshan");
-                    });
-
-                    if (!roshanInAll) {
-                      if (!_attendance.containsKey('roshan_manual_id')) {
-                        _attendance['roshan_manual_id'] = true;
-                      }
-                      final isPresent = _attendance['roshan_manual_id'] ?? true;
-                      bool showRoshan = true;
-                      if (_filter == "Present" && !isPresent) {
-                        showRoshan = false;
-                      }
-                      if (_filter == "Absent" && isPresent) {
-                        showRoshan = false;
-                      }
-                      if (showRoshan) {
-                        finalDisplayList.add(<String, dynamic>{
-                          'id': 'roshan_manual_id',
-                          'data': <String, dynamic>{
-                            'name': 'Roshan',
-                            'firstName': 'Roshan',
-                            'lastName': '',
-                            'regNo': 'MCA001',
-                            'department': 'MCA',
-                          },
-                        });
-                      }
-                    }
                   }
 
                   if (finalDisplayList.isEmpty) {
@@ -1541,17 +1562,16 @@ class _AttendanceMarkingDialogState extends State<_AttendanceMarkingDialog> {
                       final item = finalDisplayList[index];
                       final student = item['data'] as Map<String, dynamic>;
                       final docId = item['id'] as String;
-                      String name = student['name'] ?? '';
-                      if (name.isEmpty) {
-                        final fName =
-                            student['firstName'] ?? student['firstname'] ?? '';
-                        final lName =
-                            student['lastName'] ?? student['lastname'] ?? '';
-                        name = "$fName $lName".trim();
-                      }
+                      final firstName = student['firstname']?.toString() ??
+                          student['firstName']?.toString() ?? '';
+                      final lastName = student['lastname']?.toString() ??
+                          student['lastName']?.toString() ?? '';
+                      String name = student['fullName']?.toString() ??
+                          student['name']?.toString() ??
+                          '$firstName $lastName'.trim();
                       if (name.isEmpty) name = 'Unknown';
 
-                      final regNo = student['regNo'] ?? docId;
+                      final regNo = student['username']?.toString() ?? docId;
                       final isPresent = _attendance[docId] ?? true;
 
                       return Padding(

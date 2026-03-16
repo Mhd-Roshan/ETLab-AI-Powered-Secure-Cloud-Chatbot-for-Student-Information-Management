@@ -360,6 +360,11 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
         'label': 'Assignments',
         'color': Colors.indigo,
       },
+      {
+        'icon': Icons.analytics_rounded,
+        'label': 'Internal Marks',
+        'color': const Color(0xFF0EA5E9),
+      },
       {'icon': Icons.quiz_rounded, 'label': 'Q-Bank', 'color': Colors.green},
       {'icon': Icons.book_rounded, 'label': 'Subjects', 'color': Colors.cyan},
     ];
@@ -396,7 +401,9 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
           } else if (item['label'] == 'Results') {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ResultsScreen()),
+              MaterialPageRoute(
+                builder: (context) => ResultsScreen(studentId: widget.studentId),
+              ),
             );
           } else if (item['label'] == 'Exams') {
             Navigator.push(
@@ -439,6 +446,16 @@ class _AcademicsScreenState extends State<AcademicsScreen> {
               MaterialPageRoute(
                 builder: (context) =>
                     SyllabusScreen(studentRegNo: widget.studentId ?? ''),
+              ),
+            );
+          } else if (item['label'] == 'Internal Marks') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ResultsScreen(
+                  studentId: widget.studentId,
+                  initialExam: 'Internal Assessment',
+                ),
               ),
             );
           } else if (item['label'] == 'Q-Bank') {

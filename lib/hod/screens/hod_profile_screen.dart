@@ -116,9 +116,9 @@ class _HodProfileScreenState extends State<HodProfileScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("$title updated in database!"),
+                    content: Text("$title updated locally!"),
                     behavior: SnackBarBehavior.floating,
-                    backgroundColor: Colors.green,
+                    backgroundColor: const Color(0xFF001FF4),
                   ),
                 );
               } catch (e) {
@@ -177,10 +177,10 @@ class _HodProfileScreenState extends State<HodProfileScreen> {
   Widget _buildProfileUI(Map<String, dynamic> data) {
     final fullName = data['fullName'] ?? data['username'] ?? 'HOD User';
     final email = data['email'] ?? widget.userId;
-    final department = data['department'] ?? 'Master Of Computer Application';
-    final role = data['role'] ?? 'Head of Department';
+    final department = data['department']?.toString() ?? 'Master Of Computer Application';
+    final role = data['role']?.toString() ?? 'Head of Department';
     final subjects =
-        data['subjects'] ?? 'Department Management, Advanced Systems';
+        data['subjects']?.toString() ?? 'Department Management, Advanced Systems';
     final notifications = data['notifications'] ?? true;
     final darkMode = data['darkMode'] ?? false;
 

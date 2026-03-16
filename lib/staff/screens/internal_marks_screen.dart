@@ -24,7 +24,6 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
   @override
   void initState() {
     super.initState();
-    _seedStudents();
   }
 
   @override
@@ -101,59 +100,135 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
                           children: [
                             // Live Stats Overview Cards
                             StreamBuilder<QuerySnapshot>(
-                              stream: _firestore
-                                  .collection('internal_marks')
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                double avg = 0;
-                                int highest = 0;
-                                int lowest = 0;
+                              stream: _firestore.collection('internal_marks').snapshots(),
+                              builder: (context, marksSnap) {
+                                return StreamBuilder<QuerySnapshot>(
+                                  stream: _firestore.collection('attendance').snapshots(),
+                                  builder: (context, attSnap) {
+                                    return StreamBuilder<QuerySnapshot>(
+                                      stream: _firestore.collection('obe_marks').snapshots(),
+                                      builder: (context, obeSnap) {
+                                        return StreamBuilder<QuerySnapshot>(
+                                          stream: _firestore.collection('obe_evaluations').snapshots(),
+                                          builder: (context, evalSnap) {
+                                            double avg = 0;
+                                            int highest = 0;
+                                            int lowest = 0;
 
-                                if (snapshot.hasData &&
-                                    snapshot.data!.docs.isNotEmpty) {
-                                  final docs = snapshot.data!.docs;
-                                  final marks = docs.map((d) {
-                                    final data =
-                                        d.data() as Map<String, dynamic>;
-                                    return (data['internalMark'] ?? 0) as int;
-                                  }).toList();
-                                  highest = marks.reduce(
-                                    (a, b) => a > b ? a : b,
-                                  );
-                                  lowest = marks.reduce(
-                                    (a, b) => a < b ? a : b,
-                                  );
-                                  avg =
-                                      marks.reduce((a, b) => a + b) /
-                                      marks.length;
-                                }
+                                            if (marksSnap.hasData) {
+                                              // 1. Process Metadata
+                                              final Map<String, String> evalTypes = {};
+                                              for (var doc in evalSnap.data?.docs ?? []) {
+                                                final d = doc.data() as Map<String, dynamic>;
+                                                evalTypes[doc.id] = d['type']?.toString() ?? 'Series Exam';
+                                              }
 
-                                return Row(
-                                  children: [
-                                    _buildStatCard(
-                                      "Average Score",
-                                      avg.toStringAsFixed(1),
-                                      Icons.analytics_rounded,
-                                      const Color(0xFFEFF6FF),
-                                      const Color(0xFF3B82F6),
-                                    ),
-                                    const SizedBox(width: 24),
-                                    _buildStatCard(
-                                      "Highest Score",
-                                      "$highest",
-                                      Icons.emoji_events_rounded,
-                                      const Color(0xFFF0FDF4),
-                                      const Color(0xFF22C55E),
-                                    ),
-                                    const SizedBox(width: 24),
-                                    _buildStatCard(
-                                      "Lowest Score",
-                                      "$lowest",
-                                      Icons.warning_amber_rounded,
-                                      const Color(0xFFFFF1F2),
-                                      const Color(0xFFF43F5E),
-                                    ),
-                                  ],
+                                              // 2. Process attendance
+                                              final Map<String, List<num>> attMap = {};
+                                              for (var doc in attSnap.data?.docs ?? []) {
+                                                final d = doc.data() as Map<String, dynamic>;
+                                                final sId = d['studentId']?.toString() ?? '';
+                                                if (sId.isNotEmpty) {
+                                                  attMap.putIfAbsent(sId, () => []);
+                                                  final total = (d['total'] as num?)?.toDouble() ?? 0;
+                                                  final present = (d['present'] as num?)?.toDouble() ?? 0;
+                                                  if (total > 0) attMap[sId]!.add((present / total) * 100);
+                                                }
+                                              }
+
+                                              // 3. Process OBE
+                                              final Map<String, Map<String, List<double>>> obeMap = {};
+                                              for (var doc in obeSnap.data?.docs ?? []) {
+                                                final d = doc.data() as Map<String, dynamic>;
+                                                final sId = d['studentId']?.toString() ?? d['rollNo']?.toString() ?? '';
+                                                final eId = d['evaluationId']?.toString() ?? '';
+                                                if (sId.isNotEmpty && eId.isNotEmpty) {
+                                                  final type = evalTypes[eId] ?? 'Series Exam';
+                                                  final score = double.tryParse(d['total']?.toString() ?? '0') ?? 0.0;
+                                                  obeMap.putIfAbsent(sId, () => {});
+                                                  obeMap[sId]!.putIfAbsent(type, () => []).add(score);
+                                                }
+                                              }
+
+                                              final marksDocs = marksSnap.data!.docs;
+                                              final List<int> allInternalMarks = [];
+
+                                              // We check against known internal_marks documents
+                                              // In a real scenario, we'd iterate over all students, 
+                                              // but here we use the ones that have some marks data.
+                                              for (var doc in marksDocs) {
+                                                final data = doc.data() as Map<String, dynamic>;
+                                                final sId = doc.id;
+                                                
+                                                // 1. Attendance Marks
+                                                double attPercent = (data['attendance'] as num?)?.toDouble() ?? 0;
+                                                if (attPercent == 0 && attMap.containsKey(sId)) {
+                                                  final list = attMap[sId]!;
+                                                  attPercent = list.reduce((a, b) => a + b) / list.length;
+                                                }
+                                                final attMarks = _calculateAttendanceMarks(attPercent);
+
+                                                // 2. Assignments
+                                                double assignScore = (data['assignments'] as num?)?.toDouble() ?? 0;
+                                                if (assignScore == 0 && obeMap[sId]?.containsKey('Assignment') == true) {
+                                                  final scores = obeMap[sId]!['Assignment']!;
+                                                  assignScore = scores.reduce((a, b) => a + b) / scores.length;
+                                                }
+
+                                                // 3. Series
+                                                double seriesScore = (data['seriesTests'] as num?)?.toDouble() ?? 0;
+                                                if (seriesScore == 0) {
+                                                  final studentObe = obeMap[sId];
+                                                  final scores = studentObe?['Series Exam'] ?? studentObe?['Series Test'] ?? [];
+                                                  if (scores.isNotEmpty) {
+                                                    seriesScore = scores.reduce((a, b) => a + b) / scores.length;
+                                                  }
+                                                }
+
+                                                int total = (attMarks + assignScore + seriesScore).round();
+                                                if (total > 50) total = 50; // Cap at 50
+                                                allInternalMarks.add(total);
+                                              }
+
+                                              if (allInternalMarks.isNotEmpty) {
+                                                highest = allInternalMarks.reduce((a, b) => a > b ? a : b);
+                                                lowest = allInternalMarks.reduce((a, b) => a < b ? a : b);
+                                                avg = allInternalMarks.reduce((a, b) => a + b) / allInternalMarks.length;
+                                              }
+                                            }
+
+                                            return Row(
+                                              children: [
+                                                _buildStatCard(
+                                                  "Average Score",
+                                                  avg.toStringAsFixed(1),
+                                                  Icons.analytics_rounded,
+                                                  const Color(0xFFEFF6FF),
+                                                  const Color(0xFF3B82F6),
+                                                ),
+                                                const SizedBox(width: 24),
+                                                _buildStatCard(
+                                                  "Highest Score",
+                                                  "$highest",
+                                                  Icons.emoji_events_rounded,
+                                                  const Color(0xFFF0FDF4),
+                                                  const Color(0xFF22C55E),
+                                                ),
+                                                const SizedBox(width: 24),
+                                                _buildStatCard(
+                                                  "Lowest Score",
+                                                  "$lowest",
+                                                  Icons.report_problem_rounded,
+                                                  const Color(0xFFFEF2F2),
+                                                  const Color(0xFFEF4444),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
+                                    );
+                                  },
                                 );
                               },
                             ),
@@ -376,40 +451,128 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
       ),
     );
 
-    // Fetch current marks data
-    final snapshot = await _firestore
-        .collection('internal_marks')
-        .snapshots()
-        .first;
+    // --- FETCH DATA FROM ALL SOURCES ---
+    final marksSnap = await _firestore.collection('internal_marks').get();
+    final attendanceSnap = await _firestore.collection('attendance').get();
+    final obeMarksSnap = await _firestore.collection('obe_marks').get();
+    final evalSnap = await _firestore.collection('obe_evaluations').get();
+    
     final studentSnapshot = await _firestore
-        .collection('students')
-        .snapshots()
-        .first;
+        .collection('users')
+        .where('role', isEqualTo: 'student')
+        .get();
 
     final Map<String, Map<String, dynamic>> studentMap = {
       for (var doc in studentSnapshot.docs)
-        doc.id: doc.data() as Map<String, dynamic>,
+        doc.id: doc.data(),
     };
 
+    final Map<String, Map<String, dynamic>> marksMap = {
+      for (var doc in marksSnap.docs) doc.id: doc.data(),
+    };
+
+    final Map<String, List<Map<String, dynamic>>> attendanceByStudent = {};
+    for (var doc in attendanceSnap.docs) {
+      final data = doc.data();
+      final sId = data['studentId']?.toString() ?? '';
+      if (sId.isNotEmpty) {
+        attendanceByStudent.putIfAbsent(sId, () => []).add(data);
+      }
+    }
+
+    final Map<String, Map<String, dynamic>> evals = {
+      for (var doc in evalSnap.docs) doc.id: doc.data(),
+    };
+
+    final Map<String, Map<String, List<double>>> obeByStudent = {};
+    for (var doc in obeMarksSnap.docs) {
+      final data = doc.data();
+      final sId = data['studentId']?.toString() ?? data['rollNo']?.toString() ?? '';
+      final evalId = data['evaluationId']?.toString() ?? '';
+      if (sId.isNotEmpty && evalId.isNotEmpty) {
+        final eval = evals[evalId];
+        final type = eval?['type']?.toString() ?? 'Series Exam';
+        final score = double.tryParse(data['total']?.toString() ?? '0') ?? 0.0;
+        obeByStudent.putIfAbsent(sId, () => {});
+        obeByStudent[sId]!.putIfAbsent(type, () => []).add(score);
+      }
+    }
+
     final List<Map<String, dynamic>> rows = [];
-    for (var doc in snapshot.docs) {
-      final marks = doc.data() as Map<String, dynamic>;
-      final student = studentMap[doc.id] ?? {};
+    for (var studentId in studentMap.keys) {
+      final student = studentMap[studentId]!;
+      final regNo = student['regNo']?.toString() ?? 
+                    student['studentId']?.toString() ?? 
+                    studentId;
+      final email = student['email']?.toString() ?? 
+                    student['userEmail']?.toString() ?? '';
+
+      // Find marks from manual map first
+      final manualMarks = marksMap[regNo] ?? (email.isNotEmpty ? marksMap[email] : null) ?? {};
+
+      // 1. Attendance Calculation
+      double attPercentage = 0;
+      final attDocs = attendanceByStudent[regNo] ?? (email.isNotEmpty ? attendanceByStudent[email] : null) ?? [];
+      if (attDocs.isNotEmpty) {
+        int totalSum = 0;
+        int presentSum = 0;
+        for (var doc in attDocs) {
+          totalSum += (doc['total'] as num?)?.toInt() ?? 0;
+          presentSum += (doc['present'] as num?)?.toInt() ?? 0;
+        }
+        attPercentage = totalSum > 0 ? (presentSum / totalSum) * 100 : 0;
+      }
+      // Override if manual exists and non-zero
+      if (manualMarks['attendance'] != null && manualMarks['attendance'] != 0) {
+        attPercentage = (manualMarks['attendance'] as num).toDouble();
+      }
+
+      // 2. OBE / Series Tests
+      double seriesTotal = 0;
+      final studentObe = obeByStudent[regNo] ?? (email.isNotEmpty ? obeByStudent[email] : null) ?? {};
+      final seriesScores = studentObe['Series Exam'] ?? studentObe['Series Test'] ?? [];
+      if (seriesScores.isNotEmpty) {
+        seriesTotal = seriesScores.reduce((a, b) => a + b) / seriesScores.length;
+      }
+      if (manualMarks['seriesTests'] != null && manualMarks['seriesTests'] != 0) {
+        seriesTotal = (manualMarks['seriesTests'] as num).toDouble();
+      }
+
+      // 3. Assignments
+      double assignTotal = 0;
+      final assignScores = studentObe['Assignment'] ?? [];
+      if (assignScores.isNotEmpty) {
+        assignTotal = assignScores.reduce((a, b) => a + b) / assignScores.length;
+      }
+      if (manualMarks['assignments'] != null && manualMarks['assignments'] != 0) {
+        assignTotal = (manualMarks['assignments'] as num).toDouble();
+      }
+
+      // Robust name extraction
+      String fullName = 'Unknown';
+      if (student['name'] != null) {
+        fullName = student['name'].toString();
+      } else if (student['fullName'] != null) {
+        fullName = student['fullName'].toString();
+      } else if (student['firstname'] != null || student['lastname'] != null) {
+        fullName = '${student['firstname'] ?? ''} ${student['lastname'] ?? ''}'.trim();
+      }
+
       rows.add({
-        'rollNo': student['rollNo'] ?? doc.id.split('-').last,
-        'name': student['name'] ?? 'Unknown',
-        'regNo': doc.id,
-        'attendance': marks['attendance'] ?? 0,
-        'assignments': marks['assignments'] ?? 0,
-        'seriesTests': marks['seriesTests'] ?? 0,
-        'internalMark': marks['internalMark'] ?? 0,
+        'email': email.isNotEmpty ? email : regNo,
+        'name': fullName,
+        'regNo': regNo,
+        'attendance': attPercentage.round(),
+        'assignments': assignTotal.round(),
+        'seriesTests': seriesTotal.round(),
+        'internalMark': (attPercentage / 10 + assignTotal / 2 + seriesTotal / 2).round(),
       });
     }
 
-    // Sort by rollNo
+    // Sort by name
     rows.sort(
-      (a, b) => (a['rollNo'] ?? '').toString().compareTo(
-        (b['rollNo'] ?? '').toString(),
+      (a, b) => (a['name'] ?? '').toString().compareTo(
+        (b['name'] ?? '').toString(),
       ),
     );
 
@@ -461,7 +624,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               cellAlignment: pw.Alignment.center,
               headers: format == "Detailed"
                   ? [
-                      'Roll No',
+                      'Email',
                       'Name',
                       'Reg No',
                       'Att %',
@@ -471,7 +634,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
                       'Grade',
                     ]
                   : [
-                      'Roll No',
+                      'Email',
                       'Name',
                       'Att %',
                       'Assign',
@@ -491,7 +654,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
                       ? 'B'
                       : 'C';
                   return [
-                    r['rollNo'].toString(),
+                    r['email'].toString(),
                     r['name'].toString(),
                     r['regNo'].toString(),
                     '${r['attendance']}%',
@@ -502,7 +665,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
                   ];
                 }
                 return [
-                  r['rollNo'].toString(),
+                  r['email'].toString(),
                   r['name'].toString(),
                   '${r['attendance']}%',
                   r['assignments'].toString(),
@@ -545,11 +708,11 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
     // Build CSV content
     final buffer = StringBuffer();
     buffer.writeln(
-      'Roll No,Name,Reg No,Attendance %,Assignments,Series Tests,Internal Mark',
+      'Email,Name,Reg No,Attendance %,Assignments,Series Tests,Internal Mark',
     );
     for (var r in rows) {
       buffer.writeln(
-        '${r['rollNo']},${r['name']},${r['regNo']},${r['attendance']},${r['assignments']},${r['seriesTests']},${r['internalMark']}',
+        '${r['email']},${r['name']},${r['regNo']},${r['attendance']},${r['assignments']},${r['seriesTests']},${r['internalMark']}',
       );
     }
 
@@ -583,7 +746,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               ),
               cellAlignment: pw.Alignment.center,
               headers: [
-                'Roll No',
+                'Email',
                 'Name',
                 'Reg No',
                 'Att %',
@@ -594,7 +757,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               data: rows
                   .map(
                     (r) => [
-                      r['rollNo'].toString(),
+                      r['email'].toString(),
                       r['name'].toString(),
                       r['regNo'].toString(),
                       '${r['attendance']}%',
@@ -976,12 +1139,13 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
             color: const Color(0xFFF8FAFC),
             child: Row(
               children: [
-                _buildColHead("ROLL NO", flex: 1),
+                _buildColHead("EMAIL", flex: 2),
                 _buildColHead("STUDENT NAME", flex: 2),
                 _buildColHead("ATTENDANCE %", flex: 1, center: true),
                 _buildColHead("ASSIGNMENTS", flex: 1, center: true),
                 _buildColHead("SERIES TESTS", flex: 1, center: true),
                 _buildColHead("INTERNAL MARK", flex: 1, center: true),
+                _buildColHead("ACTIONS", flex: 1, center: true),
               ],
             ),
           ),
@@ -1001,33 +1165,20 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
               }
 
               final students = studentSnapshot.data?.docs ?? [];
-
-              if (students.isEmpty) {
-                // Secondary fallback to students collection
-                return StreamBuilder<QuerySnapshot>(
-                  stream: _firestore.collection('students').snapshots(),
-                  builder: (context, fallbackSnapshot) {
-                    if (fallbackSnapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return const Padding(
-                        padding: EdgeInsets.all(40),
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-                    return _buildMarksStream(
-                      context,
-                      fallbackSnapshot.data?.docs ?? [],
-                    );
-                  },
-                );
-              }
-
               return _buildMarksStream(context, students);
             },
           ),
         ],
       ),
     );
+  }
+
+  double _calculateAttendanceMarks(double percentage) {
+    if (percentage >= 90) return 5.0;
+    if (percentage >= 85) return 4.0;
+    if (percentage >= 80) return 3.0;
+    if (percentage >= 75) return 2.0;
+    return 0.0;
   }
 
   Widget _buildMarksStream(
@@ -1037,92 +1188,184 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.collection('internal_marks').snapshots(),
       builder: (context, marksSnapshot) {
-        if (marksSnapshot.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.all(40),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
+        return StreamBuilder<QuerySnapshot>(
+          stream: _firestore.collection('attendance').snapshots(),
+          builder: (context, attendanceSnapshot) {
+            return StreamBuilder<QuerySnapshot>(
+              stream: _firestore.collection('obe_marks').snapshots(),
+              builder: (context, obeMarksSnapshot) {
+                return StreamBuilder<QuerySnapshot>(
+                  stream: _firestore.collection('obe_evaluations').snapshots(),
+                  builder: (context, evalSnapshot) {
+                    if (marksSnapshot.connectionState == ConnectionState.waiting ||
+                        attendanceSnapshot.connectionState == ConnectionState.waiting ||
+                        obeMarksSnapshot.connectionState == ConnectionState.waiting ||
+                        evalSnapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
 
-        final marksList = marksSnapshot.data?.docs ?? [];
-        final Map<String, Map<String, dynamic>> marksMap = {
-          for (var doc in marksList) doc.id: doc.data() as Map<String, dynamic>,
-        };
+                    // --- PROCESS ATTENDANCE DATA ---
+                    final attendanceDocs = attendanceSnapshot.data?.docs ?? [];
+                    final Map<String, List<Map<String, dynamic>>> attendanceByStudent = {};
+                    for (var doc in attendanceDocs) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final sId = data['studentId']?.toString() ?? '';
+                      if (sId.isNotEmpty) {
+                        attendanceByStudent.putIfAbsent(sId, () => []).add(data);
+                      }
+                    }
 
-        // Filter students based on search query
-        final filteredStudents = students.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final name = (data['name'] ?? data['fullName'] ?? "")
-              .toString()
-              .toLowerCase();
-          final regNo = (data['regNo'] ?? data['studentId'] ?? doc.id)
-              .toString()
-              .toLowerCase();
-          return name.contains(_searchQuery.toLowerCase()) ||
-              regNo.contains(_searchQuery.toLowerCase());
-        }).toList();
+                    // --- PROCESS EVALUATION TYPES ---
+                    final Map<String, String> evalTypes = {};
+                    for (var doc in evalSnapshot.data?.docs ?? []) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      evalTypes[doc.id] = data['type']?.toString() ?? 'Series Exam';
+                    }
 
-        if (filteredStudents.isEmpty) return _buildEmptyState();
+                    // --- PROCESS OBE MARKS ---
+                    final Map<String, Map<String, List<double>>> obeByStudent = {};
+                    for (var doc in obeMarksSnapshot.data?.docs ?? []) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final sId = data['studentId']?.toString() ?? data['rollNo']?.toString() ?? '';
+                      final evalId = data['evaluationId']?.toString() ?? '';
+                      if (sId.isNotEmpty && evalId.isNotEmpty) {
+                        final type = evalTypes[evalId] ?? 'Series Exam';
+                        final double score = double.tryParse(data['total']?.toString() ?? '0') ?? 0.0;
+                        obeByStudent.putIfAbsent(sId, () => {});
+                        obeByStudent[sId]!.putIfAbsent(type, () => []).add(score);
+                      }
+                    }
 
-        return Column(
-          children: [
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: filteredStudents.length,
-              itemBuilder: (context, index) {
-                final studentDoc = filteredStudents[index];
-                final studentData = studentDoc.data() as Map<String, dynamic>;
-                final String regNo =
-                    studentData['regNo'] ??
-                    studentData['studentId'] ??
-                    studentDoc.id;
-
-                // Merge student data with internal marks
-                final markData =
-                    marksMap[regNo] ??
-                    {
-                      'attendance': 0,
-                      'assignments': 0,
-                      'seriesTests': 0,
-                      'internalMark': 0,
+                    final marksList = marksSnapshot.data?.docs ?? [];
+                    final Map<String, Map<String, dynamic>> marksMap = {
+                      for (var doc in marksList) doc.id: doc.data() as Map<String, dynamic>,
                     };
 
-                final displayData = {
-                  'rollNo': studentData['rollNo'] ?? regNo.split('-').last,
-                  'name':
-                      studentData['name'] ??
-                      studentData['fullName'] ??
-                      "Unknown",
-                  'regNo': regNo,
-                  ...markData,
-                };
+                    // Filter students based on search query
+                    final filteredStudents = students.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final name = (data['name'] ?? data['fullName'] ?? "")
+                          .toString()
+                          .toLowerCase();
+                      final regNo = (data['regNo'] ?? data['studentId'] ?? doc.id)
+                          .toString()
+                          .toLowerCase();
+                      final email = (data['email'] ?? data['userEmail'] ?? "")
+                          .toString()
+                          .toLowerCase();
+                      return name.contains(_searchQuery.toLowerCase()) ||
+                          regNo.contains(_searchQuery.toLowerCase()) ||
+                          email.contains(_searchQuery.toLowerCase());
+                    }).toList();
 
-                return _buildStudentRow(displayData);
+                    if (filteredStudents.isEmpty) return _buildEmptyState();
+
+                    return Column(
+                      children: [
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filteredStudents.length,
+                          itemBuilder: (context, index) {
+                            final studentDoc = filteredStudents[index];
+                            final studentData = studentDoc.data() as Map<String, dynamic>;
+                            final String regNo =
+                                studentData['regNo'] ??
+                                studentData['studentId'] ??
+                                studentDoc.id;
+                            final String email = studentData['email']?.toString() ?? 
+                                                 (studentData['userEmail']?.toString() ?? '');
+
+                            // Lookup marks with fallbacks
+                            final manualMarks = marksMap[regNo] ?? (email.isNotEmpty ? marksMap[email] : null) ?? {};
+
+                            // 1. Exact Attendance
+                            double attPercent = 0;
+                            final attDocs = attendanceByStudent[regNo] ?? (email.isNotEmpty ? attendanceByStudent[email] : null) ?? [];
+                            if (attDocs.isNotEmpty) {
+                              int total = 0;
+                              int present = 0;
+                              for (var d in attDocs) {
+                                total += (d['total'] as num?)?.toInt() ?? 0;
+                                present += (d['present'] as num?)?.toInt() ?? 0;
+                              }
+                              attPercent = total > 0 ? (present / total) * 100 : 0;
+                            }
+                            if (manualMarks['attendance'] != null && manualMarks['attendance'] != 0) {
+                              attPercent = (manualMarks['attendance'] as num).toDouble();
+                            }
+
+                            // 2. Exact Series Tests
+                            double seriesVal = 0;
+                            final studentObeData = obeByStudent[regNo] ?? (email.isNotEmpty ? obeByStudent[email] : null) ?? {};
+                            final scores = studentObeData['Series Exam'] ?? studentObeData['Series Test'] ?? [];
+                            if (scores.isNotEmpty) {
+                              seriesVal = scores.reduce((a, b) => a + b) / scores.length;
+                            }
+                            if (manualMarks['seriesTests'] != null && manualMarks['seriesTests'] != 0) {
+                              seriesVal = (manualMarks['seriesTests'] as num).toDouble();
+                            }
+
+                            // 3. Exact Assignments
+                            double assignVal = 0;
+                            final assignScores = studentObeData['Assignment'] ?? [];
+                            if (assignScores.isNotEmpty) {
+                              assignVal = assignScores.reduce((a, b) => a + b) / assignScores.length;
+                            }
+                            if (manualMarks['assignments'] != null && manualMarks['assignments'] != 0) {
+                              assignVal = (manualMarks['assignments'] as num).toDouble();
+                            }
+
+                            final attMarks = _calculateAttendanceMarks(attPercent);
+                            final displayData = {
+                              'uid': studentDoc.id,
+                              'regNo': regNo,
+                              'email': email.isNotEmpty ? email : regNo,
+                              'name': () {
+                                if (studentData['name'] != null) return studentData['name'];
+                                if (studentData['fullName'] != null) return studentData['fullName'];
+                                return '${studentData['firstname'] ?? ''} ${studentData['lastname'] ?? ''}'.trim();
+                              }(),
+                              'attendance': attPercent.round(),
+                              'assignments': assignVal.round(),
+                              'seriesTests': seriesVal.round(),
+                              'internalMark': (attMarks + assignVal + seriesVal).round(),
+                            };
+
+                            return _buildStudentRow(displayData);
+                          },
+                        ),
+
+                        // Footer
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Row(
+                            children: [
+                              Text(
+                                "Showing ${filteredStudents.length} of ${students.length} students",
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: const Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Spacer(),
+                              _buildPaginationBtn("Previous"),
+                              const SizedBox(width: 8),
+                              _buildPaginationBtn("Next"),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
-            ),
-
-            // Footer
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                children: [
-                  Text(
-                    "Showing ${filteredStudents.length} of ${students.length} students",
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: const Color(0xFF64748B),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const Spacer(),
-                  _buildPaginationBtn("Previous"),
-                  const SizedBox(width: 8),
-                  _buildPaginationBtn("Next"),
-                ],
-              ),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -1155,13 +1398,16 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
         child: Row(
           children: [
             Expanded(
-              flex: 1,
+              flex: 2,
               child: Text(
-                data['rollNo'] ?? "-",
+                data['email'] ?? "-",
                 style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF64748B),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Expanded(
@@ -1214,6 +1460,29 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
                 ),
               ),
             ),
+            Expanded(
+              flex: 1,
+              child: Center(
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => _showEditMarksDialog(data),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF001FF4).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.edit_note_rounded,
+                        color: Color(0xFF001FF4),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -1233,57 +1502,275 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Edit Marks: ${data['name']}"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildDialogField("Attendance %", attController),
-            const SizedBox(height: 12),
-            _buildDialogField("Assignments", assController),
-            const SizedBox(height: 12),
-            _buildDialogField("Series Tests", serController),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+      builder: (BuildContext context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: 450,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final int attendance = int.tryParse(attController.text) ?? 0;
-              final int assignments = int.tryParse(assController.text) ?? 0;
-              final int series = int.tryParse(serController.text) ?? 0;
-
-              // Simple calculation logic
-              final int total = (attendance / 10 + assignments + series)
-                  .round();
-
-              await _firestore
-                  .collection('internal_marks')
-                  .doc(data['regNo'])
-                  .set({
-                    'attendance': attendance,
-                    'assignments': assignments,
-                    'seriesTests': series,
-                    'internalMark': total,
-                    'lastUpdated': FieldValue.serverTimestamp(),
-                  });
-
-              if (context.mounted) Navigator.pop(context);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("✅ Marks updated for ${data['name']}"),
-                  behavior: SnackBarBehavior.floating,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Dialog Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-              );
-            },
-            child: const Text("Save"),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF001FF4).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        color: Color(0xFF001FF4),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Update Assessment",
+                            style: GoogleFonts.inter(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            data['name'] ?? "Student",
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    _buildEditField(
+                      "Attendance Percentage",
+                      Icons.fact_check_rounded,
+                      attController,
+                      "e.g. 95",
+                    ),
+                    const SizedBox(height: 20),
+                    _buildEditField(
+                      "Assignments Mark",
+                      Icons.assignment_rounded,
+                      assController,
+                      "e.g. 20",
+                    ),
+                    const SizedBox(height: 20),
+                    _buildEditField(
+                      "Series Tests Average",
+                      Icons.analytics_rounded,
+                      serController,
+                      "e.g. 45",
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F9FF),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFBAE6FD)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calculate_rounded,
+                                color: Color(0xFF0369A1),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                "Internal Calculation (Max 50)",
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0369A1),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "• Attendance: 90%+=5, 85%+=4, 80%+=3, 75%+=2\n• Assignments: Max 5\n• Series Tests: Max 40",
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF0C4A6E),
+                              height: 1.6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Actions
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          "Cancel",
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFF64748B),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final double attendance = double.tryParse(attController.text) ?? 0;
+                          final double assignments = double.tryParse(assController.text) ?? 0;
+                          final double series = double.tryParse(serController.text) ?? 0;
+
+                          // Calculation: Convert attendance % to marks (Max 5)
+                          final double attMarks = _calculateAttendanceMarks(attendance);
+                          final double internal = attMarks + assignments + series;
+
+                          // Save using regNo as primary key (fallback to UID if regNo is empty)
+                          final String docId = (data['regNo'] != null && data['regNo'].toString().isNotEmpty) 
+                                              ? data['regNo'].toString() 
+                                              : data['uid'].toString();
+
+                          await _firestore
+                              .collection('internal_marks')
+                              .doc(docId)
+                              .set({
+                            'attendance': attendance,
+                            'assignments': assignments,
+                            'seriesTests': series,
+                            'internalMark': internal.round(),
+                            'studentName': data['name'],
+                            'studentEmail': data['email'],
+                            'lastUpdated': FieldValue.serverTimestamp(),
+                          }, SetOptions(merge: true));
+
+                          if (context.mounted) Navigator.pop(context);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("✅ Assessment updated for ${data['name']}"),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: const Color(0xFF10B981),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF001FF4),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          "Save Changes",
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildEditField(String label, IconData icon, TextEditingController controller, String hint) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF475569),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 13),
+            prefixIcon: Icon(icon, size: 18, color: const Color(0xFF64748B)),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF001FF4), width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1304,26 +1791,27 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
       alignment: Alignment.center,
       child: Column(
         children: [
+          Icon(
+            Icons.group_off_rounded,
+            size: 48,
+            color: const Color(0xFF94A3B8).withOpacity(0.5),
+          ),
+          const SizedBox(height: 16),
           Text(
-            "No student data available.",
+            "No student data available in the database.",
             style: GoogleFonts.inter(
               fontSize: 14,
               color: const Color(0xFF94A3B8),
-              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: _seedStudents,
-            icon: const Icon(Icons.person_add_rounded),
-            label: const Text("Seed Test Students"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF001FF4),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          const SizedBox(height: 8),
+          Text(
+            "Student records will appear here once they are added to the system.",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: const Color(0xFF94A3B8).withOpacity(0.8),
             ),
           ),
         ],
@@ -1331,128 +1819,7 @@ class _InternalMarksScreenState extends State<InternalMarksScreen> {
     );
   }
 
-  Future<void> _seedStudents() async {
-    final List<Map<String, dynamic>> mockStudents = [
-      {
-        'name': 'Roshan',
-        'regNo': 'MCA001',
-        'rollNo': '1',
-        'department': 'MCA',
-        'semester': '1',
-        'role': 'student',
-        'attendance': 95,
-        'assignments': 19,
-        'seriesTests': 18,
-      },
-      {
-        'name': 'Abhidev',
-        'regNo': 'MCA002',
-        'rollNo': '2',
-        'department': 'MCA',
-        'semester': '1',
-        'role': 'student',
-        'attendance': 88,
-        'assignments': 16,
-        'seriesTests': 15,
-      },
-      {
-        'name': 'Sruthi',
-        'regNo': 'MCA003',
-        'rollNo': '3',
-        'department': 'MCA',
-        'semester': '1',
-        'role': 'student',
-        'attendance': 92,
-        'assignments': 18,
-        'seriesTests': 17,
-      },
-      {
-        'name': 'Adithyan',
-        'regNo': 'MCA004',
-        'rollNo': '4',
-        'department': 'MCA',
-        'semester': '1',
-        'role': 'student',
-        'attendance': 85,
-        'assignments': 14,
-        'seriesTests': 14,
-      },
-      {
-        'name': 'Anjali',
-        'regNo': 'MCA005',
-        'rollNo': '5',
-        'department': 'MCA',
-        'semester': '1',
-        'role': 'student',
-        'attendance': 90,
-        'assignments': 17,
-        'seriesTests': 16,
-      },
-    ];
 
-    try {
-      final batch = _firestore.batch();
-      for (var student in mockStudents) {
-        // Add to students collection
-        final studentRef = _firestore
-            .collection('students')
-            .doc(student['regNo']);
-        batch.set(studentRef, {
-          'name': student['name'],
-          'regNo': student['regNo'],
-          'rollNo': student['rollNo'],
-          'department': student['department'],
-          'semester': student['semester'],
-          'role': student['role'],
-        });
-
-        // Add to users collection
-        final userRef = _firestore.collection('users').doc(student['regNo']);
-        batch.set(userRef, {
-          'fullName': student['name'],
-          'role': 'student',
-          'department': 'MCA',
-          'semester': '1',
-        });
-
-        // Add to internal_marks collection
-        final int tot =
-            ((student['attendance'] as int) / 10 +
-                    (student['assignments'] as int) +
-                    (student['seriesTests'] as int))
-                .round();
-        final markRef = _firestore
-            .collection('internal_marks')
-            .doc(student['regNo']);
-        batch.set(markRef, {
-          'attendance': student['attendance'],
-          'assignments': student['assignments'],
-          'seriesTests': student['seriesTests'],
-          'internalMark': tot,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        });
-      }
-      await batch.commit();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Class data seeded with marks & roll numbers!"),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("❌ Error seeding: $e"),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
 
   Widget _buildPaginationBtn(String label) {
     return Container(

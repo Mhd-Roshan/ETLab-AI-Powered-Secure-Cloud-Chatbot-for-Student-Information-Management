@@ -99,42 +99,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           int overallPresent = 0;
           int overallTotal = 0;
 
-          // Define the static baseline subjects first
-          final List<Map<String, dynamic>> baselineSubjects = [
-            {
-              'subject': 'ADVANCED DATA STRUCTURES',
-              'code': 'MCA101',
-              'present': 6,
-              'total': 8,
-            },
-            {
-              'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
-              'code': 'MCA105',
-              'present': 6,
-              'total': 8,
-            },
-            {
-              'subject': 'ADVANCED SOFTWARE ENGINEERING',
-              'code': 'MCA103',
-              'present': 6,
-              'total': 8,
-            },
-            {
-              'subject': 'WEB PROGRAMMING LAB',
-              'code': 'MCA106',
-              'present': 6,
-              'total': 8,
-            },
-          ];
-
           final Map<String, Map<String, dynamic>> aggregated = {};
-
-          // 1. Initialize with baseline if no real records exist or for certain student IDs
-          if (widget.studentRegNo != null) {
-            for (var base in baselineSubjects) {
-              aggregated[base['subject']] = {...base, 'isBaseline': true};
-            }
-          }
 
           if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
             bool hasRealRecords = snapshot.data!.docs.any(
@@ -167,7 +132,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 }
               } else if (data.containsKey('present') &&
                   data.containsKey('total')) {
-                // For summary records
                 if (!aggregated.containsKey(subjectName)) {
                   aggregated[subjectName] = {
                     'subject': subjectName,
@@ -175,8 +139,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     'present': data['present'] ?? 0,
                     'total': data['total'] ?? 0,
                   };
-                } else if (!(aggregated[subjectName]!['isBaseline'] ?? false)) {
-                  // Only add summary records if not already populated by baseline
+                } else {
                   aggregated[subjectName]!['present'] += data['present'] ?? 0;
                   aggregated[subjectName]!['total'] += data['total'] ?? 0;
                 }

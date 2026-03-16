@@ -1,230 +1,91 @@
 import 'package:flutter/material.dart';
+import '../services/student_service.dart';
 
 class ResultsScreen extends StatefulWidget {
-  const ResultsScreen({super.key});
+  final String? studentId;
+  final String? initialExam;
+  const ResultsScreen({super.key, this.studentId, this.initialExam});
 
   @override
   State<ResultsScreen> createState() => _ResultsScreenState();
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
-  String _selectedExam = "Series Exam 1";
-  final List<String> _examTypes = [
-    "Series Exam 1",
-    "Series Exam 2",
-    "Assignment 1",
-    "Assignment 2",
-  ];
+  final StudentService _studentService = StudentService();
+  bool _isLoading = true;
+  late String _selectedExam;
+  List<String> _examTypes = [];
+  Map<String, List<Map<String, dynamic>>> _examResults = {};
 
-  // Series exam results - out of 40 marks each
-  final Map<String, List<Map<String, dynamic>>> _examResults = {
-    "Series Exam 1": [
-      {
-        'subject': 'ADVANCED DATA STRUCTURES',
-        'code': 'MCA101',
-        'marks': 35,
-        'maxMarks': 40,
-        'grade': 'A+',
-        'gradePoint': 10,
-        'color': const Color(0xFF001FF4),
-      },
-      {
-        'subject': 'ADVANCED SOFTWARE ENGINEERING',
-        'code': 'MCA102',
-        'marks': 32,
-        'maxMarks': 40,
-        'grade': 'A',
-        'gradePoint': 9,
-        'color': Colors.orange,
-      },
-      {
-        'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
-        'code': 'MCA103',
-        'marks': 38,
-        'maxMarks': 40,
-        'grade': 'A+',
-        'gradePoint': 10,
-        'color': Colors.green,
-      },
-      {
-        'subject': 'MATHEMATICAL FOUNDATIONS FOR COMPUTING',
-        'code': 'MCA104',
-        'marks': 28,
-        'maxMarks': 40,
-        'grade': 'B+',
-        'gradePoint': 8,
-        'color': Colors.red,
-      },
-      {
-        'subject': 'DATA STRUCTURES LAB',
-        'code': 'MCA105',
-        'marks': 33,
-        'maxMarks': 40,
-        'grade': 'A',
-        'gradePoint': 9,
-        'color': Colors.purple,
-      },
-      {
-        'subject': 'PROGRAMMING LAB',
-        'code': 'MCA106',
-        'marks': 37,
-        'maxMarks': 40,
-        'grade': 'A+',
-        'gradePoint': 10,
-        'color': Colors.teal,
-      },
-      {
-        'subject': 'WEB PROGRAMMING LAB',
-        'code': 'MCA107',
-        'marks': 34,
-        'maxMarks': 40,
-        'grade': 'A',
-        'gradePoint': 9,
-        'color': Colors.blue,
-      },
-    ],
-    "Series Exam 2": [
-      {
-        'subject': 'ADVANCED DATA STRUCTURES',
-        'code': 'MCA101',
-        'marks': 36,
-        'maxMarks': 40,
-        'grade': 'A+',
-        'gradePoint': 10,
-        'color': const Color(0xFF001FF4),
-      },
-      {
-        'subject': 'ADVANCED SOFTWARE ENGINEERING',
-        'code': 'MCA102',
-        'marks': 30,
-        'maxMarks': 40,
-        'grade': 'B+',
-        'gradePoint': 8,
-        'color': Colors.orange,
-      },
-      {
-        'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
-        'code': 'MCA103',
-        'marks': 39,
-        'maxMarks': 40,
-        'grade': 'A+',
-        'gradePoint': 10,
-        'color': Colors.green,
-      },
-      {
-        'subject': 'MATHEMATICAL FOUNDATIONS FOR COMPUTING',
-        'code': 'MCA104',
-        'marks': 29,
-        'maxMarks': 40,
-        'grade': 'B+',
-        'gradePoint': 8,
-        'color': Colors.red,
-      },
-      {
-        'subject': 'DATA STRUCTURES LAB',
-        'code': 'MCA105',
-        'marks': 34,
-        'maxMarks': 40,
-        'grade': 'A',
-        'gradePoint': 9,
-        'color': Colors.purple,
-      },
-      {
-        'subject': 'PROGRAMMING LAB',
-        'code': 'MCA106',
-        'marks': 38,
-        'maxMarks': 40,
-        'grade': 'A+',
-        'gradePoint': 10,
-        'color': Colors.teal,
-      },
-      {
-        'subject': 'WEB PROGRAMMING LAB',
-        'code': 'MCA107',
-        'marks': 32,
-        'maxMarks': 40,
-        'grade': 'A',
-        'gradePoint': 9,
-        'color': Colors.blue,
-      },
-    ],
-    "Assignment 1": [
-      {
-        'subject': 'ADVANCED DATA STRUCTURES',
-        'code': 'MCA101',
-        'marks': 9,
-        'maxMarks': 10,
-        'grade': 'A+',
-        'gradePoint': 10,
-        'color': const Color(0xFF001FF4),
-      },
-      {
-        'subject': 'ADVANCED SOFTWARE ENGINEERING',
-        'code': 'MCA102',
-        'marks': 8,
-        'maxMarks': 10,
-        'grade': 'A',
-        'gradePoint': 9,
-        'color': Colors.orange,
-      },
-      {
-        'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
-        'code': 'MCA103',
-        'marks': 10,
-        'maxMarks': 10,
-        'grade': 'O',
-        'gradePoint': 10,
-        'color': Colors.green,
-      },
-      {
-        'subject': 'MATHEMATICAL FOUNDATIONS FOR COMPUTING',
-        'code': 'MCA104',
-        'marks': 7,
-        'maxMarks': 10,
-        'grade': 'B+',
-        'gradePoint': 8,
-        'color': Colors.red,
-      },
-    ],
-    "Assignment 2": [
-      {
-        'subject': 'ADVANCED DATA STRUCTURES',
-        'code': 'MCA101',
-        'marks': 10,
-        'maxMarks': 10,
-        'grade': 'O',
-        'gradePoint': 10,
-        'color': const Color(0xFF001FF4),
-      },
-      {
-        'subject': 'ADVANCED SOFTWARE ENGINEERING',
-        'code': 'MCA102',
-        'marks': 9,
-        'maxMarks': 10,
-        'grade': 'A+',
-        'gradePoint': 10,
-        'color': Colors.orange,
-      },
-      {
-        'subject': 'DIGITAL FUNDAMENTALS AND COMPUTER ARCHITECTURE',
-        'code': 'MCA103',
-        'marks': 10,
-        'maxMarks': 10,
-        'grade': 'O',
-        'gradePoint': 10,
-        'color': Colors.green,
-      },
-      {
-        'subject': 'MATHEMATICAL FOUNDATIONS FOR COMPUTING',
-        'code': 'MCA104',
-        'marks': 8,
-        'maxMarks': 10,
-        'grade': 'A',
-        'gradePoint': 9,
-        'color': Colors.red,
-      },
-    ],
+  // Subject color mapping
+  static const Map<String, Color> _subjectColors = {
+    'DATA STRUCTURES': Color(0xFF001FF4),
+    'SOFTWARE ENGINEERING': Colors.orange,
+    'COMPUTER ARCHITECTURE': Colors.green,
+    'DIGITAL FUNDAMENTALS': Colors.green,
+    'PROGRAMMING LAB': Colors.teal,
+    'WEB PROGRAMMING': Colors.cyan,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedExam = widget.initialExam ?? "";
+    _loadResults();
+  }
+
+  Future<void> _loadResults() async {
+    if (widget.studentId == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final dbResults = await _studentService.getStudentExamResults(
+        widget.studentId!,
+      );
+      _applyResults(dbResults);
+    } catch (e) {
+      debugPrint("Error loading results: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _applyResults(Map<String, List<Map<String, dynamic>>> dbResults) {
+    final Map<String, List<Map<String, dynamic>>> processed = {};
+    dbResults.forEach((exam, subjects) {
+      processed[exam] = subjects.map((s) {
+        return {
+          ...s,
+          'color': _getSubjectColor(s['subject']?.toString() ?? ''),
+        };
+      }).toList();
+    });
+
+    setState(() {
+      _examResults = processed;
+      _examTypes = processed.keys.toList();
+      
+      // Select the initial exam if provided and exists, otherwise pick the first one
+      if (widget.initialExam != null && processed.containsKey(widget.initialExam)) {
+        _selectedExam = widget.initialExam!;
+      } else if (_examTypes.isNotEmpty && (!_examTypes.contains(_selectedExam) || _selectedExam.isEmpty)) {
+        _selectedExam = _examTypes.first;
+      }
+    });
+  }
+
+  Color _getSubjectColor(String subject) {
+    final upper = subject.toUpperCase();
+    for (final entry in _subjectColors.entries) {
+      if (upper.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+    return Colors.blue;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -267,34 +128,81 @@ class _ResultsScreenState extends State<ResultsScreen> {
             color: Colors.black,
           ),
         ),
+        actions: const [
+          SizedBox(width: 8),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Overall Results Card (Static)
-            _buildOverallPerformanceCard(
-              globalPercentage,
-              globalTotalMarks,
-              globalTotalMaxMarks,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _examResults.isEmpty
+              ? _buildEmptyState()
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildOverallPerformanceCard(
+                        globalPercentage,
+                        globalTotalMarks,
+                        globalTotalMaxMarks,
+                      ),
+                      const SizedBox(height: 24),
+                      _buildDropdownSelector(),
+                      const SizedBox(height: 20),
+                      Text(
+                        "Subject-wise Marks - $_selectedExam",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildResultsTable(subjectResults),
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.assignment_outlined, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(
+            "No results available yet",
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(height: 24),
-            _buildDropdownSelector(),
-            const SizedBox(height: 20),
-            Text(
-              "Subject-wise Marks - $_selectedExam",
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Results will appear here once your\nteachers publish exam marks",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade500,
+            ),
+          ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: _loadResults,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text("Refresh"),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            const SizedBox(height: 12),
-            _buildResultsTable(subjectResults),
-            const SizedBox(height: 30),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -308,7 +216,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        // Liquid glass: frosted clear background
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -369,6 +276,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Widget _buildDropdownSelector() {
+    if (_examTypes.isEmpty) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
@@ -419,6 +328,23 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Widget _buildResultsTable(List<Map<String, dynamic>> results) {
+    if (results.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Center(
+          child: Text(
+            "No results for this exam",
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -436,7 +362,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              // Liquid glass Header
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -593,4 +518,3 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
   }
 }
-

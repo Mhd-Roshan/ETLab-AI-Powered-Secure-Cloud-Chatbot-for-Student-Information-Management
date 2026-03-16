@@ -23,13 +23,18 @@ class _HodAttendanceScreenState extends State<HodAttendanceScreen>
   final Map<String, bool> _liveMarks = {};
   bool _isSaving = false;
 
+  List<Map<String, dynamic>> _realStudents = [];
+  bool _studentsLoaded = false;
+
   late List<Map<String, dynamic>> _batches;
-
-  // Current tab index
   int _currentBatch = 0;
-
-  // Inner view tab: 0 = Mark, 1 = View
   late TabController _viewTabController;
+
+  void _initLiveMarks() {
+    for (final s in _realStudents) {
+      _liveMarks[s['regNo']] = true; // Default: present
+    }
+  }
 
   @override
   void initState() {
@@ -40,30 +45,12 @@ class _HodAttendanceScreenState extends State<HodAttendanceScreen>
         'subject': 'Relational Database Systems',
         'color': const Color(0xFF6366F1),
         'collection': 'hod_attendance_mca2023',
-        'students': [
-          {'name': 'Aditya Sharma', 'rollNo': '001', 'regNo': 'REG2024001'},
-          {'name': 'Priya Nair', 'rollNo': '002', 'regNo': 'REG2024002'},
-          {'name': 'Rahul Verma', 'rollNo': '003', 'regNo': 'REG2024003'},
-          {'name': 'Sneha Pillai', 'rollNo': '004', 'regNo': 'REG2024004'},
-          {'name': 'Kiran Das', 'rollNo': '005', 'regNo': 'REG2024005'},
-          {'name': 'Meera Menon', 'rollNo': '006', 'regNo': 'REG2024006'},
-          {'name': 'Arjun Krishnan', 'rollNo': '007', 'regNo': 'REG2024007'},
-          {'name': 'Divya Suresh', 'rollNo': '008', 'regNo': 'REG2024008'},
-        ],
       },
       {
         'name': 'MCA 2024-26',
         'subject': 'Advanced Computer Architecture',
         'color': const Color(0xFF10B981),
         'collection': 'hod_attendance_mca2024',
-        'students': [
-          {'name': 'Vishnu Raj', 'rollNo': '001', 'regNo': 'REG2025001'},
-          {'name': 'Lakshmi Iyer', 'rollNo': '002', 'regNo': 'REG2025002'},
-          {'name': 'Rohan Thomas', 'rollNo': '003', 'regNo': 'REG2025003'},
-          {'name': 'Anjali Mohan', 'rollNo': '004', 'regNo': 'REG2025004'},
-          {'name': 'Sreekanth K', 'rollNo': '005', 'regNo': 'REG2025005'},
-          {'name': 'Deepa Varma', 'rollNo': '006', 'regNo': 'REG2025006'},
-        ],
       },
     ];
     _tabController = TabController(length: _batches.length, vsync: this)
@@ -72,17 +59,55 @@ class _HodAttendanceScreenState extends State<HodAttendanceScreen>
           setState(() {
             _currentBatch = _tabController.index;
             _liveMarks.clear();
+            _initLiveMarks();
           });
         }
       });
     _viewTabController = TabController(length: 3, vsync: this);
-    _initLiveMarks();
+    _loadStudents();
   }
 
-  void _initLiveMarks() {
-    final students = _batches[_currentBatch]['students'] as List;
-    for (final s in students) {
-      _liveMarks[s['regNo']] = true; // Default: present
+  Future<void> _loadStudents() async {
+    try {
+      final snapshot = await _db
+          .collection('users')
+          .where('role', isEqualTo: 'student')
+          .get();
+
+      final students = <Map<String, dynamic>>[];
+      int rollCounter = 1;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final firstName = data['firstname']?.toString() ??
+            data['firstName']?.toString() ?? '';
+        final lastName = data['lastname']?.toString() ??
+            data['lastName']?.toString() ?? '';
+        final fullName = data['fullName']?.toString() ??
+            '$firstName $lastName'.trim();
+        final username = data['username']?.toString() ?? doc.id;
+        final rollNo = data['rollNo']?.toString() ??
+            rollCounter.toString().padLeft(3, '0');
+
+        students.add({
+          'name': fullName.isNotEmpty ? fullName : 'Unknown',
+          'rollNo': rollNo,
+          'regNo': username,
+        });
+        rollCounter++;
+      }
+
+      students.sort((a, b) =>
+          (a['rollNo'] ?? '').compareTo(b['rollNo'] ?? ''));
+
+      setState(() {
+        _realStudents = students;
+        _studentsLoaded = true;
+        _initLiveMarks();
+      });
+    } catch (e) {
+      debugPrint('[HodAttendance] Error loading students: $e');
+      setState(() => _studentsLoaded = true);
     }
   }
 
@@ -193,9 +218,13 @@ class _HodAttendanceScreenState extends State<HodAttendanceScreen>
   }
 
   Widget _buildBatchBody(int idx) {
+    if (!_studentsLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final batch = _batches[idx];
     final color = batch['color'] as Color;
-    final students = batch['students'] as List<dynamic>;
+    final students = _realStudents;
     final col = batch['collection'] as String;
 
     return Column(
@@ -404,7 +433,8 @@ class _HodAttendanceScreenState extends State<HodAttendanceScreen>
   }
 
   // ── MARK ATTENDANCE TAB ───────────────────────────────────
-  Widget _buildMarkTab(List students, String col, Color color, int batchIdx) {
+  Widget _buildMarkTab(
+      List<Map<String, dynamic>> students, String col, Color color, int batchIdx) {
     return StreamBuilder<QuerySnapshot>(
       stream: _db
           .collection(col)
@@ -620,7 +650,7 @@ class _HodAttendanceScreenState extends State<HodAttendanceScreen>
                       ),
                     ),
                     ...students.asMap().entries.map((entry) {
-                      final s = entry.value as Map<String, dynamic>;
+                      final s = entry.value;
                       final regNo = s['regNo'] as String;
                       final isPresent = marks[regNo] ?? true;
 
@@ -781,7 +811,8 @@ class _HodAttendanceScreenState extends State<HodAttendanceScreen>
     );
   }
 
-  Future<void> _saveAttendance(List students, String col, Color color) async {
+  Future<void> _saveAttendance(
+      List<Map<String, dynamic>> students, String col, Color color) async {
     setState(() => _isSaving = true);
     final batch = _db.batch();
     final batchInfo = _batches[_currentBatch];
@@ -848,7 +879,7 @@ class _HodAttendanceScreenState extends State<HodAttendanceScreen>
   }
 
   // ── VIEW SUMMARY TAB ─────────────────────────────────────
-  Widget _buildViewTab(String col, Color color, List students) {
+  Widget _buildViewTab(String col, Color color, List<Map<String, dynamic>> students) {
     return StreamBuilder<QuerySnapshot>(
       stream: _db.collection(col).snapshots(),
       builder: (context, snapshot) {

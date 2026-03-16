@@ -120,9 +120,9 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("$title updated in database!"),
+                    content: Text("$title updated locally!"),
                     behavior: SnackBarBehavior.floating,
-                    backgroundColor: Colors.green,
+                    backgroundColor: const Color(0xFF001FF4),
                   ),
                 );
               } catch (e) {
@@ -185,10 +185,10 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
   Widget _buildProfileUI(Map<String, dynamic> data) {
     final fullName = data['fullName'] ?? data['username'] ?? 'Staff User';
     final email = data['email'] ?? widget.userId;
-    final department = data['department'] ?? 'Master Of Computer Application';
-    final role = data['role'] ?? 'Assistant Professor';
+    final department = data['department']?.toString() ?? 'Master Of Computer Application';
+    final role = data['role']?.toString() ?? 'Assistant Professor';
     final subjects =
-        data['subjects'] ?? 'Digital Foundation, Computer Architecture';
+        data['subjects']?.toString() ?? 'Digital Foundation, Computer Architecture';
     final notifications = data['notifications'] ?? true;
     final darkMode = data['darkMode'] ?? false;
 

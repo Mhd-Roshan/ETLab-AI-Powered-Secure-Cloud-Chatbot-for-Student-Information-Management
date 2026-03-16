@@ -12,7 +12,7 @@ class HodService {
 
   /// Updates specific fields in the HOD's profile
   Future<void> updateProfile(String userId, Map<String, dynamic> data) async {
-    await _db.collection('users').doc(userId).update(data);
+    await _db.collection('users').doc(userId).set(data, SetOptions(merge: true));
   }
 
   /// Adds a new staff member to the users collection

@@ -85,11 +85,8 @@ class _HodMarkEntryScreenState extends State<HodMarkEntryScreen>
   Future<void> _loadData() async {
     if (mounted) setState(() => _loading = true);
 
-    // Always start with default students (guaranteed data)
-    final defaults = _defaultStudents();
-
     try {
-      // Try to load existing saved marks
+      // Step 1: Load existing saved marks for this evaluation
       final marksSnap = await _db
           .collection('obe_marks')
           .where('evaluationId', isEqualTo: widget.evaluationId)
@@ -110,23 +107,46 @@ class _HodMarkEntryScreenState extends State<HodMarkEntryScreen>
         }
       }
 
-      // Try Firestore students, fallback to defaults
-      List<Map<String, dynamic>> studentList = defaults;
-      try {
-        final studentsSnap = await _db
-            .collection('students')
-            .where('batch', isEqualTo: widget.batchName)
-            .get();
-        if (studentsSnap.docs.isNotEmpty) {
-          studentList = studentsSnap.docs.map((d) => d.data()).toList();
-          studentList.sort((a, b) {
-            final aR = int.tryParse(a['rollNo']?.toString() ?? '') ?? 999;
-            final bR = int.tryParse(b['rollNo']?.toString() ?? '') ?? 999;
-            return aR.compareTo(bR);
-          });
+      // Step 2: Fetch real students from 'users' collection (role = student)
+      List<Map<String, dynamic>> studentList = [];
+
+      final usersSnap = await _db
+          .collection('users')
+          .where('role', isEqualTo: 'student')
+          .get();
+
+      if (usersSnap.docs.isNotEmpty) {
+        int rollCounter = 1;
+        for (var doc in usersSnap.docs) {
+          final data = doc.data();
+          final firstName = data['firstname']?.toString() ??
+              data['firstName']?.toString() ?? '';
+          final lastName = data['lastname']?.toString() ??
+              data['lastName']?.toString() ?? '';
+          final fullName = data['fullName']?.toString() ??
+              data['name']?.toString() ??
+              '$firstName $lastName'.trim();
+          final username = data['username']?.toString() ?? doc.id;
+          final rollNo = data['rollNo']?.toString() ??
+              data['roll_no']?.toString() ??
+              '${rollCounter}';
+
+          if (fullName.isNotEmpty) {
+            studentList.add({
+              'rollNo': rollNo,
+              'name': fullName.toUpperCase(),
+              'studentId': username,
+            });
+            rollCounter++;
+          }
         }
-      } catch (_) {
-        // Stick with defaults
+
+        // Sort by rollNo
+        studentList.sort((a, b) {
+          final aR = int.tryParse(a['rollNo']?.toString() ?? '') ?? 999;
+          final bR = int.tryParse(b['rollNo']?.toString() ?? '') ?? 999;
+          return aR.compareTo(bR);
+        });
       }
 
       if (mounted) {
@@ -135,14 +155,12 @@ class _HodMarkEntryScreenState extends State<HodMarkEntryScreen>
           for (int i = 0; i < studentList.length; i++) {
             final s = studentList[i];
             final roll = s['rollNo']?.toString() ?? '${i + 1}';
-            final name =
-                s['name']?.toString() ??
-                s['fullName']?.toString() ??
-                'Student ${i + 1}';
+            final name = s['name']?.toString() ?? 'Student ${i + 1}';
             _students.add(
               _StudentEntry(
                 rollNo: roll,
                 name: name,
+                studentId: s['studentId']?.toString() ?? '',
                 absent: absentMap[roll] ?? false,
                 marks: {
                   for (final q in _questions)
@@ -157,24 +175,10 @@ class _HodMarkEntryScreenState extends State<HodMarkEntryScreen>
         });
       }
     } catch (e) {
-      // Even on total failure, show default students
+      debugPrint('Error loading students: $e');
       if (mounted) {
         setState(() {
           _students.clear();
-          for (int i = 0; i < defaults.length; i++) {
-            final s = defaults[i];
-            final roll = s['rollNo']?.toString() ?? '${i + 1}';
-            _students.add(
-              _StudentEntry(
-                rollNo: roll,
-                name: s['name']?.toString() ?? 'Student ${i + 1}',
-                absent: false,
-                marks: {
-                  for (final q in _questions) q.id: TextEditingController(),
-                },
-              ),
-            );
-          }
           _loading = false;
         });
       }
@@ -187,11 +191,9 @@ class _HodMarkEntryScreenState extends State<HodMarkEntryScreen>
       for (final s in _students) {
         if (!s.absent) {
           for (final q in _questions) {
-            // Random mark between 50–100% of max
             final max = q.maxMark;
             final min = max * 0.4;
             final raw = min + rng.nextDouble() * (max - min);
-            // Round to nearest 0.5
             final rounded = (raw * 2).round() / 2;
             s.marks[q.id]?.text = rounded.toStringAsFixed(
               rounded % 1 == 0 ? 0 : 1,
@@ -201,29 +203,6 @@ class _HodMarkEntryScreenState extends State<HodMarkEntryScreen>
       }
     });
   }
-
-  List<Map<String, dynamic>> _defaultStudents() => [
-    {'rollNo': '1', 'name': 'ABHIN GEORGE'},
-    {'rollNo': '2', 'name': 'ADISHANKAR V G'},
-    {'rollNo': '3', 'name': 'AISWARYA K'},
-    {'rollNo': '4', 'name': 'AMAL ANIL'},
-    {'rollNo': '5', 'name': 'AMITHA K'},
-    {'rollNo': '6', 'name': 'ANUMOL SHAJI'},
-    {'rollNo': '7', 'name': 'ASWANI A'},
-    {'rollNo': '8', 'name': 'DHRISYA LAKSHMI K J'},
-    {'rollNo': '9', 'name': 'FAAIQUATHUNNAYYIRA T M'},
-    {'rollNo': '10', 'name': 'FATHIMA SAFNA K'},
-    {'rollNo': '11', 'name': 'GITHA K'},
-    {'rollNo': '12', 'name': 'GREESHMA K'},
-    {'rollNo': '13', 'name': 'HANZALA K'},
-    {'rollNo': '14', 'name': 'IRFANA M'},
-    {'rollNo': '15', 'name': 'JISHNU K'},
-    {'rollNo': '16', 'name': 'KRISHNA PRASAD'},
-    {'rollNo': '17', 'name': 'MUHAMMED RASHID'},
-    {'rollNo': '18', 'name': 'NEETHU K'},
-    {'rollNo': '19', 'name': 'RAHUL R'},
-    {'rollNo': '20', 'name': 'SNEHA P'},
-  ];
 
   Future<void> _saveMarks() async {
     setState(() => _saving = true);
@@ -242,6 +221,7 @@ class _HodMarkEntryScreenState extends State<HodMarkEntryScreen>
           'evaluationId': widget.evaluationId,
           'rollNo': s.rollNo,
           'name': s.name,
+          'studentId': s.studentId,
           'absent': s.absent,
           'marks': marks,
           'total': total,
@@ -607,7 +587,8 @@ class _HodMarkEntryScreenState extends State<HodMarkEntryScreen>
             ),
             const SizedBox(height: 6),
             Text(
-              'Tap refresh to reload',
+              'No registered students found.\nEnsure students are added with role "student".',
+              textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 13,
                 color: const Color(0xFF64748B),
@@ -1327,11 +1308,13 @@ class _Question {
 
 class _StudentEntry {
   final String rollNo, name;
+  final String studentId;
   bool absent;
   final Map<String, TextEditingController> marks;
   _StudentEntry({
     required this.rollNo,
     required this.name,
+    this.studentId = '',
     required this.absent,
     required this.marks,
   });

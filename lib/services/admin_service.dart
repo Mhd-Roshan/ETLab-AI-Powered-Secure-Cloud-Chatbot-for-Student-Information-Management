@@ -92,8 +92,6 @@ class AdminService {
   }
 
   Future<void> updateProfile(String userId, Map<String, dynamic> data) async {
-    // If updating username, also update session?
-    // Usually we just update the doc.
-    await _db.collection('users').doc(userId).update(data);
+    await _db.collection('users').doc(userId).set(data, SetOptions(merge: true));
   }
 }

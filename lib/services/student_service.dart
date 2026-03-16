@@ -214,83 +214,388 @@ class StudentService {
         .snapshots();
   }
 
-  // 13. Get Results from Firestore
-  Future<Map<String, List<Map<String, dynamic>>>> getResults(
+  // 13. Get Results from obe_marks + evaluations (Staff-entered marks)
+  // This fetches marks that staff/HOD/advisor entered via the mark entry screen
+  Future<Map<String, List<Map<String, dynamic>>>> getStudentExamResults(
     String studentId,
   ) async {
     try {
-      QuerySnapshot? snapshot;
+      // Step 1: Find student rollNo
+      String? rollNo;
+      String studentName = '';
 
-      // Try multiple identifier fields
-      for (final field in ['studentId', 'regNo', 'email', 'username']) {
-        final result = await _db
-            .collection('results')
-            .where(field, isEqualTo: studentId)
+      // Check users collection
+      final userDoc = await getUserByIdentifier(studentId);
+      if (userDoc != null && userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        rollNo = data['rollNo']?.toString() ?? data['roll_no']?.toString();
+        studentName = '${data['firstname'] ?? ''} ${data['lastname'] ?? ''}'.trim();
+      }
+
+      // Check students collection  
+      if (rollNo == null) {
+        final studentDoc = await _db.collection('students').doc(studentId).get();
+        if (studentDoc.exists) {
+          final data = studentDoc.data()!;
+          rollNo = data['rollNo']?.toString();
+          studentName = data['name']?.toString() ?? '';
+        }
+      }
+
+      debugPrint('[getStudentExamResults] studentId=$studentId, rollNo=$rollNo, name=$studentName');
+
+      // Step 2: Fetch all obe_marks for this student
+      List<QueryDocumentSnapshot<Map<String, dynamic>>> markDocs = [];
+
+      // Try by studentId field (username/regNo stored during mark entry)
+      {
+        final snap = await _db
+            .collection('obe_marks')
+            .where('studentId', isEqualTo: studentId)
             .get();
-        if (result.docs.isNotEmpty) {
-          snapshot = result;
-          debugPrint(
-            '[getResults] Found ${result.docs.length} results by $field=$studentId',
-          );
-          break;
-        }
+        markDocs = snap.docs;
       }
 
-      // Case-insensitive fallback
-      if (snapshot == null || snapshot.docs.isEmpty) {
-        final lowerCaseId = studentId.toLowerCase();
-        final allResults = await _db.collection('results').get();
-        final matched = allResults.docs.where((doc) {
+      // Try by rollNo
+      if (markDocs.isEmpty && rollNo != null && rollNo.isNotEmpty) {
+        final snap = await _db
+            .collection('obe_marks')
+            .where('rollNo', isEqualTo: rollNo)
+            .get();
+        markDocs = snap.docs;
+      }
+
+      // Also try by name if rollNo didn't find anything
+      if (markDocs.isEmpty && studentName.isNotEmpty) {
+        final snap = await _db
+            .collection('obe_marks')
+            .where('name', isEqualTo: studentName.toUpperCase())
+            .get();
+        markDocs = snap.docs;
+      }
+
+      // If still empty, try scanning all obe_marks for matching name/id patterns
+      if (markDocs.isEmpty) {
+        final allMarks = await _db.collection('obe_marks').get();
+        final lowerName = studentName.toLowerCase();
+        final lowerStudentId = studentId.toLowerCase();
+        markDocs = allMarks.docs.where((doc) {
           final data = doc.data();
-          return (data['studentId']?.toString().toLowerCase() == lowerCaseId) ||
-              (data['regNo']?.toString().toLowerCase() == lowerCaseId) ||
-              (data['email']?.toString().toLowerCase() == lowerCaseId) ||
-              (data['username']?.toString().toLowerCase() == lowerCaseId);
+          final docName = (data['name'] ?? '').toString().toLowerCase();
+          final docRoll = (data['rollNo'] ?? '').toString().toLowerCase();
+          final docStudentId = (data['studentId'] ?? '').toString().toLowerCase();
+          return docStudentId == lowerStudentId ||
+              docName == lowerName ||
+              (lowerName.isNotEmpty && docName.contains(lowerName)) ||
+              docRoll == lowerStudentId;
         }).toList();
-
-        if (matched.isEmpty) return {};
-
-        // Process matched docs
-        Map<String, List<Map<String, dynamic>>> groupedResults = {};
-        for (var doc in matched) {
-          final data = doc.data();
-          final String examName = data['examName'] ?? 'General';
-          if (!groupedResults.containsKey(examName)) {
-            groupedResults[examName] = [];
-          }
-          groupedResults[examName]!.add({
-            'subject': data['subject'] ?? 'Unknown',
-            'code': data['subjectCode'] ?? 'N/A',
-            'marks': data['marks'] ?? 0,
-            'maxMarks': data['maxMarks'] ?? 40,
-            'grade': data['grade'] ?? 'N/A',
-          });
-        }
-        return groupedResults;
       }
 
+      if (markDocs.isEmpty) {
+        debugPrint('[getStudentExamResults] No obe_marks found');
+      } else {
+        debugPrint('[getStudentExamResults] Found ${markDocs.length} mark entries');
+      }
+
+      // Step 3: For each mark entry, get the evaluation details
       Map<String, List<Map<String, dynamic>>> groupedResults = {};
 
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final String examName = data['examName'] ?? 'General';
+      for (var markDoc in markDocs) {
+        final markData = markDoc.data();
+        final evaluationId = markData['evaluationId']?.toString() ?? '';
+        final total = (markData['total'] ?? 0);
+        final double totalMarks = total is double ? total : (total as num).toDouble();
+        final bool isAbsent = markData['absent'] == true;
+
+        if (isAbsent) continue; // skip absent entries
+
+        // Fetch evaluation details
+        String examName = 'General';
+        String subject = markData['subjectCode']?.toString() ?? 'Unknown';
+        String examType = 'Series Exam';
+        double maxMark = 40.0;
+
+        if (evaluationId.isNotEmpty) {
+          try {
+            // Check both obe_evaluations and evaluations for robustness
+            var evalDoc = await _db.collection('obe_evaluations').doc(evaluationId).get();
+            if (!evalDoc.exists) {
+              evalDoc = await _db.collection('evaluations').doc(evaluationId).get();
+            }
+
+            if (evalDoc.exists) {
+              final evalData = evalDoc.data()!;
+              String rawName = evalData['name']?.toString() ?? 'General';
+              examName = rawName;
+              subject = evalData['subject']?.toString() ?? (evalData['subjectName']?.toString() ?? subject);
+              examType = evalData['type']?.toString() ?? 'Series Exam';
+              maxMark = double.tryParse(evalData['totalMark']?.toString() ?? (evalData['maxMark']?.toString() ?? '40')) ?? 40.0;
+
+              // Normalize exam names for grouping (e.g., "ADS Series Exam 1" -> "Series Exam 1")
+              String lowerName = rawName.toLowerCase();
+              if (lowerName.contains('series exam 1') || lowerName.contains('series 1')) {
+                examName = 'Series Exam 1';
+              } else if (lowerName.contains('series exam 2') || lowerName.contains('series 2')) {
+                examName = 'Series Exam 2';
+              } else if (lowerName.contains('series exam 3') || lowerName.contains('series 3')) {
+                examName = 'Series Exam 3';
+              }
+            }
+          } catch (e) {
+            debugPrint('[getStudentExamResults] Error fetching evaluation $evaluationId: $e');
+          }
+        }
+
+        // Compute grade
+        final percentage = maxMark > 0 ? (totalMarks / maxMark) * 100 : 0;
+        String grade = 'N/A';
+        int gradePoint = 0;
+        if (percentage >= 90) {
+          grade = 'A+';
+          gradePoint = 10;
+        } else if (percentage >= 80) {
+          grade = 'A';
+          gradePoint = 9;
+        } else if (percentage >= 70) {
+          grade = 'B+';
+          gradePoint = 8;
+        } else if (percentage >= 60) {
+          grade = 'B';
+          gradePoint = 7;
+        } else if (percentage >= 50) {
+          grade = 'C';
+          gradePoint = 6;
+        } else if (percentage >= 40) {
+          grade = 'D';
+          gradePoint = 5;
+        } else {
+          grade = 'F';
+          gradePoint = 0;
+        }
 
         if (!groupedResults.containsKey(examName)) {
           groupedResults[examName] = [];
         }
 
         groupedResults[examName]!.add({
-          'subject': data['subject'] ?? 'Unknown',
-          'code': data['subjectCode'] ?? 'N/A',
-          'marks': data['marks'] ?? 0,
-          'maxMarks': data['maxMarks'] ?? 40,
-          'grade': data['grade'] ?? 'N/A',
+          'subject': subject,
+          'code': markData['subjectCode']?.toString() ?? examType,
+          'marks': totalMarks.round(),
+          'maxMarks': maxMark.round(),
+          'grade': grade,
+          'gradePoint': gradePoint,
+          'examType': examType,
         });
       }
 
+      // Step 4: Also fetch assignment results from submissions + assignments_master
+      try {
+        List<QueryDocumentSnapshot<Map<String, dynamic>>> submissionDocs = [];
+
+        // Try by studentId
+        {
+          final snap = await _db
+              .collection('submissions')
+              .where('studentId', isEqualTo: studentId)
+              .where('status', isEqualTo: 'marked')
+              .get();
+          submissionDocs = snap.docs;
+        }
+
+        // Try by studentName
+        if (submissionDocs.isEmpty && studentName.isNotEmpty) {
+          final snap = await _db
+              .collection('submissions')
+              .where('studentName', isEqualTo: studentName)
+              .where('status', isEqualTo: 'marked')
+              .get();
+          submissionDocs = snap.docs;
+          
+          // Also try uppercase name
+          if (submissionDocs.isEmpty) {
+            final snap2 = await _db
+                .collection('submissions')
+                .where('studentName', isEqualTo: studentName.toUpperCase())
+                .where('status', isEqualTo: 'marked')
+                .get();
+            submissionDocs = snap2.docs;
+          }
+        }
+
+        // Fallback: scan all marked submissions
+        if (submissionDocs.isEmpty) {
+          final allSubs = await _db
+              .collection('submissions')
+              .where('status', isEqualTo: 'marked')
+              .get();
+          final lowerName = studentName.toLowerCase();
+          final lowerStudentId = studentId.toLowerCase();
+          submissionDocs = allSubs.docs.where((doc) {
+            final data = doc.data();
+            final docStudentId = (data['studentId'] ?? '').toString().toLowerCase();
+            final docStudentName = (data['studentName'] ?? '').toString().toLowerCase();
+            final docRegNo = (data['regNo'] ?? '').toString().toLowerCase();
+            return docStudentId == lowerStudentId ||
+                docStudentName == lowerName ||
+                (lowerName.isNotEmpty && docStudentName.contains(lowerName)) ||
+                docRegNo == lowerStudentId;
+          }).toList();
+        }
+
+        debugPrint('[getStudentExamResults] Found ${submissionDocs.length} graded submissions');
+
+        // Cache for assignment details
+        final Map<String, Map<String, dynamic>> assignmentCache = {};
+        int assignmentCounter = 1;
+
+        for (var subDoc in submissionDocs) {
+          final subData = subDoc.data();
+          final assignmentId = subData['assignmentId']?.toString() ?? '';
+          final gradeStr = subData['grade']?.toString() ?? '';
+
+          if (gradeStr.isEmpty) continue;
+
+          // Get assignment details
+          String assignmentTitle = 'Assignment $assignmentCounter';
+          String subject = subData['subject']?.toString() ?? 'Unknown';
+          double maxMark = 10.0;
+
+          if (assignmentId.isNotEmpty) {
+            if (!assignmentCache.containsKey(assignmentId)) {
+              try {
+                final assignDoc = await _db.collection('assignments_master').doc(assignmentId).get();
+                if (assignDoc.exists) {
+                  assignmentCache[assignmentId] = assignDoc.data()!;
+                }
+              } catch (_) {}
+            }
+
+            final assignData = assignmentCache[assignmentId];
+            if (assignData != null) {
+              assignmentTitle = assignData['title']?.toString() ?? assignmentTitle;
+              subject = assignData['subject']?.toString() ?? subject;
+            }
+          }
+
+          // Parse grade - could be "A+", "8/10", "85", etc.
+          double marks = 0;
+          String grade = gradeStr;
+          int gradePoint = 0;
+
+          // Try parsing as "X/Y" format
+          if (gradeStr.contains('/')) {
+            final parts = gradeStr.split('/');
+            marks = double.tryParse(parts[0].trim()) ?? 0;
+            maxMark = double.tryParse(parts[1].trim()) ?? 10;
+          }
+          // Try parsing as numeric
+          else if (double.tryParse(gradeStr) != null) {
+            marks = double.parse(gradeStr);
+            maxMark = 10;
+          }
+          // Letter grade
+          else {
+            switch (gradeStr.toUpperCase()) {
+              case 'A+': case 'S': marks = 10; maxMark = 10; gradePoint = 10; break;
+              case 'A': marks = 9; maxMark = 10; gradePoint = 9; break;
+              case 'B+': marks = 8; maxMark = 10; gradePoint = 8; break;
+              case 'B': marks = 7; maxMark = 10; gradePoint = 7; break;
+              case 'C': marks = 6; maxMark = 10; gradePoint = 6; break;
+              case 'D': marks = 5; maxMark = 10; gradePoint = 5; break;
+              case 'F': marks = 0; maxMark = 10; gradePoint = 0; break;
+              default: marks = 0; maxMark = 10; gradePoint = 0;
+            }
+          }
+
+          // Compute grade from marks if not already a letter grade
+          if (gradePoint == 0 && marks > 0) {
+            final percentage = maxMark > 0 ? (marks / maxMark) * 100 : 0;
+            if (percentage >= 90) { grade = 'A+'; gradePoint = 10; }
+            else if (percentage >= 80) { grade = 'A'; gradePoint = 9; }
+            else if (percentage >= 70) { grade = 'B+'; gradePoint = 8; }
+            else if (percentage >= 60) { grade = 'B'; gradePoint = 7; }
+            else if (percentage >= 50) { grade = 'C'; gradePoint = 6; }
+            else if (percentage >= 40) { grade = 'D'; gradePoint = 5; }
+            else { grade = 'F'; gradePoint = 0; }
+          }
+
+          // Group under assignment title
+          final groupKey = assignmentTitle;
+          if (!groupedResults.containsKey(groupKey)) {
+            groupedResults[groupKey] = [];
+          }
+
+          groupedResults[groupKey]!.add({
+            'subject': subject,
+            'code': 'Assignment',
+            'marks': marks.round(),
+            'maxMarks': maxMark.round(),
+            'grade': grade,
+            'gradePoint': gradePoint,
+            'examType': 'Assignment',
+          });
+
+          assignmentCounter++;
+        }
+      } catch (e) {
+        debugPrint('[getStudentExamResults] Error fetching assignments: $e');
+      }
+
+      // Step 5: Fetch Internal Marks from internal_marks collection
+      try {
+        final internalDoc = await _db.collection('internal_marks').doc(studentId).get();
+        if (internalDoc.exists) {
+          final data = internalDoc.data()!;
+          if (!groupedResults.containsKey('Internal Assessment')) {
+            groupedResults['Internal Assessment'] = [];
+          }
+          groupedResults['Internal Assessment']!.add({
+            'subject': 'Consolidated Internal',
+            'code': 'Internal-CIA',
+            'marks': (data['internalMark'] ?? 0),
+            'maxMarks': 50,
+            'grade': (data['internalMark'] ?? 0) >= 40 ? 'S' : 'A',
+            'gradePoint': ((data['internalMark'] ?? 0) / 5).floor(),
+            'examType': 'Internal',
+          });
+        }
+      } catch (e) {
+        debugPrint('[getStudentExamResults] Error fetching internal_marks: $e');
+      }
+
+      // Step 6: Fetch from HOD-managed subject internal marks
+      final List<String> hodCollections = ['hod_marks_mca2023', 'hod_marks_mca2024'];
+      for (final col in hodCollections) {
+        try {
+          final doc = await _db.collection(col).doc(studentId).get();
+          if (doc.exists) {
+            final data = doc.data()!;
+            if (!groupedResults.containsKey('Internal Assessment')) {
+              groupedResults['Internal Assessment'] = [];
+            }
+            
+            // Avoid duplicates if same data exists in internal_marks
+            final alreadyIn = groupedResults['Internal Assessment']!.any((m) => m['marks'] == data['internalMark'] && m['subject'] == (col.contains('2023') ? 'Data Structures' : 'Software Engineering'));
+            
+            if (!alreadyIn) {
+              groupedResults['Internal Assessment']!.add({
+                'subject': col.contains('2023') ? 'Data Structures' : 'Software Engineering',
+                'code': col.split('_').last.toUpperCase(),
+                'marks': (data['internalMark'] ?? 0),
+                'maxMarks': 50,
+                'grade': (data['internalMark'] ?? 0) >= 45 ? 'S' : ((data['internalMark'] ?? 0) >= 40 ? 'A+' : 'A'),
+                'gradePoint': ((data['internalMark'] ?? 0) / 5).floor(),
+                'examType': 'Internal',
+              });
+            }
+          }
+        } catch (_) {}
+      }
+
+      debugPrint('[getStudentExamResults] Grouped into ${groupedResults.length} exams');
       return groupedResults;
     } catch (e) {
-      debugPrint("Error fetching results: $e");
+      debugPrint("Error fetching student exam results: $e");
       return {};
     }
   }

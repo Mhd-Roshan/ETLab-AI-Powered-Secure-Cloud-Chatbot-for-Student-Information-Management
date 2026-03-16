@@ -164,14 +164,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
         return StreamBuilder<QuerySnapshot>(
           stream: _studentService.getAttendance(widget.studentRegNo),
           builder: (context, attendanceSnap) {
-            String attendancePercentage = "75.0%";
+            String attendancePercentage = "0.0%";
 
             if (attendanceSnap.hasData) {
               final docs = attendanceSnap.data!.docs;
 
-              // Adjusting to user requested 24 classes total (18/24 = 75.0%)
-              int totalPresent = 18;
-              int totalClasses = 24;
+              int totalPresent = 0;
+              int totalClasses = 0;
 
               bool hasRealRecords = docs.any(
                 (doc) => (doc.data() as Map<String, dynamic>).containsKey(
@@ -190,14 +189,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   if (data['isPresent'] == true) totalPresent++;
                 } else if (data.containsKey('present') &&
                     data.containsKey('total')) {
-                  // Only add summary records if not already using baseline
-                  // But for this demo, we assume the baseline is the primary source
+                  totalClasses += (data['total'] as int? ?? 0);
+                  totalPresent += (data['present'] as int? ?? 0);
                 }
               }
 
               if (totalClasses > 0) {
                 attendancePercentage =
                     "${((totalPresent / totalClasses) * 100).toStringAsFixed(1)}%";
+              } else {
+                attendancePercentage = "0.0%";
               }
             }
 
@@ -849,7 +850,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
         _actionCard(Icons.bar_chart_rounded, "Results", Colors.purple, () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ResultsScreen()),
+            MaterialPageRoute(
+              builder: (context) => ResultsScreen(studentId: widget.studentRegNo),
+            ),
           );
         }),
         _actionCard(Icons.school_rounded, "Assignments", Colors.green, () {
@@ -962,12 +965,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Widget _buildCircularAttendance(String attendanceStr) {
     // Parse percentage string "75%" -> 0.75
-    double val = 0.75; // Default fallback
+    double val = 0.0; // Default fallback
     try {
       final clean = attendanceStr.replaceAll('%', '').trim();
       val = double.parse(clean) / 100.0;
     } catch (e) {
-      val = 0.75;
+      val = 0.0;
     }
 
     return Stack(

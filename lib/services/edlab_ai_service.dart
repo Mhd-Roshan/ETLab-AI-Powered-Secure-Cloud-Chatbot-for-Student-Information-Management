@@ -430,7 +430,7 @@ Try asking:
 
         Map<String, List<Map<String, dynamic>>> results = {};
         for (final id in identifiersToTry) {
-          results = await _studentService.getResults(id);
+          results = await _studentService.getStudentExamResults(id);
           if (results.isNotEmpty) {
             debugPrint('[AI] Found results using id=$id');
             break;
